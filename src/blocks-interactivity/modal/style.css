@@ -12,10 +12,18 @@
  * Wrapper (data-wp-interactive root)
  * ────────────────────────────────────────────── */
 
-.wp-block-aggressive-apparel-modal {
+.wp-block-aggressive-blocks-modal {
+	box-sizing: border-box;
 
 	/* Inline trigger sits naturally in document flow. */
 	display: inline-block;
+
+	/* Own the box model. Twenty Twenty-Five does not apply the theme reset. */
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
 
 	/* A triggerless modal should not leave an empty inline line box in flow. */
 	&.is-triggerless {
@@ -320,7 +328,7 @@
 		top: 0;
 		left: 0;
 		bottom: 0;
-		width: min(90vw, var(--aa-panel-width-drawer));
+		width: min(90vw, var(--aa-panel-width-drawer, 21.25rem));
 		max-width: none;
 		max-height: 100%;
 		height: 100%;
@@ -334,7 +342,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: min(90vw, var(--aa-panel-width-drawer));
+		width: min(90vw, var(--aa-panel-width-drawer, 21.25rem));
 		max-width: none;
 		max-height: 100%;
 		height: 100%;

@@ -19,6 +19,7 @@ bash "${SCRIPT_DIR}/reset-wp-env.sh"
 
 bash "${SCRIPT_DIR}/wp-env.sh" run cli wp plugin activate aggressive-blocks
 bash "${SCRIPT_DIR}/wp-env.sh" run cli wp theme activate twentytwentyfive
+bash "${SCRIPT_DIR}/wp-env.sh" run cli wp user meta update admin show_admin_bar_front false
 
 cd "${REPO_ROOT}"
 CI=1 \

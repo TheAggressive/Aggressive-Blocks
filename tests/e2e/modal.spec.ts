@@ -572,7 +572,7 @@ test.describe('Modal — front end', () => {
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const builtIn = page.locator('.wp-block-aggressive-apparel-modal__trigger');
     const wrapper = page.locator(
-      '.wp-block-aggressive-apparel-modal.is-triggerless'
+      '.wp-block-aggressive-blocks-modal.is-triggerless'
     );
     await expect(builtIn).toHaveCount(0);
     await expect(wrapper).toHaveCSS('display', 'contents');
@@ -633,7 +633,7 @@ test.describe('Modal — front end', () => {
 
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const wrapper = page.locator(
-      '.wp-block-aggressive-apparel-modal.is-triggerless'
+      '.wp-block-aggressive-blocks-modal.is-triggerless'
     );
     await expect(wrapper).toHaveCSS('display', 'contents');
     expect(
@@ -647,8 +647,11 @@ test.describe('Modal — front end', () => {
     await expect(shell).toBeHidden();
 
     // Fixture creation leaves Playwright logged in. Remove the admin toolbar
-    // so keyboard order matches the anonymous storefront experience.
-    await page.locator('#wpadminbar').evaluate(element => element.remove());
+    // when it is present so keyboard order matches the storefront.
+    const adminBar = page.locator('#wpadminbar');
+    if ((await adminBar.count()) > 0) {
+      await adminBar.evaluate(element => element.remove());
+    }
     await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
     await page.keyboard.press('Tab');
     await expect(page.locator('.skip-link')).toBeFocused();

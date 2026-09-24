@@ -28,6 +28,16 @@
 			<directory suffix=".php">tests/Performance</directory>
 		</testsuite>
 	</testsuites>
+	<coverage
+		includeUncoveredFiles="true"
+		disableCodeCoverageIgnore="true"
+	>
+		<include>
+			<file>aggressive-blocks.php</file>
+			<directory suffix=".php">includes</directory>
+			<directory suffix=".php">src</directory>
+		</include>
+	</coverage>
 	<php>
 		<ini name="display_errors" value="1" />
 		<ini name="error_reporting" value="-1" />
