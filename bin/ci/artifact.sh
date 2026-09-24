@@ -66,6 +66,7 @@ artifact_wp_env clean all --no-scripts
 artifact_wp_env run cli wp plugin install \
 	"/var/www/html/wp-content/ab-artifacts/${package_name}" --activate --force
 artifact_wp_env run cli wp theme activate twentytwentyfive
+artifact_wp_env run cli wp user meta update admin show_admin_bar_front false
 
 actual_version="$(artifact_wp_env run cli wp plugin get aggressive-blocks --field=version | tail -n 1)"
 if [[ "${actual_version}" != "${expected_version}" ]]; then

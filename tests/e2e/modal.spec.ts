@@ -572,7 +572,7 @@ test.describe('Modal — front end', () => {
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const builtIn = page.locator('.wp-block-aggressive-apparel-modal__trigger');
     const wrapper = page.locator(
-      '.wp-block-aggressive-apparel-modal.is-triggerless'
+      '.wp-block-aggressive-blocks-modal.is-triggerless'
     );
     await expect(builtIn).toHaveCount(0);
     await expect(wrapper).toHaveCSS('display', 'contents');
@@ -633,7 +633,7 @@ test.describe('Modal — front end', () => {
 
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const wrapper = page.locator(
-      '.wp-block-aggressive-apparel-modal.is-triggerless'
+      '.wp-block-aggressive-blocks-modal.is-triggerless'
     );
     await expect(wrapper).toHaveCSS('display', 'contents');
     expect(
