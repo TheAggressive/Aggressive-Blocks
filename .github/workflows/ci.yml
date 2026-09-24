@@ -279,7 +279,13 @@ jobs:
   package:
     name: 📦 Package Plugin
     runs-on: ubuntu-24.04
-    needs: [build, test, e2e]
+    needs: [release-plan, build, test, e2e]
+    if: >-
+      !cancelled() &&
+      needs.build.result == 'success' &&
+      needs.test.result == 'success' &&
+      needs.e2e.result == 'success' &&
+      (needs.release-plan.result == 'success' || needs.release-plan.result == 'skipped')
     timeout-minutes: 15
 
     steps:
@@ -320,7 +326,11 @@ jobs:
   artifact-acceptance:
     name: 🧳 Release Artifact Acceptance
     runs-on: ubuntu-24.04
-    needs: [package]
+    needs: [release-plan, package]
+    if: >-
+      !cancelled() &&
+      needs.package.result == 'success' &&
+      (needs.release-plan.result == 'success' || needs.release-plan.result == 'skipped')
     timeout-minutes: 25
 
     steps:
