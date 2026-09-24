@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# Fast pre-push subset of the required CI lanes.
+# Fast pre-push subset. Does not start wp-env; the merge rehearsal (`pnpm qa`)
+# still runs the containerized i18n/php/e2e/package lanes.
 
 set -euo pipefail
 
@@ -11,6 +12,6 @@ cd "${REPO_ROOT}"
 
 pnpm ci:doctor
 pnpm ci:frontend
-pnpm ci:i18n
+pnpm i18n:check
 
 echo "Fast local CI gate passed."
