@@ -1,0 +1,41 @@
+# PHPStan configuration — production level matching Aggressive Apparel.
+
+parameters:
+	level: 8
+	paths:
+		- aggressive-blocks.php
+		- includes/
+		- src/
+
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+
+	scanFiles:
+		- vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+
+	phpVersion: 80200
+
+	# WordPress stubs declare optimistic types. PHPStan 2 treats those
+	# docblocks as certain and then reports every defensive is_string()/
+	# is_array() guard as redundant. Acting on that would delete runtime
+	# protection. Same trade-off as Aggressive Apparel.
+	treatPhpDocTypesAsCertain: false
+
+	ignoreErrors:
+		-
+			identifier: missingType.iterableValue
+		# WP_Block_Type properties are array<int, string>|string|null at
+		# runtime; the register_block_type stub wants array<string>|null.
+		-
+			identifier: argument.type
+			message: '#Parameter \#2 \$args of function register_block_type#'
+			path: includes/Blocks/class-aliases.php
+
+	universalObjectCratesClasses:
+		- WP_Post
+		- WP_Term
+		- WP_User
+		- WP_Comment
+		- WP_Query
+		- WP_Block_Type
+		- stdClass

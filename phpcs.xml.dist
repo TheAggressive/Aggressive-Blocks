@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
+
+	<description>WordPress coding standard for Aggressive Blocks</description>
+
+	<arg name="colors"/>
+	<arg value="p"/>
+	<config name="testVersion" value="8.2-"/>
+	<!--
+		PHPCompatibility 9.x conflicts with current WPCS 3 / PHPCS 3.13
+		sniff registration (same constraint as Aggressive Apparel). The
+		8.2 floor is still enforced by composer.json, phpstan.neon
+		phpVersion, the plugin header, and the PHP 8.2 wp-env lane.
+	-->
+
+	<rule ref="WordPress"/>
+	<rule ref="WordPress-Core"/>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-VIP-Go"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" value="aggressive-blocks"/>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.Security.EscapeOutput">
+		<properties>
+			<property name="customAutoEscapedFunctions" type="array">
+				<element value="aggressive_blocks_get_icon"/>
+				<element value="aggressive_blocks_trusted_html"/>
+				<element value="aggressive_blocks_get_block_wrapper_attributes"/>
+				<element value="get_block_wrapper_attributes"/>
+				<element value="render_block"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.Found">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed">
+		<severity>0</severity>
+	</rule>
+
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="strict_class_file_names" value="false"/>
+			<property name="is_theme" value="false"/>
+		</properties>
+	</rule>
+
+	<file>.</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/build/*</exclude-pattern>
+	<exclude-pattern>*/tests/*</exclude-pattern>
+	<exclude-pattern>*/.wp-env/*</exclude-pattern>
+	<exclude-pattern>*/.wp-env-ci/*</exclude-pattern>
+	<exclude-pattern>*/.cache/*</exclude-pattern>
+	<exclude-pattern>*.min.js</exclude-pattern>
+	<exclude-pattern>*.min.css</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<config name="severity" value="1"/>
+	<config name="error-severity" value="1"/>
+	<config name="warning-severity" value="1"/>
+	<config name="show_warnings" value="1"/>
+</ruleset>

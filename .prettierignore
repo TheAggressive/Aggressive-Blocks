@@ -1,0 +1,15 @@
+src/**/*.css
+build/
+node_modules/
+vendor/
+.claude/
+.cursor/
+.vscode/
+languages/
+tests/e2e/.auth/
+test-results/
+playwright-report/
+*.min.css
+*.min.js
+pnpm-lock.yaml
+composer.lock

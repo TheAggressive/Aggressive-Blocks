@@ -1,0 +1,631 @@
+# Copyright (C) 2026 The Aggressive Network, LLC
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Aggressive Blocks\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/aggressive-blocks\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI\n"
+"X-Domain: aggressive-blocks\n"
+
+#. Plugin Name of the plugin
+#: aggressive-blocks.php
+#: includes/Core/class-block-categories.php:53
+msgid "Aggressive Blocks"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: aggressive-blocks.php
+msgid "https://github.com/TheAggressive/Aggressive-Apparel"
+msgstr ""
+
+#. Description of the plugin
+#: aggressive-blocks.php
+msgid "Reusable Gutenberg blocks extracted from Aggressive Apparel."
+msgstr ""
+
+#. Author of the plugin
+#: aggressive-blocks.php
+msgid "The Aggressive Network, LLC"
+msgstr ""
+
+#: includes/Blocks/class-copyright.php:73
+#: includes/Blocks/class-copyright.php:383
+msgid "Privacy"
+msgstr ""
+
+#: includes/Blocks/class-copyright.php:74
+#: includes/Blocks/class-copyright.php:392
+msgid "Terms"
+msgstr ""
+
+#: includes/Blocks/class-icon-block.php:395
+msgid "Icon not found."
+msgstr ""
+
+#: includes/helpers.php:98
+msgid "Parallax Debug"
+msgstr ""
+
+#: includes/helpers.php:99
+msgid "Animate On Scroll Debug"
+msgstr ""
+
+#: includes/helpers.php:100
+msgid "Collapse debug panel"
+msgstr ""
+
+#: includes/helpers.php:101
+msgid "Expand debug panel"
+msgstr ""
+
+#: includes/helpers.php:102
+msgid "Live state"
+msgstr ""
+
+#: includes/helpers.php:103
+msgid "Details"
+msgstr ""
+
+#: includes/helpers.php:104
+msgid "Legend"
+msgstr ""
+
+#: includes/helpers.php:105
+msgid "State"
+msgstr ""
+
+#: includes/helpers.php:106
+msgid "Visibility"
+msgstr ""
+
+#: includes/helpers.php:107
+msgid "Progress"
+msgstr ""
+
+#: includes/helpers.php:108
+msgid "Scroll direction"
+msgstr ""
+
+#: includes/helpers.php:109
+msgid "Threshold"
+msgstr ""
+
+#: includes/helpers.php:110
+msgid "Frame rate"
+msgstr ""
+
+#: includes/helpers.php:111
+msgid "Element size"
+msgstr ""
+
+#: includes/helpers.php:112
+msgid "Boundary"
+msgstr ""
+
+#: includes/helpers.php:113
+msgid "Observer"
+msgstr ""
+
+#: includes/helpers.php:114
+msgid "Waiting"
+msgstr ""
+
+#: includes/helpers.php:115
+msgid "Approaching"
+msgstr ""
+
+#: includes/helpers.php:116
+#: includes/helpers.php:118
+msgid "Active"
+msgstr ""
+
+#: includes/helpers.php:117
+msgid "Engine"
+msgstr ""
+
+#: includes/helpers.php:119
+msgid "Idle"
+msgstr ""
+
+#: includes/helpers.php:120
+msgid "Animation"
+msgstr ""
+
+#: includes/helpers.php:121
+msgid "Shown"
+msgstr ""
+
+#: includes/helpers.php:122
+msgid "Hidden"
+msgstr ""
+
+#: includes/helpers.php:123
+msgid "Reverse on scroll back"
+msgstr ""
+
+#: includes/helpers.php:124
+msgid "Yes"
+msgstr ""
+
+#: includes/helpers.php:125
+msgid "No"
+msgstr ""
+
+#: includes/helpers.php:126
+msgid "↓ Down"
+msgstr ""
+
+#: includes/helpers.php:127
+msgid "↑ Up"
+msgstr ""
+
+#: includes/helpers.php:128
+msgid "— measuring…"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:130
+msgid "{pct}% entry"
+msgstr ""
+
+#. translators: {entry} and {exit} are replaced with percentage numbers.
+#: includes/helpers.php:132
+msgid "{entry}% entry · {exit}% exit"
+msgstr ""
+
+#: includes/helpers.php:133
+msgid "Detection boundary"
+msgstr ""
+
+#: includes/helpers.php:134
+msgid "Observer boundary (incl. engine buffer)"
+msgstr ""
+
+#: includes/helpers.php:135
+msgid "· extends beyond viewport"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:137
+msgid "Entry (bottom) {pct}%"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:139
+msgid "Entry (top) {pct}%"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:141
+msgid "Exit ≤ {pct}%"
+msgstr ""
+
+#: includes/helpers.php:142
+msgid "Detection boundary — area the observer watches (viewport ± your margins)"
+msgstr ""
+
+#: includes/helpers.php:143
+msgid "Observer boundary — detection boundary plus the engine’s pre-activation buffer"
+msgstr ""
+
+#: includes/helpers.php:144
+msgid "This block’s element — outlined even while its content is hidden"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:146
+msgid "Entry line — triggers at {pct}% visible when scrolling down"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:148
+msgid "Entry line for scrolling up (same {pct}%, measured from the bottom)"
+msgstr ""
+
+#. translators: {pct} is replaced with a percentage number.
+#: includes/helpers.php:150
+msgid "Exit line — reverses once visibility falls below {pct}%"
+msgstr ""
+
+#: includes/helpers.php:151
+msgid "Entry zone — tinted band the boundary edge must reach to trigger"
+msgstr ""
+
+#. translators: Four brace-delimited placeholders are replaced with measurements.
+#: includes/helpers.php:153
+msgid "Entry threshold {pct}% is unreachable: the element ({elem}px) is taller than the detection area ({root}px). Max visibility ≈ {max}%."
+msgstr ""
+
+#: src/blocks-interactivity/card-flip/render.php:64
+msgid "Flip card"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/render.php:211
+msgid "Hero slideshow"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/render.php:229
+msgid "Play slideshow"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/render.php:230
+#: src/blocks-interactivity/hero-carousel/render.php:487
+msgid "Pause slideshow"
+msgstr ""
+
+#. translators: 1: current slide number, 2: total slide count. Announced by screen readers.
+#: src/blocks-interactivity/hero-carousel/render.php:232
+#: src/blocks-interactivity/horizontal-scroll/render.php:114
+#, php-format
+msgid "Slide %1$s of %2$s"
+msgstr ""
+
+#. translators: 1: current slide number, 2: total slide count.
+#. translators: 1: current slide number, 2: total slide count. Per-slide aria-label.
+#: src/blocks-interactivity/hero-carousel/render.php:403
+#: src/blocks-interactivity/horizontal-scroll/render.php:116
+#, php-format
+msgid "%1$s of %2$s"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/render.php:422
+#: src/blocks-interactivity/horizontal-scroll/render.php:139
+msgid "Previous slide"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/render.php:439
+#: src/blocks-interactivity/horizontal-scroll/render.php:154
+msgid "Next slide"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/render.php:461
+msgid "Choose slide"
+msgstr ""
+
+#. translators: %s: slide number.
+#: src/blocks-interactivity/hero-carousel/render.php:467
+#, php-format
+msgid "Go to slide %s"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/render.php:70
+msgid "Scrolling gallery"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/render.php:175
+msgid "Scroll progress"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/render.php:194
+msgid "Swipe"
+msgstr ""
+
+#: src/blocks-interactivity/modal/render.php:80
+msgid "Open Modal"
+msgstr ""
+
+#: src/blocks-interactivity/modal/render.php:267
+msgid "Close modal"
+msgstr ""
+
+#: src/blocks-interactivity/ticker/render.php:196
+msgid "Pause animation"
+msgstr ""
+
+#: src/blocks-interactivity/ticker/render.php:197
+msgid "Play animation"
+msgstr ""
+
+#: src/blocks-interactivity/animate-on-scroll/block.json
+msgctxt "block title"
+msgid "Animate On Scroll"
+msgstr ""
+
+#: src/blocks-interactivity/animate-on-scroll/block.json
+msgctxt "block description"
+msgid "Animate elements on scroll."
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-back/block.json
+msgctxt "block title"
+msgid "Card Back"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-back/block.json
+msgctxt "block description"
+msgid "The back face of a Card Flip, revealed when the card flips. Add any blocks here."
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-back/block.json
+#: src/blocks-interactivity/card-flip-front/block.json
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block keyword"
+msgid "card"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-back/block.json
+#: src/blocks-interactivity/card-flip-front/block.json
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block keyword"
+msgid "flip"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-back/block.json
+msgctxt "block keyword"
+msgid "back"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-back/block.json
+#: src/blocks-interactivity/card-flip-front/block.json
+msgctxt "block keyword"
+msgid "face"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-front/block.json
+msgctxt "block title"
+msgid "Card Front"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-front/block.json
+msgctxt "block description"
+msgid "The front face of a Card Flip. Add any blocks here."
+msgstr ""
+
+#: src/blocks-interactivity/card-flip-front/block.json
+msgctxt "block keyword"
+msgid "front"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block title"
+msgid "Card Flip"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block description"
+msgid "A card with two faces that flips to reveal the back. Accessible button-driven disclosure, with an optional hover flip."
+msgstr ""
+
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block keyword"
+msgid "3d"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block keyword"
+msgid "product"
+msgstr ""
+
+#: src/blocks-interactivity/card-flip/block.json
+msgctxt "block keyword"
+msgid "reveal"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block title"
+msgid "Hero Carousel"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block description"
+msgid "A full-bleed hero slider built from Cover blocks. Background motion effects, autoplay with pause control, and adaptive light/dark chrome."
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "carousel"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "slider"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "hero"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "slideshow"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "cover"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "motion"
+msgstr ""
+
+#: src/blocks-interactivity/hero-carousel/block.json
+msgctxt "block keyword"
+msgid "animation"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/block.json
+msgctxt "block title"
+msgid "Horizontal Scroll"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/block.json
+msgctxt "block description"
+msgid "Pins a section and drives horizontal scroll via vertical scroll progress. Falls back to native scroll-snap on touch."
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/block.json
+msgctxt "block keyword"
+msgid "scroll"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/block.json
+msgctxt "block keyword"
+msgid "horizontal"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/block.json
+msgctxt "block keyword"
+msgid "parallax"
+msgstr ""
+
+#: src/blocks-interactivity/horizontal-scroll/block.json
+#: src/blocks/split-story-content/block.json
+#: src/blocks/split-story-media/block.json
+#: src/blocks/split-story/block.json
+msgctxt "block keyword"
+msgid "story"
+msgstr ""
+
+#: src/blocks-interactivity/modal/block.json
+msgctxt "block title"
+msgid "Modal"
+msgstr ""
+
+#: src/blocks-interactivity/modal/block.json
+msgctxt "block description"
+msgid "An interactive modal block that can be positioned and triggered by other elements."
+msgstr ""
+
+#: src/blocks-interactivity/parallax/block.json
+msgctxt "block title"
+msgid "Advanced Parallax Container"
+msgstr ""
+
+#: src/blocks-interactivity/parallax/block.json
+msgctxt "block description"
+msgid "A container block that applies parallax effects to nested blocks using intersection observer."
+msgstr ""
+
+#: src/blocks-interactivity/ticker/block.json
+msgctxt "block title"
+msgid "Ticker"
+msgstr ""
+
+#: src/blocks-interactivity/ticker/block.json
+msgctxt "block description"
+msgid "Infinite scrolling marquee for text, logos, or any content. Add the Free Shipping Message block for live cart thresholds."
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block title"
+msgid "Copyright"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block description"
+msgid "Dynamic copyright notice with legal identity, Schema.org markup, and Privacy/Terms links."
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "copyright"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "year"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "footer"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "legal"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "llc"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "inc"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "privacy"
+msgstr ""
+
+#: src/blocks/copyright/block.json
+msgctxt "block keyword"
+msgid "terms"
+msgstr ""
+
+#: src/blocks/split-story-content/block.json
+msgctxt "block title"
+msgid "Story Content"
+msgstr ""
+
+#: src/blocks/split-story-content/block.json
+msgctxt "block description"
+msgid "The scrolling content column of a Split Story. Add any blocks."
+msgstr ""
+
+#: src/blocks/split-story-content/block.json
+#: src/blocks/split-story-media/block.json
+#: src/blocks/split-story/block.json
+msgctxt "block keyword"
+msgid "split"
+msgstr ""
+
+#: src/blocks/split-story-content/block.json
+msgctxt "block keyword"
+msgid "content"
+msgstr ""
+
+#: src/blocks/split-story-content/block.json
+msgctxt "block keyword"
+msgid "text"
+msgstr ""
+
+#: src/blocks/split-story-media/block.json
+msgctxt "block title"
+msgid "Story Media"
+msgstr ""
+
+#: src/blocks/split-story-media/block.json
+msgctxt "block description"
+msgid "The sticky media column of a Split Story. Add an image, video, or any blocks."
+msgstr ""
+
+#: src/blocks/split-story-media/block.json
+#: src/blocks/split-story/block.json
+msgctxt "block keyword"
+msgid "media"
+msgstr ""
+
+#: src/blocks/split-story-media/block.json
+#: src/blocks/split-story/block.json
+msgctxt "block keyword"
+msgid "sticky"
+msgstr ""
+
+#: src/blocks/split-story/block.json
+msgctxt "block title"
+msgid "Split Story"
+msgstr ""
+
+#: src/blocks/split-story/block.json
+msgctxt "block description"
+msgid "A sticky media column alongside a scrolling content column — the classic editorial split layout."
+msgstr ""
+
+#: src/blocks/split-story/block.json
+msgctxt "block keyword"
+msgid "editorial"
+msgstr ""

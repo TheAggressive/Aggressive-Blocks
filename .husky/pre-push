@@ -1,0 +1,4 @@
+export PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
+# Fast gate: frontend lint/types/tests, i18n, and drift contracts.
+# Browser E2E and packaging stay in `pnpm qa` / Actions.
+pnpm run qa:fast
