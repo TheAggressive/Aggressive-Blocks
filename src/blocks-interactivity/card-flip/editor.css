@@ -3,7 +3,7 @@
  * inner content is directly editable. The front/back identity comes from the
  * real child blocks (List View shows "Card Front" / "Card Back"). */
 
-.wp-block-aggressive-apparel-card-flip .aa-card-flip__inner {
+.aa-card-flip .aa-card-flip__inner {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -11,7 +11,7 @@
   transform: none !important;
 }
 
-.wp-block-aggressive-apparel-card-flip .aa-card-flip__face {
+.aa-card-flip .aa-card-flip__face {
   transform: none !important;
   backface-visibility: visible;
   min-height: 6rem;
