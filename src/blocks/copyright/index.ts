@@ -20,7 +20,7 @@ const variations: BlockVariation[] = [
     title: __('Copyright', 'aggressive-blocks'),
     description: __(
       'Current year with the site title as owner.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     isDefault: true,
     attributes: {
@@ -38,7 +38,7 @@ const variations: BlockVariation[] = [
     title: __('Copyright (year range)', 'aggressive-blocks'),
     description: __(
       'Start year through the current year, synced to the site title.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       ownerSource: 'site_title',
@@ -53,7 +53,7 @@ const variations: BlockVariation[] = [
     title: __('Copyright with rights reserved', 'aggressive-blocks'),
     description: __(
       'Current year plus an “All rights reserved” suffix.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       ownerSource: 'site_title',
@@ -67,7 +67,7 @@ const variations: BlockVariation[] = [
     title: __('Copyright with Privacy & Terms', 'aggressive-blocks'),
     description: __(
       'Legal name owner, rights reserved, and Privacy / Terms links.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       ownerSource: 'legal_name',

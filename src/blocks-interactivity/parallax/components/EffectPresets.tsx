@@ -32,7 +32,7 @@ const PRESET_TILES: Array<PresetTile<PresetConfig>> = [
     name: __('Backdrop', 'aggressive-blocks'),
     description: __(
       'Slow drift behind the focal plane — for section background layers',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     value: {
       name: 'Backdrop',
@@ -53,7 +53,7 @@ const PRESET_TILES: Array<PresetTile<PresetConfig>> = [
     name: __('Subtle', 'aggressive-blocks'),
     description: __(
       'Gentle drift with a hint of depth — safe everywhere',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     value: {
       name: 'Subtle',
@@ -74,7 +74,7 @@ const PRESET_TILES: Array<PresetTile<PresetConfig>> = [
     name: __('Float', 'aggressive-blocks'),
     description: __(
       'Airy movement that fades in as it scrolls',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     value: {
       name: 'Float',
@@ -101,7 +101,7 @@ const PRESET_TILES: Array<PresetTile<PresetConfig>> = [
     name: __('Dramatic', 'aggressive-blocks'),
     description: __(
       'Fast, deep motion with zoom and fade — for hero moments',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     value: {
       name: 'Dramatic',

@@ -106,7 +106,7 @@ export const EffectTimingControls = ({
         }}
         help={__(
           'When the effect starts and completes within the scroll journey',
-          'aggressive-apparel'
+          'aggressive-blocks'
         )}
       />
 
@@ -127,7 +127,7 @@ export const EffectTimingControls = ({
             step={5}
             help={__(
               'When effect animation begins (% through scroll)',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
           <RangeControl
@@ -144,7 +144,7 @@ export const EffectTimingControls = ({
             step={5}
             help={__(
               'When effect reaches maximum (% through scroll)',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
           {hasValidationError && (
@@ -158,7 +158,7 @@ export const EffectTimingControls = ({
               ⚠️{' '}
               {__(
                 'End position must be greater than start position',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             </div>
           )}
@@ -185,7 +185,7 @@ export const EffectTimingControls = ({
         onChange={value => onUpdate('effectMode', value)}
         help={__(
           'How the effect behaves after reaching maximum',
-          'aggressive-apparel'
+          'aggressive-blocks'
         )}
       />
 

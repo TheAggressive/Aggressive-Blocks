@@ -137,7 +137,7 @@ export const useTriggerManagement = ({
 
   // Create a list of available triggers for the dropdown.
   const availableTriggers: TriggerOption[] = [
-    { label: __('— Select a trigger —', 'laao'), value: '' },
+    { label: __('— Select a trigger —', 'aggressive-blocks'), value: '' },
   ];
 
   // Add options from the triggers state if available.

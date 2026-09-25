@@ -85,14 +85,14 @@ const ChildMappingHint = ({
   if (childCount === 0) {
     message = __(
       'Add child blocks inside this block — each child plays the step at its position.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     );
   } else if (childCount === sequence.length) {
     message = sprintf(
       /* translators: %d: number of child blocks. */
       __(
         '%d child blocks — each child gets its own step.',
-        'aggressive-apparel'
+        'aggressive-blocks'
       ),
       childCount
     );
@@ -101,7 +101,7 @@ const ChildMappingHint = ({
       /* translators: %d: number of child blocks. */
       __(
         '%d child blocks — the pattern repeats from step 1 when it runs out of steps.',
-        'aggressive-apparel'
+        'aggressive-blocks'
       ),
       childCount
     );
@@ -110,7 +110,7 @@ const ChildMappingHint = ({
       /* translators: %d: number of child blocks. */
       __(
         'Only %d child blocks — later steps are unused until more children are added.',
-        'aggressive-apparel'
+        'aggressive-blocks'
       ),
       childCount
     );

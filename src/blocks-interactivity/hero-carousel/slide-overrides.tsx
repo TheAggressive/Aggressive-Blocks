@@ -224,11 +224,11 @@ const withHeroSlideControls = createHigherOrderComponent(
               <SelectControl<string>
                 label={__(
                   'Background motion (this slide)',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 help={__(
                   'Override the carousel background animation for just this slide.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 value={motionValue}
                 options={HERO_MOTION_OVERRIDE_OPTIONS}
@@ -246,7 +246,7 @@ const withHeroSlideControls = createHigherOrderComponent(
                 label={__('Show from', 'aggressive-blocks')}
                 help={__(
                   'Optional. Hide this slide before this time (site timezone).',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 value={attributes.aaHeroStart ?? ''}
                 emptyLabel={__('No start time', 'aggressive-blocks')}
@@ -257,7 +257,7 @@ const withHeroSlideControls = createHigherOrderComponent(
                 label={__('Show until', 'aggressive-blocks')}
                 help={__(
                   'Optional. Hide this slide from this time onward (site timezone).',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 value={attributes.aaHeroEnd ?? ''}
                 emptyLabel={__('No end time', 'aggressive-blocks')}

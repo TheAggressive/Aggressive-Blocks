@@ -192,7 +192,7 @@ export default function Edit({
             label={__('Accessibility Label', 'aggressive-blocks')}
             help={__(
               'Accessible name for this carousel region. Required for clarity when a page has more than one horizontal-scroll section — use a unique label for each.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={ariaLabel}
             onChange={(val: string) => setAttributes({ ariaLabel: val })}
@@ -201,7 +201,7 @@ export default function Edit({
             label={__('Slide Size', 'aggressive-blocks')}
             help={__(
               'Peek shows neighboring slides. Focus fills most of the viewport. Full is edge-to-edge. Choose Custom, or tweak the width field below.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={slideSizePreset}
             options={[
@@ -257,7 +257,7 @@ export default function Edit({
             label={__('Desktop Behavior', 'aggressive-blocks')}
             help={__(
               'Both pin the section on desktop and map vertical scroll to horizontal movement. “Pinned — scrub or snap” can advance one slide per gesture; continuous scrub never parks between slides. Touch always uses a swipe carousel.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={desktopBehavior}
             options={[
@@ -280,7 +280,7 @@ export default function Edit({
             label={__('Scroll Length', 'aggressive-blocks')}
             help={__(
               'How much vertical scrolling is needed to travel the full gallery. Higher values feel slower; lower values finish sooner.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={speed}
             onChange={(val: number | undefined) =>
@@ -294,7 +294,7 @@ export default function Edit({
             label={__('Activate When Block Reaches', 'aggressive-blocks')}
             help={__(
               'Where the section pins before horizontal scroll begins. The dashed frame in the canvas shows the pin height.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={activation}
             options={[
@@ -323,7 +323,7 @@ export default function Edit({
                 label={__('Scroll Behavior', 'aggressive-blocks')}
                 help={__(
                   'Continuous scrubs 1:1 with scroll. Snap to next advances one slide per scroll (down = next, up = previous), then waits for the next deliberate gesture.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 value={snapBehavior === 'paged' ? 'paged' : 'off'}
                 options={[
@@ -347,7 +347,7 @@ export default function Edit({
                   label={__('Slide Transition Duration', 'aggressive-blocks')}
                   help={__(
                     'How long the glide from one slide to the next takes.',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                   value={stepDuration}
                   onChange={(val: number | undefined) =>
@@ -374,7 +374,7 @@ export default function Edit({
             <p className='components-base-control__help'>
               {__(
                 'Scrubs the track across the canvas so you can judge slide size without publishing.',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             </p>
           </div>
@@ -387,7 +387,7 @@ export default function Edit({
             label={__('Show Previous / Next Buttons', 'aggressive-blocks')}
             help={__(
               'Keeps prev/next in the markup for keyboard users. Tab order is region → arrows → slide content; they stay visually hidden until focus-visible. Wheel and pointer users never see them.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={showControls}
             onChange={(val: boolean) => setAttributes({ showControls: val })}
@@ -396,7 +396,7 @@ export default function Edit({
             label={__('Mobile Swipe Hint', 'aggressive-blocks')}
             help={__(
               'Animation cue uses a bare chevron so it does not look like a button. Badge adds a circular background.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={swipeHintStyle}
             options={[

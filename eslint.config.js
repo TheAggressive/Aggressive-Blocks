@@ -86,6 +86,10 @@ export default [
       'react/prop-types': 'off', // WordPress handles props differently
       // WordPress specific rules
       '@wordpress/no-unsafe-wp-apis': 'warn', // Warn about experimental APIs
+      '@wordpress/i18n-text-domain': [
+        'error',
+        { allowedTextDomain: 'aggressive-blocks' },
+      ],
       // Accessibility rules (jsx-a11y)
       'jsx-a11y/alt-text': 'error', // Images must have alt text
       'jsx-a11y/anchor-has-content': 'error', // Links must have content
@@ -177,6 +181,10 @@ export default [
       'react/prop-types': 'off', // WordPress handles props differently
       // WordPress specific rules
       '@wordpress/no-unsafe-wp-apis': 'warn', // Warn about experimental APIs
+      '@wordpress/i18n-text-domain': [
+        'error',
+        { allowedTextDomain: 'aggressive-blocks' },
+      ],
       // Accessibility rules (jsx-a11y)
       'jsx-a11y/alt-text': 'error', // Images must have alt text
       'jsx-a11y/anchor-has-content': 'error', // Links must have content

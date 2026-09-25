@@ -52,7 +52,7 @@ export const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
     name: __('Cascade', 'aggressive-blocks'),
     description: __(
       'Children rise one after another — great for lists and grids',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       useSequence: false,
@@ -71,7 +71,7 @@ export const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
     name: __('Zoom Pop', 'aggressive-blocks'),
     description: __(
       'Springy zoom-in for cards and callouts',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       useSequence: false,
@@ -90,7 +90,7 @@ export const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
     name: __('Hero Reveal', 'aggressive-blocks'),
     description: __(
       'Sequence: heading fades, then content rises — for hero sections',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       useSequence: true,
@@ -111,7 +111,7 @@ export const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
     name: __('Zig-Zag', 'aggressive-blocks'),
     description: __(
       'Sequence: children alternate sliding in from left and right',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       useSequence: true,
@@ -131,7 +131,7 @@ export const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
     name: __('Soft Focus', 'aggressive-blocks'),
     description: __(
       'Blurred content sharpens into place — for editorial imagery',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       useSequence: false,
@@ -147,7 +147,7 @@ export const ANIMATION_PRESETS: Record<string, AnimationPreset> = {
     name: __('Flip Reveal', 'aggressive-blocks'),
     description: __(
       'Cards flip up one by one — for product grids',
-      'aggressive-apparel'
+      'aggressive-blocks'
     ),
     attributes: {
       useSequence: false,
