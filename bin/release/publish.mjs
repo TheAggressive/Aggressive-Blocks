@@ -18,6 +18,13 @@ if (!version) {
   throw new Error('AA_RELEASE_VERSION is required to publish.');
 }
 
+// Tag the commit this run built and tested. Without --target, gh tags the
+// default branch as it is now, which may include commits merged since.
+const target = process.env.GITHUB_SHA;
+if (!target) {
+  throw new Error('GITHUB_SHA is required to tag the tested commit.');
+}
+
 execFileSync(
   'gh',
   [
@@ -26,6 +33,8 @@ execFileSync(
     `v${version}`,
     ...zips,
     ...zips.map(name => `${name}.sha256`).filter(Boolean),
+    '--target',
+    target,
     '--title',
     `v${version}`,
     '--generate-notes',
