@@ -27,7 +27,7 @@ execFileSync(
     ...zips,
     ...zips.map(name => `${name}.sha256`).filter(Boolean),
     '--title',
-    `Aggressive Blocks ${version}`,
+    `v${version}`,
     '--generate-notes',
   ],
   { stdio: 'inherit' }
