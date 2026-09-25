@@ -340,12 +340,16 @@ test.describe('Modal — front end', () => {
 
     const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
+    const dialog = shell.locator('.wp-block-aggressive-apparel-modal__dialog');
     const close = page.locator('.wp-block-aggressive-apparel-modal__close');
     const first = page.getByRole('link', { name: 'First link' });
     const second = page.getByRole('link', { name: 'Second link' });
 
     await trigger.click();
     await expect(shell).toBeVisible();
+    // Open focuses the dialog in the same frame that installs the trap.
+    // Tabbing before that frame lets the dialog take focus back.
+    await expect(dialog).toBeFocused();
 
     await close.focus();
     await page.keyboard.press('Tab');

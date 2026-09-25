@@ -47,7 +47,7 @@ const automation = (classification, overrides = {}) =>
     labels: ['automerge', ...classification.labels],
     checks: passedChecks,
     isDraft: false,
-    baseRef: 'master',
+    baseRef: 'main',
     sameRepository: true,
     mergeable: 'MERGEABLE',
     mergeStateStatus: 'CLEAN',
@@ -245,7 +245,7 @@ describe('bot commit provenance', () => {
     committer: { login: 'web-flow', type: 'User', id: 19864447 },
     parents: [{ sha: previousSha }, { sha: baseSha }],
     commit: {
-      message: "Merge branch 'master' into dependabot/npm_and_yarn/example",
+      message: "Merge branch 'main' into dependabot/npm_and_yarn/example",
       author: {
         name: 'github-actions[bot]',
         email: '41898282+github-actions[bot]@users.noreply.github.com',
@@ -258,7 +258,7 @@ describe('bot commit provenance', () => {
     verifiedBotCommits(
       commits,
       'dependabot[bot]',
-      'master',
+      'main',
       'dependabot/npm_and_yarn/example',
       trustedBaseParents
     );
@@ -348,6 +348,13 @@ describe('automation decisions', () => {
     const result = automation(classification);
     assert.equal(result.action, 'stop');
     assert.equal(result.attention, true);
+  });
+
+  it('stops when the pull request does not target main', () => {
+    const result = automation(owner({}), { baseRef: 'master' });
+    assert.equal(result.action, 'stop');
+    assert.equal(result.attention, true);
+    assert.equal(result.reason, 'The PR source or target is unexpected.');
   });
 
   it('updates a stale eligible PR and waits for fresh checks', () => {
