@@ -28,10 +28,10 @@
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@eslint/js": "^9.39.5",
-    "@playwright/test": "1.62.1",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/jest": "^30.0.0",
-    "@types/node": "26.2.0",
+    "@types/node": "26.6.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@types/wordpress__block-editor": "^15.0.6",
@@ -71,7 +71,7 @@
     "stylelint-config-standard": "^40.0.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   },
   "scripts": {
     "build": "rm -rf build && concurrently 'pnpm build:blocks' 'pnpm build:interactivity' 'pnpm build:modules' 'pnpm build:icons' 'pnpm build:debug' && pnpm build:manifest",
