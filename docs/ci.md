@@ -57,7 +57,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 
-`pnpm qa` routes through the same pinned Node as Actions (`bin/ci/node.sh`) and then `bin/ci/verify.sh`.
+Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-push check and does not start containers. `pnpm qa` rehearses the containerized CI lanes: it routes through the same pinned Node as Actions (`bin/ci/node.sh`) and then `bin/ci/verify.sh`.
 
 ## Independent-site proof
 

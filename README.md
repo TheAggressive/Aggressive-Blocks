@@ -10,15 +10,17 @@ The plugin is developed and tested against WordPress VIP Coding Standards. It is
 * PHP 8.2 or later
 * Node 24 and pnpm 11 for development
 
-## Local quality gate
+## Local development
+
+WordPress Studio is the local site. GitHub Actions runs the Docker lanes.
 
 ```bash
 pnpm install --frozen-lockfile
 composer install
-pnpm qa
+pnpm qa:fast
 ```
 
-`pnpm qa` is the local equivalent of the merge gate. Use `pnpm qa:fast` before push for the subset that does not start containers.
+`pnpm qa:fast` is the pre-push check. It does not start containers. `pnpm qa` rehearses the same wp-env lanes CI runs.
 
 See [docs/ci.md](docs/ci.md) for workflows, required branch checks, the PHP/WordPress matrix, packaging, and VIP-oriented gates.
 
@@ -32,8 +34,4 @@ The production build emits block assets, Interactivity API modules, PHP render f
 
 ## Package
 
-```bash
-pnpm ci:package
-```
-
-The ZIP is allowlist-built and verified. Install that ZIP — not the source checkout — to confirm a release.
+CI builds an allowlisted ZIP and installs that ZIP, not the source checkout, before a release is published. Merging to `main` does not publish. A release is a manual CI run on `main` with publish enabled.

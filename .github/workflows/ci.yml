@@ -384,7 +384,12 @@ jobs:
     name: 🚀 Release
     runs-on: ubuntu-24.04
     needs: [release-plan, package, artifact-acceptance]
-    if: success() && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: >-
+      success() &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      inputs.publish &&
+      needs.release-plan.outputs.should_release == 'true'
     timeout-minutes: 15
     environment: production
     permissions:
@@ -419,6 +424,7 @@ jobs:
       - name: Publish GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AA_RELEASE_VERSION: ${{ needs.release-plan.outputs.next_version }}
           HUSKY: '0'
         run: node bin/release/publish.mjs
 
@@ -437,6 +443,7 @@ jobs:
       - e2e
       - package
       - artifact-acceptance
+      - release
     timeout-minutes: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -460,7 +467,7 @@ jobs:
           E2E_RESULT: ${{ needs.e2e.result }}
           PACKAGE_RESULT: ${{ needs.package.result }}
           ARTIFACT_ACCEPTANCE_RESULT: ${{ needs.artifact-acceptance.result }}
-          RELEASE_RESULT: skipped
+          RELEASE_RESULT: ${{ needs.release.result }}
           VERSION_SYNC_RESULT: skipped
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
           VERSION_SYNC: ${{ needs.changes.outputs.version_sync }}
