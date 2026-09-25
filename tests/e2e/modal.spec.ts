@@ -556,10 +556,6 @@ test.describe('Modal — front end', () => {
     page,
   }) => {
     const modalId = 'e2e-onload';
-    await page.addInitScript(id => {
-      localStorage.removeItem(`aa_modal_seen_${id}`);
-    }, modalId);
-
     const { id, url } = await insertModalPage(page, {
       modalId,
       triggerLabel: 'On-load modal',
@@ -567,6 +563,21 @@ test.describe('Modal — front end', () => {
       openOnLoadOnce: true,
     });
     pageIds.push(id);
+
+    // Clear the seen key before page scripts on the first frontend visit.
+    // A post-load removeItem races init, which writes the key and makes the
+    // following reload skip open. The guard keeps the second visit intact.
+    await page.addInitScript(seenId => {
+      if (window.top !== window) {
+        return;
+      }
+      const guard = `aa_e2e_cleared_${seenId}`;
+      if (sessionStorage.getItem(guard) === '1') {
+        return;
+      }
+      sessionStorage.setItem(guard, '1');
+      localStorage.removeItem(`aa_modal_seen_${seenId}`);
+    }, modalId);
 
     await page.goto(url);
 
