@@ -555,8 +555,13 @@ test.describe('Modal — front end', () => {
   test('openOnLoad opens immediately; openOnLoadOnce skips the second visit', async ({
     page,
   }) => {
+    const modalId = 'e2e-onload';
+    await page.addInitScript(id => {
+      localStorage.removeItem(`aa_modal_seen_${id}`);
+    }, modalId);
+
     const { id, url } = await insertModalPage(page, {
-      modalId: 'e2e-onload',
+      modalId,
       triggerLabel: 'On-load modal',
       openOnLoad: true,
       openOnLoadOnce: true,
@@ -564,10 +569,6 @@ test.describe('Modal — front end', () => {
     pageIds.push(id);
 
     await page.goto(url);
-    await page.evaluate(() => {
-      localStorage.removeItem('aa_modal_seen_e2e-onload');
-    });
-    await page.reload();
 
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const builtIn = page.locator('.wp-block-aggressive-apparel-modal__trigger');
