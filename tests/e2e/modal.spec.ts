@@ -555,19 +555,31 @@ test.describe('Modal — front end', () => {
   test('openOnLoad opens immediately; openOnLoadOnce skips the second visit', async ({
     page,
   }) => {
+    const modalId = 'e2e-onload';
     const { id, url } = await insertModalPage(page, {
-      modalId: 'e2e-onload',
+      modalId,
       triggerLabel: 'On-load modal',
       openOnLoad: true,
       openOnLoadOnce: true,
     });
     pageIds.push(id);
 
+    // Clear the seen key before page scripts on the first frontend visit.
+    // A post-load removeItem races init, which writes the key and makes the
+    // following reload skip open. The guard keeps the second visit intact.
+    await page.addInitScript(seenId => {
+      if (window.top !== window) {
+        return;
+      }
+      const guard = `aa_e2e_cleared_${seenId}`;
+      if (sessionStorage.getItem(guard) === '1') {
+        return;
+      }
+      sessionStorage.setItem(guard, '1');
+      localStorage.removeItem(`aa_modal_seen_${seenId}`);
+    }, modalId);
+
     await page.goto(url);
-    await page.evaluate(() => {
-      localStorage.removeItem('aa_modal_seen_e2e-onload');
-    });
-    await page.reload();
 
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const builtIn = page.locator('.wp-block-aggressive-apparel-modal__trigger');
