@@ -1,8 +1,8 @@
 /**
  * Shared Interactivity helpers used by migrated blocks.
  *
- * Extracted from the theme helper module. Only the focus-trap used by Modal
- * is owned here; product-grid and store helpers stay in Aggressive Apparel.
+ * Extracted from the theme helper module. The modal uses the native dialog
+ * focus cycle; this trap remains for a caller that still needs one.
  *
  * @package Aggressive_Blocks
  */

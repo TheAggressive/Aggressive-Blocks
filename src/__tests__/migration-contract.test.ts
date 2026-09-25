@@ -68,12 +68,13 @@ describe('migrated block metadata', () => {
     ]);
   });
 
-  it('keeps shared Interactivity modules imported rather than duplicated', () => {
+  it('opens the modal with the native dialog instead of a custom trap', () => {
     const modal = readFileSync(
       path.join(root, 'src/blocks-interactivity/modal/view.ts'),
       'utf8'
     );
-    expect(modal).toContain("from '@aggressive-blocks/scroll-lock'");
-    expect(modal).toContain("from '@aggressive-blocks/helpers'");
+    expect(modal).toContain('showModal()');
+    expect(modal).not.toContain("from '@aggressive-blocks/scroll-lock'");
+    expect(modal).not.toContain("from '@aggressive-blocks/helpers'");
   });
 });
