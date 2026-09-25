@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import {
   DEPENDABOT_METADATA_CONTEXT,
   LABELS,
+  PROTECTED_BRANCH,
   MANAGED_LABELS,
   classifyPullRequest,
   decideAutomation,
@@ -149,9 +150,11 @@ function verifiedBotCommitHistory(number, login, headRef) {
   const commits = paginated(
     `repos/${repository}/pulls/${number}/commits?per_page=100`
   );
-  const masterSha = ghJson(['api', `repos/${repository}/git/ref/heads/master`])
-    ?.object?.sha;
-  if (!masterSha) return false;
+  const baseSha = ghJson([
+    'api',
+    `repos/${repository}/git/ref/heads/${PROTECTED_BRANCH}`,
+  ])?.object?.sha;
+  if (!baseSha) return false;
 
   const candidateBaseParents = new Set(
     commits
@@ -161,14 +164,14 @@ function verifiedBotCommitHistory(number, login, headRef) {
   );
   const trustedBaseParents = new Set(
     [...candidateBaseParents].filter(parent =>
-      commitIsAncestor(parent, masterSha)
+      commitIsAncestor(parent, baseSha)
     )
   );
 
   return verifiedBotCommits(
     commits,
     login,
-    'master',
+    PROTECTED_BRANCH,
     headRef,
     trustedBaseParents
   );
@@ -233,7 +236,7 @@ function classificationForAutomation(files, pr) {
 /** @param {string} branch @param {string} sha */
 function resolveWorkflowRunPullRequest(branch, sha) {
   const matches = paginated(
-    `repos/${repository}/pulls?state=open&base=master&per_page=100`
+    `repos/${repository}/pulls?state=open&base=${PROTECTED_BRANCH}&per_page=100`
   ).filter(pr => pr.head.ref === branch && pr.head.sha === sha);
 
   if (matches.length !== 1) {

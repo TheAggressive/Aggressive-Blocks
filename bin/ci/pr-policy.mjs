@@ -15,6 +15,9 @@ export const REQUIRED_CHECKS = [
 
 export const DEPENDABOT_METADATA_CONTEXT = 'PR Automation Metadata';
 
+/** Protected branch for this repository. Aggressive Apparel uses `master`. */
+export const PROTECTED_BRANCH = 'main';
+
 export const LABELS = {
   'type:feature': ['1f883d', 'Conventional Commit feature'],
   'type:fix': ['d73a4a', 'Conventional Commit fix or performance change'],
@@ -442,7 +445,7 @@ export function decideAutomation(input) {
       reason: 'The PR title is not conventional.',
     };
   }
-  if (input.baseRef !== 'master' || !input.sameRepository) {
+  if (input.baseRef !== PROTECTED_BRANCH || !input.sameRepository) {
     return {
       action: 'stop',
       attention: true,
@@ -470,14 +473,14 @@ export function decideAutomation(input) {
     return {
       action: 'stop',
       attention: true,
-      reason: 'The PR conflicts with master.',
+      reason: `The PR conflicts with ${PROTECTED_BRANCH}.`,
     };
   }
   if (input.mergeStateStatus === 'BEHIND') {
     return {
       action: 'update',
       attention: false,
-      reason: 'The PR branch is behind master.',
+      reason: `The PR branch is behind ${PROTECTED_BRANCH}.`,
     };
   }
 

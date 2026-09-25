@@ -48,7 +48,7 @@ describe('release summary gate', () => {
     assert.match(result.markdown, /Required CI gate failed/u);
   });
 
-  it('requires every artifact and publish stage for a master release', () => {
+  it('requires every artifact and publish stage for a main release', () => {
     const result = evaluateReleaseSummary({
       ...successfulPullRequest,
       EVENT_NAME: 'workflow_dispatch',
@@ -73,7 +73,7 @@ describe('release summary gate', () => {
     );
   });
 
-  it('fails when a planned master release is skipped', () => {
+  it('fails when a planned main release is skipped', () => {
     const result = evaluateReleaseSummary({
       ...successfulPullRequest,
       EVENT_NAME: 'workflow_dispatch',
@@ -152,7 +152,7 @@ describe('release summary gate', () => {
     ]);
   });
 
-  it('does not require release planning on an ordinary push to master', () => {
+  it('does not require release planning on an ordinary push to main', () => {
     // Releasing is an explicit decision now; a merge that skips planning is the
     // normal case, not a failure.
     const result = evaluateReleaseSummary({
