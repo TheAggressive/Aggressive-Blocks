@@ -1,42 +1,62 @@
 #!/usr/bin/env node
+
 /**
- * Dry-run semantic-release planning. Writes should_release / next_version
- * to GITHUB_OUTPUT when present.
+ * Determine whether semantic-release would publish from the current commit.
+ *
+ * The JavaScript API provides a structured result and rejects on operational
+ * errors. That keeps CI fail-closed without parsing human-readable CLI output.
  */
 
-import { appendFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { appendFile } from 'node:fs/promises';
+import process from 'node:process';
 
-const output = process.env.GITHUB_OUTPUT;
-let shouldRelease = false;
-let releaseType = '';
-let nextVersion = '';
+import semanticRelease from 'semantic-release';
+
+async function planRelease() {
+  const outputPath = process.env.GITHUB_OUTPUT;
+
+  if (!outputPath) {
+    throw new Error('GITHUB_OUTPUT is required for release planning.');
+  }
+
+  const result = await semanticRelease(
+    { dryRun: true },
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      stdout: process.stdout,
+      stderr: process.stderr,
+    }
+  );
+
+  if (!result) {
+    await appendFile(outputPath, 'should_release=false\n', 'utf8');
+    console.log('No release-worthy commits found.');
+    return;
+  }
+
+  const { type, version } = result.nextRelease;
+
+  await appendFile(
+    outputPath,
+    [
+      'should_release=true',
+      `release_type=${type}`,
+      `next_version=${version}`,
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+
+  console.log(`Release due: ${type} version ${version}.`);
+}
 
 try {
-  const stdout = execFileSync(
-    'pnpm',
-    ['exec', 'semantic-release', '--dry-run'],
-    { encoding: 'utf8' }
+  await planRelease();
+} catch (error) {
+  const errorName = error instanceof Error ? error.name : 'UnknownError';
+  console.error(
+    `Release planning failed (${errorName}). Review the sanitized semantic-release log above.`
   );
-  const match = stdout.match(
-    /The next release version is ([0-9]+\.[0-9]+\.[0-9]+)/u
-  );
-  if (match) {
-    shouldRelease = true;
-    nextVersion = match[1];
-    releaseType = 'planned';
-  }
-} catch {
-  shouldRelease = false;
+  process.exitCode = 1;
 }
-
-if (output) {
-  appendFileSync(
-    output,
-    `should_release=${shouldRelease}\nrelease_type=${releaseType}\nnext_version=${nextVersion}\n`
-  );
-}
-
-console.log(
-  `should_release=${shouldRelease} next_version=${nextVersion || 'none'}`
-);
