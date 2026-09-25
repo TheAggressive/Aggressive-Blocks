@@ -37,11 +37,13 @@ msgstr ""
 
 #: includes/Blocks/class-copyright.php:73
 #: includes/Blocks/class-copyright.php:383
+#: build/blocks/copyright/index.js:3
 msgid "Privacy"
 msgstr ""
 
 #: includes/Blocks/class-copyright.php:74
 #: includes/Blocks/class-copyright.php:392
+#: build/blocks/copyright/index.js:3
 msgid "Terms"
 msgstr ""
 
@@ -90,6 +92,7 @@ msgid "Progress"
 msgstr ""
 
 #: includes/helpers.php:108
+#: build/blocks-interactivity/parallax/index.js:1
 msgid "Scroll direction"
 msgstr ""
 
@@ -135,6 +138,7 @@ msgid "Idle"
 msgstr ""
 
 #: includes/helpers.php:120
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
 msgid "Animation"
 msgstr ""
 
@@ -143,6 +147,7 @@ msgid "Shown"
 msgstr ""
 
 #: includes/helpers.php:122
+#: build/blocks-interactivity/modal/index.js:1
 msgid "Hidden"
 msgstr ""
 
@@ -181,6 +186,7 @@ msgid "{entry}% entry · {exit}% exit"
 msgstr ""
 
 #: includes/helpers.php:133
+#: build/blocks-interactivity/parallax/index.js:1
 msgid "Detection boundary"
 msgstr ""
 
@@ -277,11 +283,13 @@ msgstr ""
 
 #: src/blocks-interactivity/hero-carousel/render.php:422
 #: src/blocks-interactivity/horizontal-scroll/render.php:139
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
 msgid "Previous slide"
 msgstr ""
 
 #: src/blocks-interactivity/hero-carousel/render.php:439
 #: src/blocks-interactivity/horizontal-scroll/render.php:154
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
 msgid "Next slide"
 msgstr ""
 
@@ -304,6 +312,7 @@ msgid "Scroll progress"
 msgstr ""
 
 #: src/blocks-interactivity/horizontal-scroll/render.php:194
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
 msgid "Swipe"
 msgstr ""
 
@@ -312,6 +321,7 @@ msgid "Open Modal"
 msgstr ""
 
 #: src/blocks-interactivity/modal/render.php:267
+#: build/blocks-interactivity/modal/index.js:1
 msgid "Close modal"
 msgstr ""
 
@@ -628,4 +638,2634 @@ msgstr ""
 #: src/blocks/split-story/block.json
 msgctxt "block keyword"
 msgid "editorial"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/hero-carousel/index.js:1
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Fade"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Slide"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Up"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Down"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+#: build/blocks/split-story/index.js:1
+msgid "Left"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+#: build/blocks/split-story/index.js:1
+msgid "Right"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Zoom"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "In"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Out"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Flip"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Rotate"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Blur"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Reveal"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Bounce"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Standard"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Elastic"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Spring"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Quick Presets"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Reset"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Gentle Fade"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Soft fade-in, safe everywhere"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Rise Up"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Content slides up as it enters"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Cascade"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Children rise one after another — great for lists and grids"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Zoom Pop"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Springy zoom-in for cards and callouts"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Hero Reveal"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Sequence: heading fades, then content rises — for hero sections"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Zig-Zag"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Sequence: children alternate sliding in from left and right"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Soft Focus"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Blurred content sharpens into place — for editorial imagery"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Flip Reveal"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Cards flip up one by one — for product grids"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:1
+msgid "Add child blocks inside this block — each child plays the step at its position."
+msgstr ""
+
+#. translators: %d: number of child blocks.
+#: build/blocks-interactivity/animate-on-scroll/index.js:2
+#, js-format
+msgid "%d child blocks — each child gets its own step."
+msgstr ""
+
+#. translators: %d: number of child blocks.
+#: build/blocks-interactivity/animate-on-scroll/index.js:3
+#, js-format
+msgid "%d child blocks — the pattern repeats from step 1 when it runs out of steps."
+msgstr ""
+
+#. translators: %d: number of child blocks.
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#, js-format
+msgid "Only %d child blocks — later steps are unused until more children are added."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Slide Distance (px)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Zoom Out Start Scale"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Zoom In Start Scale"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Rotation Angle (degrees)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Blur Amount (px)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Perspective (px)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Bounce Distance (px)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Elastic Distance (px)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Collapse step"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Edit step"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Move up"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Move step up"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Move down"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Move step down"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Duplicate"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Duplicate step"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Remove"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Remove step"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#: build/blocks-interactivity/parallax/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Direction"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Add Step"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Animation Type"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Playing…"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Preview animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Sequence mode previews each direct child’s step in the canvas (types cycle when there are more children than steps)."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Stagger and sequence only animate direct children. This block has a single Group/columns wrapper — move paragraphs or cards out of the Group, or they will animate as one unit."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Use Animation Sequence"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Apply different animations to each child element in sequence"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Animation Sequence"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Reverse on Scroll Back"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Animate elements out when scrolling back up past them. If stagger children is enabled, children will animate in reverse order."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Animation Customization"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Distance the element slides during animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Starting scale for zoom in animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Starting scale for zoom out animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Angle of rotation during animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Intensity of blur effect during animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "3D perspective depth for flip animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Distance for standard and spring bounce animations"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Distance for elastic bounce animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Timing"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Duration (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "How long the animation takes to complete"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Easing Function"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Ease (Default)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Linear"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Ease In"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Ease Out"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Ease In Out"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Overshoot"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "The timing function for the animation transition"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Initial Delay (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Delay before animation starts. When stagger is enabled, this delay is added to each child's stagger delay."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Stagger Children"
+msgstr ""
+
+#. translators: %d: number of direct child blocks.
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+#, js-format
+msgid "Cascade each direct child with a delay between them. Currently %d direct child — add siblings (not a wrapping Group) for a cascade."
+msgid_plural "Cascade each direct child with a delay between them. Currently %d direct children. Nested Groups count as one child."
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Stagger Pattern"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Sequential"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Wave"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Random"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "How the stagger delay is applied to children"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Stagger Delay (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Delay between each child element animation"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Wave Frequency"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Number of wave cycles across all children"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Base Delay (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Base delay for wave pattern"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Min Random Delay (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Minimum random delay for each child"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Max Random Delay (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Maximum random delay for each child"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Reshuffle delays"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Random delays are seeded so the cascade stays the same across reloads. Reshuffle picks a new pattern."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Trigger Settings"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Visibility Trigger"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "100% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "90% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "80% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "70% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "60% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "50% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "40% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "30% of Element (Default)"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "20% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "10% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "0% of Element"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "What percentage of the target's visibility should be in the Detection Boundary before the animation triggers."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Detection Boundary"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Negative values delay trigger until element is further in viewport. -50% means element must be halfway into viewport before triggering."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Debug & Accessibility"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Debug Mode"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Shows visual indicators for the Detection Boundary & Visibility Trigger"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Respect Reduced Motion"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Disable animations for users who prefer reduced motion"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Screen Reader Announcements"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:5
+msgid "Announce when content animates into view. Off by default — enable only when a single block is critical to understand."
+msgstr ""
+
+#: build/blocks-interactivity/card-flip/index.js:1
+msgid "Card Flip"
+msgstr ""
+
+#: build/blocks-interactivity/card-flip/index.js:1
+msgid "Flip on"
+msgstr ""
+
+#: build/blocks-interactivity/card-flip/index.js:1
+msgid "Both variants stay keyboard-accessible via the flip button."
+msgstr ""
+
+#: build/blocks-interactivity/card-flip/index.js:1
+msgid "Hover"
+msgstr ""
+
+#: build/blocks-interactivity/card-flip/index.js:1
+msgid "Click"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Zoom in"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Zoom out"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pan left"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pan right"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pan up"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pan down"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Diagonal drift"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Zoom + pan"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Punch in"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pull back"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Breathing"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Idle sway"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Blur to sharp"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Brightness lift"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Colorize"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Clip reveal"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Slide in"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Scale from edge"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Tilt zoom"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Orbit drift"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Film grain drift"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+#: build/blocks/copyright/index.js:1
+msgid "None"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Alternate per slide"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Random per slide"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Inherit from carousel"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Crossfade + zoom"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Edges"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Bottom cluster"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Dots"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Lines"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Numbers"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Fraction (2 / 5)"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Thumbnails"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Fade up"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Blur in"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Invalid date"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Done"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Hero Slide"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Background motion (this slide)"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Override the carousel background animation for just this slide."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Show from"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Optional. Hide this slide before this time (site timezone)."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "No start time"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Clear start time"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Show until"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Optional. Hide this slide from this time onward (site timezone)."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "No end time"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Clear end time"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Carousel"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Edit mode: stack slides"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Stacks all slides vertically in the editor for easy editing. Does not affect the frontend."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Transition"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Slide uses a native swipeable track. Fade cross-fades stacked slides; Crossfade + zoom adds a subtle scale on entry."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Transition duration (ms)"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Lower = snappier fade between slides. Higher = slower, softer crossfade."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Minimum height"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Loop"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Wrap from the last slide back to the first."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Autoplay"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "A visible pause button is always shown when autoplay is on. Autoplay is disabled for visitors who prefer reduced motion."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Slide duration (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "How long each slide stays before advancing. Lower = faster carousel. Higher = more time to read each slide."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pause on hover"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Show progress on active dot"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Background Animation"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Background motion"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Ambient motion on the slide background. Transform effects pan around each Cover’s focal point. Alternate switches zoom in/out; Random picks from the full motion set."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Motion duration (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "How long one background motion cycle takes. Lower = faster, more noticeable motion. Higher = slower, subtler drift."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Content entrance"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Staggered entrance for slide content each time a slide becomes active."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Navigation"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Show arrows"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Arrow position"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pagination"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Deep link to slides"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Reflects the active slide in the URL and opens the matching slide when the page loads with a #…-slide-N hash. Requires an HTML anchor (Advanced panel)."
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Arrow icon"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Arrow background"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Pagination (active)"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "Hero Carousel"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "1 slide"
+msgstr ""
+
+#: build/blocks-interactivity/hero-carousel/index.js:1
+msgid "slides"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Horizontal Scroll"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Accessibility Label"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Accessible name for this carousel region. Required for clarity when a page has more than one horizontal-scroll section — use a unique label for each."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Slide Size"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Peek shows neighboring slides. Focus fills most of the viewport. Full is edge-to-edge. Choose Custom, or tweak the width field below."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Peek (neighboring slides)"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Focus (mostly one slide)"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Full (edge to edge)"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Custom width"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Item Width"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Width of each slide."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Desktop Behavior"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Both pin the section on desktop and map vertical scroll to horizontal movement. “Pinned — scrub or snap” can advance one slide per gesture; continuous scrub never parks between slides. Touch always uses a swipe carousel."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Pinned — scrub or snap"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Pinned — continuous scrub"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Scroll Length"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "How much vertical scrolling is needed to travel the full gallery. Higher values feel slower; lower values finish sooner."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Activate When Block Reaches"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Where the section pins before horizontal scroll begins. The dashed frame in the canvas shows the pin height."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Top of screen"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Center of screen"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Bottom of screen"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Scroll Behavior"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Continuous scrubs 1:1 with scroll. Snap to next advances one slide per scroll (down = next, up = previous), then waits for the next deliberate gesture."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Continuous scrub"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Snap to next / previous"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Slide Transition Duration"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "How long the glide from one slide to the next takes."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Preview scroll"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Scrubs the track across the canvas so you can judge slide size without publishing."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Show Progress Bar"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Show Previous / Next Buttons"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Keeps prev/next in the markup for keyboard users. Tab order is region → arrows → slide content; they stay visually hidden until focus-visible. Wheel and pointer users never see them."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Mobile Swipe Hint"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Animation cue uses a bare chevron so it does not look like a button. Badge adds a circular background."
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Off"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Animation cue"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Cue with \"Swipe\" label"
+msgstr ""
+
+#: build/blocks-interactivity/horizontal-scroll/index.js:1
+msgid "Badge (circle)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal Settings"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal ID"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Unique identifier for this modal. Used to link triggers to this modal."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal Position"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Center"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Top Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Bottom Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Bottom Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Bottom Sheet"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Top Drawer"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Left Panel"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Right Panel"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Max Width"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "e.g. 40rem, 600px, 80vw. Leave empty for default (40rem)."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Open on Page Load"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Automatically open the modal when the page loads."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Show Once Per Visitor"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Don't reopen after the visitor has seen it once."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Disable Overlay"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "When enabled, the modal will not have a background overlay"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Exit Intent Trigger"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Open the modal when the visitor shows intent to leave the page (mouse leaving viewport on desktop, rapid scroll-up on mobile)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Re-show After (days)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Days before showing the exit intent modal again to the same visitor."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Scroll Depth Trigger"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Open when the visitor scrolls to a percentage of the page. Works on all devices."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Scroll Depth (%)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Percentage of the page scrolled before the modal opens."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Trigger Block"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Select a block to trigger this modal"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Trigger block is highlighted in the editor"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Select this modal to highlight the trigger block"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Select the modal first to use this button"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Refresh Highlight"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Trigger Button Label"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Manual Connection"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "To connect any HTML element to this modal, add this class:"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Example:"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Copy to Clipboard"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Animation Settings"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Enter Animation"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Slide Up"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Slide Down"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Slide Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Slide Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Zoom In"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Expand"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Recede"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Lift"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Pop"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Warp"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Material"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Float"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Drift"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Flip Up"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Exit Animation"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Zoom Out"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Flip Down"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Drawers and sheets always exit off-screen regardless of this setting."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Animation Duration (ms)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Close Button"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Placement"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Top Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Bottom Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Bottom Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Sticky — Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Outside — Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Outside — Top Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal closes via backdrop click or Escape only."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Button floats in the overlay corner, independent of the dialog."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Icon"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Close (×)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Arrow Left (←)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Chevron Down (↓)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Text only"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Size"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Small (32px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Medium (44px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Large (56px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Style"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Ghost (transparent)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Filled"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Outlined"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "e.g. Close"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Optional visible text alongside the icon."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Close Button Colors"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Icon / text color"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Background"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Hover icon / text color"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Hover background"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Trigger Button"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Variant"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Ghost"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Text"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Large (52px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Full Width"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Stretch the button to fill its container."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Border Radius"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "e.g. 0.25rem, 9999px for pill. Leave empty for square."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Colors"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Hover text"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal Design"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Use theme color presets for automatic light/dark mode adaptation."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Padding"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "e.g. 1.5rem, 1.5rem 2rem. Leave empty for the system default (1.5rem). Use 0 for flush content."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Overrides the panel radius / Border panel. Leave empty for the system panel radius."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Overlay Opacity (%)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Darkness of the backdrop overlay."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Overlay Blur (px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Backdrop blur behind the overlay. Set to 0 to disable."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Overlay Color"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Backdrop color"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "— Select a trigger —"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal Title"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Add your modal content here…"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Position:"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Opens Automatically"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Disabled Overlay"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Uses Trigger Block"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Uses Trigger Label"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Backdrop"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Slow drift behind the focal plane — for section background layers"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Subtle"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Gentle drift with a hint of depth — safe everywhere"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Airy movement that fades in as it scrolls"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Dramatic"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Fast, deep motion with zoom and fade — for hero moments"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Effect Timing"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Timing Preset"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Instant (0-5%)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Quick (0-25%) - Default"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Gradual (0-50%)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Full Range (0-70%)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Custom"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "When the effect starts and completes within the scroll journey"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Effect Start Position (%)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "When effect animation begins (% through scroll)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Effect End Position (%)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "When effect reaches maximum (% through scroll)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "End position must be greater than start position"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Effect Mode"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Sustain - Hold at maximum"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Peek - Bell curve (fade in/out)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Reverse - Fade back to start"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "How the effect behaves after reaching maximum"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Preview:"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Motion Effects"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Zoom Effect"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Zoom Type"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Zoom Intensity"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "How much to zoom. Lower = Subtle, Higher = Dramatic."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Rotation Effect"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Start Rotation (degrees)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "End Rotation (degrees)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Rotation Axis"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Z-Axis (2D)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "X-Axis (3D)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Y-Axis (3D)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "All Axes"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Rotation Speed"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Control how fast the rotation occurs. Lower = Slow, Higher = Fast."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Rotation Mode"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Range (Fixed)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Continuous (Spinning)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Looping (Repeating)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Range: rotates between start/end angles. Continuous: keeps spinning. Looping: repeats the rotation range."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Magnetic Mouse"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Magnetic Strength"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "How strongly the element is pulled. Lower = Weak, Higher = Strong."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Attraction Range (px)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Distance from element where effect starts."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Mode"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Attract"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Repel"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Visual Effects"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Scroll Opacity"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Start Opacity"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "End Opacity"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Fade Range"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Full Range"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Top Half"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Bottom Half"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Middle"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Portion of viewport for fade transition"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Blur Effect"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Start Blur (px)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "End Blur (px)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Color Transition"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Start Color"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "End Color"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Transition Type"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Background Color"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Text Color"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Border Color"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable Dynamic Shadow"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Shadow Type"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Box Shadow"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Text Shadow"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Drop Shadow (Filter)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Background — drifts slower on scroll and follows the pointer."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Foreground — sweeps faster on scroll and moves against the pointer."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Focal plane — anchored; other layers move around it."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Parallax Layer"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable parallax on this block"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "The block becomes a layer inside the parallax scene."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Depth"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Far"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Focal"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Near"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Stacking override (z-index)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Leave at 0 to stack automatically by depth (near layers in front)."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Speed"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Slow ← → Fast"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Easing"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Ease In/Out"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Scroll Motion"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Intensity"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Maximum distance layers travel while scrolling through the block, in pixels."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Default movement direction (each layer can override it)."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Both"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Smoothing"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Inertia of pointer motion. Low = snappy, high = floaty."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Disable on small screens"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Turn off parallax below 768px wide. Off by default — most phones handle scroll motion fine. Prefer “prefers-reduced-motion” for accessibility."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "3D Depth & Pointer"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Enable 3D depth & pointer"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Layers get real 3D depth; the scene tilts and shifts with the pointer (or device tilt on mobile)."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Select a block inside this container and set its Depth: negative sits behind the focal plane, positive floats in front. Near layers react more; far layers less."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Pointer influence"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "How strongly layers shift as the pointer moves."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Max pointer shift (px)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Travel of a layer at full depth when the pointer reaches the screen edge."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Tilt angle (deg)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "How far the whole scene tilts toward the pointer. 0 disables the tilt."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Camera distance. Lower = exaggerated 3D, higher = flatter."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Depth spacing (px)"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Z distance between the focal plane and a layer at full depth."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Depth-of-field blur"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Softly blur layers the further they sit from the focal plane, like camera focus."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Activation Zone"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "When to start the effect. 0.1 = 10% visible, 0.5 = 50% visible."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Extend the trigger zone beyond the block. Use percentages, e.g. \"100%\" reaches one screen above."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Top"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Bottom"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Engine pre-activation buffer"
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Extra margin (% of viewport height) where the motion engine warms up before the block reaches the detection boundary, so layers are already moving when they appear. 0 disables the buffer."
+msgstr ""
+
+#: build/blocks-interactivity/parallax/index.js:1
+msgid "Show trigger lines, zone overlays, and a live metrics panel on the front end."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Select an icon"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Could not load icon library."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Square"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Circle"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Diamond"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Normal"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Overlay"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Multiply"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Screen"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Soft Light"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Difference"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Inherit"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "400 — Normal"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "500 — Medium"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "600 — SemiBold"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "700 — Bold"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "800 — ExtraBold"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "900 — Black"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Uppercase"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Lowercase"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Capitalize"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Diagonal Stripes"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Crosshatch"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Halftone"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Noise"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Grain"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Scratch"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Grunge"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Herringbone"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Carbon"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Honeycomb"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Linen"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Add ticker content…"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Marquee Settings"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Speed (seconds)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Duration in seconds for one full scroll loop. Lower = faster."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Gap (px)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Space between items and between the original and duplicate tracks."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Behavior"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Pause on Hover"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Edge Fade"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Fade Edges"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Fade Width (px)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Show Label"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label Type"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label Icon"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Search by slug. Brand and UI icons share the same library."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Icon Size (px)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label Text"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label Background"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label Color"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label Text Color"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Show Indicator"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Indicator Shape"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Indicator Color"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Font Size (px)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "0 inherits from the ticker block."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Font Weight"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Letter Spacing (em)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Text Transform"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Background Pattern"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Pattern"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Blend Mode"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "How the pattern blends with the block background color."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Opacity (%)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Scale (%)"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Resize the pattern tile. Higher = larger, bolder. Lower = finer, denser."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Pattern Color"
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Defaults to white 55% — visible on most colored backgrounds."
+msgstr ""
+
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "LIVE"
+msgstr ""
+
+#: build/blocks/copyright/index.js:1
+msgid "Custom…"
+msgstr ""
+
+#: build/blocks/copyright/index.js:1
+msgid "Site title"
+msgstr ""
+
+#: build/blocks/copyright/index.js:1
+msgid "Legal name"
+msgstr ""
+
+#: build/blocks/copyright/index.js:1
+msgid "Custom name"
+msgstr ""
+
+#. translators: %s: configured legal / organization name.
+#: build/blocks/copyright/index.js:2
+#, js-format
+msgid "Currently: %s (Settings → Terms)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:2
+msgid "Set under Settings → Terms. Falls back to the site title when empty."
+msgstr ""
+
+#. translators: %s: current site title.
+#: build/blocks/copyright/index.js:3
+#, js-format
+msgid "Currently: %s"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Pulls from Settings → General → Site Title (or the Site Editor site title)."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Enter a custom rights-holder name below."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Site Title"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Privacy and Terms pages are configured."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Privacy is set. Terms is missing — choose a Terms page under Settings → Terms (and publish it)."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Terms is set. Privacy is missing — choose and publish a Privacy Policy page under Settings → Privacy."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "No pages configured yet. Set Privacy under Settings → Privacy, and Terms under Settings → Terms."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Appends Privacy (Settings → Privacy) and Terms (Settings → Terms)."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Copyright Settings"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Owner source"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Owner Name"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Organization type"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Legal entity designation appended after the owner name (e.g. LLC, Inc.)."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Custom designation"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Example: S.A., Pty Ltd, PLLC."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Prefix"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Symbol or text before the year."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Show Start Year"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Display a year range (e.g. 2012–2026) instead of just the current year."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Start Year"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Year Separator"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "– (en dash)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "- (hyphen)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "/ (slash)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Legal & SEO"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Show Privacy & Terms links"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Link separator"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Character between the notice and links, and between Privacy and Terms."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "| (pipe)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "· (middle dot)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "• (bullet)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Schema.org JSON-LD"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Outputs Organization + WebSite copyrightHolder / copyrightYear (once per page)."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid ". All rights reserved."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Copyright"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Current year with the site title as owner."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Copyright (year range)"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Start year through the current year, synced to the site title."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Copyright with rights reserved"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Current year plus an “All rights reserved” suffix."
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Copyright with Privacy & Terms"
+msgstr ""
+
+#: build/blocks/copyright/index.js:3
+msgid "Legal name owner, rights reserved, and Privacy / Terms links."
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Layout"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Media position"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Media column width (%)"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Media height"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Media fills the viewport height and is cropped to cover."
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Media sizes to its own content."
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Full viewport"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Fit content"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Stack order on mobile"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Media first"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Content first"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Sticky media"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Stick media while content scrolls"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Sticky offset (rem)"
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "Top gap for a fixed site header."
+msgstr ""
+
+#: build/blocks/split-story/index.js:1
+msgid "The media only appears to stick when the content column is taller than it — add enough content to create scroll room."
 msgstr ""
