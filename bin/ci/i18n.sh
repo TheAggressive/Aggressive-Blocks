@@ -39,3 +39,7 @@ bash "${SCRIPT_DIR}/wp-env.sh" run cli \
 	-- bash -c 'PATH="$PWD/bin/ci:$PATH" I18N_CI=1 AA_I18N_PO_VALIDATOR=skip bash bin/i18n/check.sh'
 
 bash "${REPO_ROOT}/bin/i18n/validate-po.sh"
+
+# The container has no Node. The POT is proven current above, so checking the
+# committed file against build/ covers what the regenerated one would.
+node "${REPO_ROOT}/bin/i18n/check-script-coverage.mjs"
