@@ -9,10 +9,10 @@
  * blocks. Debug tooling lives in debug.ts and is only downloaded when a
  * block enables Debug Mode.
  *
- * Initial hidden/offset states in style.css apply only once this store
- * arms a block (the data-animate-id attribute set in initObserver), so
- * no-JS visitors and crashed hydration render normal, fully visible
- * content and the LCP element paints on first render.
+ * render.php arms each block (data-animate-id), so children paint in their
+ * hidden initial state and an in-view block animates in once. This store
+ * marks data-animate-ready when it takes over, which cancels the CSS
+ * failsafe that otherwise reveals the content after a few seconds.
  *
  * @package Aggressive Apparel
  */
@@ -66,7 +66,44 @@ interface AnimateOnScrollContext {
   staggerRandomMin?: number;
   staggerRandomMax?: number;
   staggerSeed?: number;
+  i18n?: { announce?: string };
 }
+
+/** Set once the store owns a block; cancels the CSS failsafe reveal. */
+const READY_ATTR = 'data-animate-ready';
+const FAILSAFE_ANIMATION = 'aos-failsafe-reveal';
+
+/**
+ * True when the CSS failsafe already revealed the children (the store took
+ * longer than the failsafe delay to arm). Animating now would hide content
+ * the visitor is already reading.
+ */
+export const failsafeRevealed = (element: HTMLElement): boolean => {
+  const child = element.firstElementChild;
+  if (!child || typeof child.getAnimations !== 'function') {
+    return false;
+  }
+  return child
+    .getAnimations()
+    .some(
+      animation =>
+        (animation as CSSAnimation).animationName === FAILSAFE_ANIMATION &&
+        animation.playState === 'finished'
+    );
+};
+
+/**
+ * Whether an observer entry counts as entering. `isIntersecting` matters at
+ * a threshold of 0: the first report for an off-screen block has ratio 0,
+ * which would otherwise pass and play the entrance out of view.
+ */
+export const isEntering = (
+  entry: Pick<
+    IntersectionObserverEntry,
+    'isIntersecting' | 'intersectionRatio'
+  >,
+  threshold: number
+): boolean => entry.isIntersecting && entry.intersectionRatio >= threshold;
 
 const getStaggerConfig = (ctx: AnimateOnScrollContext): StaggerConfig => ({
   pattern: ctx.staggerPattern ?? 'sequential',
@@ -177,6 +214,14 @@ store('aggressive-blocks/animate-on-scroll', {
         setupStaggerDelays(ref, getStaggerConfig(ctx), false);
       }
 
+      // Already revealed by the CSS failsafe: leave it shown (the failsafe's
+      // fill keeps it visible) rather than hiding it to animate again.
+      if (failsafeRevealed(ref)) {
+        ctx.hasAnimated = true;
+        return;
+      }
+
+      // render.php arms the block; kept for markup cached from before it did.
       ref.setAttribute('data-animate-id', ctx.id);
 
       // Cache timing once — avoid getComputedStyle on every exit.
@@ -202,6 +247,7 @@ store('aggressive-blocks/animate-on-scroll', {
       if (prefersReducedMotion && ctx.respectReducedMotion !== false) {
         ctx.isVisible = true;
         ctx.hasAnimated = true;
+        ref.setAttribute(READY_ATTR, '');
         return;
       }
 
@@ -289,52 +335,66 @@ store('aggressive-blocks/animate-on-scroll', {
         }, holdMs);
       };
 
-      const observer = new IntersectionObserver(
-        entries => {
-          entries.forEach(entry => {
-            if (isSequenceMode && !hasAnimationSequenceAttributes(ref)) {
-              return;
-            }
-
-            if (entry.intersectionRatio >= threshold) {
-              if (!ctx.isVisible) {
-                // A pending exit (rapid scroll-up-then-down) must not
-                // strip the entrance mid-flight.
-                clearExitState();
-                ctx.isVisible = true;
-                // Marks the JS path as owner so the CSS scroll-driven
-                // animation can't double-fire.
-                ctx.hasAnimated = true;
-
-                if (ctx.announceToScreenReader) {
-                  announceToScreenReader('Content animated into view');
-                }
+      let observer: IntersectionObserver;
+      try {
+        observer = new IntersectionObserver(
+          entries => {
+            entries.forEach(entry => {
+              if (isSequenceMode && !hasAnimationSequenceAttributes(ref)) {
+                return;
               }
-            } else if (
-              ctx.reverseOnScrollBack &&
-              ctx.isVisible &&
-              (entry.intersectionRatio <= exitThreshold ||
-                !entry.isIntersecting)
-            ) {
-              handleExit();
-            }
 
-            // After the logic runs, so the panel reflects the store's
-            // actual post-event visibility.
-            debugController?.onEntry(
-              entry.intersectionRatio,
-              entry.isIntersecting,
-              ctx.isVisible
-            );
-          });
-        },
-        {
-          threshold: [...new Set([0, exitThreshold, threshold])],
-          rootMargin,
-        }
-      );
+              if (isEntering(entry, threshold)) {
+                if (!ctx.isVisible) {
+                  // A pending exit (rapid scroll-up-then-down) must not
+                  // strip the entrance mid-flight.
+                  clearExitState();
+                  ctx.isVisible = true;
+                  // Marks the JS path as owner so the CSS scroll-driven
+                  // animation can't double-fire.
+                  ctx.hasAnimated = true;
+
+                  if (ctx.announceToScreenReader) {
+                    announceToScreenReader(
+                      ctx.i18n?.announce ?? 'Content animated into view'
+                    );
+                  }
+                }
+              } else if (
+                ctx.reverseOnScrollBack &&
+                ctx.isVisible &&
+                (entry.intersectionRatio <= exitThreshold ||
+                  !entry.isIntersecting)
+              ) {
+                handleExit();
+              }
+
+              // After the logic runs, so the panel reflects the store's
+              // actual post-event visibility.
+              debugController?.onEntry(
+                entry.intersectionRatio,
+                entry.isIntersecting,
+                ctx.isVisible
+              );
+            });
+          },
+          {
+            threshold: [...new Set([0, exitThreshold, threshold])],
+            rootMargin,
+          }
+        );
+      } catch (error) {
+        // An invalid boundary (e.g. a unitless margin) throws here. Show the
+        // content rather than leave the armed block hidden.
+        console.warn('[AnimateOnScroll] Could not observe block', error);
+        ctx.isVisible = true;
+        ctx.hasAnimated = true;
+        ref.setAttribute(READY_ATTR, '');
+        return;
+      }
 
       observer.observe(ref);
+      ref.setAttribute(READY_ATTR, '');
 
       return () => {
         observer.disconnect();

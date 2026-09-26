@@ -90,6 +90,9 @@ export default function Edit({
     ...(isPreviewing
       ? {
           'data-animate-id': 'editor-preview',
+          // The preview drives the states itself; keep the front-end
+          // failsafe reveal from firing mid-preview.
+          'data-animate-ready': '',
           'data-stagger-children':
             attributes.staggerChildren || useSequencePreview ? 'true' : 'false',
         }

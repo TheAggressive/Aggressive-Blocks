@@ -24,7 +24,8 @@
  * 4. Animation Sequence Support
  * 5. Reverse Animation States
  * 6. Stagger Animation Support
- * 7. Keyframe Animations
+ * 7. No-Script and Failsafe Reveal
+ * 8. Keyframe Animations
  *
  * Debug overlay/panel styles ship separately as
  * build/styles/components/debug-overlays.css (shared with parallax) and are
@@ -62,10 +63,12 @@
 	display: block;
 	overflow: visible; /* Prevent animations from being clipped - no CSS containment to avoid layout restrictions */
 
-	/* Accessibility: Respect prefers-reduced-motion */
+	/* Accessibility: respect prefers-reduced-motion unless the block opted
+	   out (render.php writes data-respect-reduced-motion only when it
+	   respects the preference). */
 	@media (prefers-reduced-motion: reduce) {
 
-		& > * {
+		&[data-respect-reduced-motion] > * {
 			transition: none !important;
 			animation: none !important;
 			opacity: 1 !important;
@@ -86,13 +89,12 @@
 	   editor had established.
 
 	   EVERY initial hidden/offset state in this file is gated on
-	   [data-animate-id] — the attribute the store sets the moment it
-	   takes ownership. Until JS arms the block, content renders fully
-	   visible and unshifted: no-JS visitors and crashed hydration
-	   (hydrateRegions has no per-region error isolation) see normal
-	   content, the LCP element paints on first render instead of being
-	   opacity:0 (a hero cover inside this block once posted a 128s LCP),
-	   and offset transforms can't cause pre-hydration layout shift. */
+	   [data-animate-id], which render.php writes, so a block already in
+	   view animates in once rather than painting, hiding when the store
+	   arms it, and animating. Visitors without scripting see content
+	   immediately, and the failsafe at the end of this block reveals it
+	   if the store never marks data-animate-ready (a failed or very slow
+	   hydration), which also bounds LCP for content inside the block. */
 	&[data-animate-id]:not(.has-animation-sequence) > * {
 		opacity: 0;
 		transition:
@@ -106,10 +108,13 @@
 	/* Visible state - reset to natural appearance.
 	   Bounce is excluded from transform: none so its keyframes can drive
 	   translateY (animations lose to author !important, but win over
-	   non-important transform here). */
+	   non-important transform here).
+	   End states are `none`, never an identity like blur(0) or
+	   translate(0, 0): any other filter or transform makes each child the
+	   containing block for position: fixed content inside it. */
 	&:not(.has-animation-sequence).is-visible > * {
 		opacity: 1;
-		filter: blur(0);
+		filter: none;
 	}
 
 	&:not(.has-animation-sequence, .bounce).is-visible > * {
@@ -151,7 +156,7 @@
 
 		&.right > * { transform: translateX(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance))); }
 
-		&.is-visible > * { transform: translate(0, 0); }
+		&.is-visible > * { transform: none; }
 	}
 
 	/* Zoom Animation */
@@ -161,7 +166,7 @@
 
 		&.out > * { transform: scale(var(--wp-block-animate-on-scroll-zoom-out-start)); }
 
-		&.is-visible > * { transform: scale(1); }
+		&.is-visible > * { transform: none; }
 	}
 
 	/* Flip Animation */
@@ -175,7 +180,7 @@
 
 		&.right > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(var(--wp-block-animate-on-scroll-rotate-angle)); }
 
-		&.is-visible > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(0) rotateY(0); }
+		&.is-visible > * { transform: none; }
 	}
 
 	/* Rotate Animation */
@@ -185,13 +190,13 @@
 
 		&.right > * { transform: rotate(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle))); }
 
-		&.is-visible > * { transform: rotate(0deg); }
+		&.is-visible > * { transform: none; }
 	}
 
 	/* Blur Animation */
 	&[data-animate-id].blur-in > * { filter: blur(var(--wp-block-animate-on-scroll-blur-amount)); }
 
-	&.blur-in.is-visible > * { filter: blur(0); }
+	&.blur-in.is-visible > * { filter: none; }
 
 	/* Reveal (wipe) Animation — clip-path mask opens toward the named
 	   direction; pairs with the base opacity fade. The direction is the
@@ -370,7 +375,7 @@
 		/* Visible end states — no !important (bounce keyframes need transform). */
 		&.is-visible > [data-animate-sequence-type] {
 			opacity: 1;
-			filter: blur(0);
+			filter: none;
 		}
 
 		/* :not([type=bounce]) adds an attribute to specificity so this ties
@@ -494,10 +499,46 @@
 		animation-delay: var(--wp-block-animate-on-scroll-effective-delay);
 	}
 
+	/* ==========================================================================
+	   7. NO-SCRIPT AND FAILSAFE REVEAL
+	   ========================================================================== */
+
+	/* Armed server-side, so without scripting nothing would reveal it. */
+	@media (scripting: none) {
+
+		&[data-animate-id] > * {
+			opacity: 1 !important;
+			transform: none !important;
+			filter: none !important;
+			clip-path: none !important;
+			animation: none !important;
+			transition: none !important;
+		}
+	}
+
+	/* Reveal if the store has not taken over (data-animate-ready) after a
+	   few seconds: failed hydration, or scripting off in a browser without
+	   the scripting media query. The wait is the duration, held on the
+	   initial state by step-end, not animation-delay: the stagger rule sets
+	   animation-delay with higher specificity and would cut it short. */
+	&[data-animate-id]:not([data-animate-ready]) > * {
+		animation: aos-failsafe-reveal var(--wp-block-animate-on-scroll-failsafe-delay, 3s) step-end forwards;
+	}
+
+}
+
+@keyframes aos-failsafe-reveal {
+
+	to {
+		opacity: 1;
+		transform: none;
+		filter: none;
+		clip-path: none;
+	}
 }
 
 /* ==========================================================================
-   7. KEYFRAME ANIMATIONS
+   8. KEYFRAME ANIMATIONS
    ========================================================================== */
 
 @keyframes bounce-in {
@@ -517,7 +558,7 @@
 	}
 
 	100% {
-		transform: translateY(0);
+		transform: none;
 		opacity: 1;
 	}
 }
@@ -546,7 +587,7 @@
 	}
 
 	100% {
-		transform: translateY(0) scaleY(1);
+		transform: none;
 		opacity: 1;
 	}
 }
@@ -575,7 +616,7 @@
 	}
 
 	100% {
-		transform: translateY(0) scale(1);
+		transform: none;
 		opacity: 1;
 	}
 }

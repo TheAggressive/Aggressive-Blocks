@@ -133,4 +133,56 @@ test.describe('Animate On Scroll — front end', () => {
     );
     expect(transform).not.toBe('none');
   });
+
+  test('an in-view block starts hidden and animates in once', async ({
+    page,
+  }) => {
+    await openPageEditor(page);
+
+    await page.evaluate(async () => {
+      const { createBlock } = window.wp.blocks;
+      const aos = createBlock(
+        'aggressive-blocks/animate-on-scroll',
+        { animation: 'fade', duration: 0.4, respectReducedMotion: false },
+        [createBlock('core/paragraph', { content: 'In view at load' })]
+      );
+      window.wp.data.dispatch('core/block-editor').insertBlock(aos, 0);
+      await new Promise(r => setTimeout(r, 400));
+    });
+
+    const { id, url } = await publishAndGetUrl(page);
+    pageId = id;
+
+    // Record every change in the child's opacity from the first frame.
+    await page.addInitScript(() => {
+      const trace: number[] = [];
+      (window as unknown as { aosTrace: number[] }).aosTrace = trace;
+      const sample = () => {
+        const child = document.querySelector('.wp-block-animate-on-scroll > *');
+        if (child) {
+          const opacity = Number(getComputedStyle(child).opacity);
+          if (trace.at(-1) !== opacity) trace.push(opacity);
+        }
+        if (performance.now() < 5000) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
+    await page.goto(url);
+    const root = page.locator('.wp-block-animate-on-scroll').first();
+    await expect(root).toHaveClass(/is-visible/, { timeout: 10_000 });
+    await expect(root).toHaveAttribute('data-animate-ready', '');
+    await page.waitForTimeout(800);
+
+    const trace = await page.evaluate(
+      () => (window as unknown as { aosTrace: number[] }).aosTrace
+    );
+    // Hidden on the first frame, then only rising: never shown, hidden, and
+    // shown again.
+    expect(trace[0]).toBe(0);
+    expect(trace.at(-1)).toBe(1);
+    trace.slice(1).forEach((opacity, i) => {
+      expect(opacity).toBeGreaterThanOrEqual(trace[i]);
+    });
+  });
 });

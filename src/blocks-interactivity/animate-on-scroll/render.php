@@ -1,13 +1,12 @@
 <?php
 /**
- * PHP file to use when rendering the block type on the server to show on the front end.
+ * Animate On Scroll — server render.
  *
- * The following variables are exposed to the file:
- *     $attributes (array): The block attributes.
- *     $content (string): The block default content.
- *     $block (WP_Block): The block instance.
- *
- * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
+ * The block is armed here (data-animate-id), so children render in their
+ * hidden initial state from the first paint and an in-view block animates
+ * in once, instead of painting, hiding when the script arms it, and then
+ * animating. style.css reveals everything for visitors without scripting and,
+ * as a failsafe, when the script has not taken over after a few seconds.
  *
  * @var array<string, mixed> $attributes Block attributes.
  * @var string               $content    Block default content.
@@ -16,32 +15,98 @@
  * @package Aggressive_Blocks
  */
 
-// Build animation class that combines animation type and direction.
-$default_classes = array( 'wp-block-animate-on-scroll' );
+defined( 'ABSPATH' ) || exit;
 
-// Check if sequence mode is enabled.
-$use_sequence = ! empty( $attributes['useSequence'] ) && ! empty( $attributes['animationSequence'] );
+/**
+ * Directions each animation accepts. Keys double as the allowed animations.
+ */
+$aos_directions = array(
+	'fade'   => array(),
+	'slide'  => array( 'up', 'down', 'left', 'right' ),
+	'zoom'   => array( 'in', 'out' ),
+	'flip'   => array( 'up', 'down', 'left', 'right' ),
+	'rotate' => array( 'left', 'right' ),
+	'blur'   => array(),
+	'reveal' => array( 'up', 'down', 'left', 'right' ),
+	'bounce' => array( 'standard', 'elastic', 'spring' ),
+);
 
-if ( $use_sequence ) {
-	// Sequence mode: add data attribute for JavaScript to apply animations to children.
-	$default_classes[] = 'has-animation-sequence';
-} else {
-	// Single animation mode: add the base animation class.
-	// Map 'blur' to 'blur-in' to avoid conflict with Tailwind's .blur utility.
-	if ( ! empty( $attributes['animation'] ) ) {
-		$animation_class   = 'blur' === $attributes['animation'] ? 'blur-in' : esc_attr( $attributes['animation'] );
-		$default_classes[] = $animation_class;
+/**
+ * A finite number from an attribute, or the fallback.
+ *
+ * Values land in an inline style, so anything that is not a number (which
+ * could close the declaration and start another) falls back.
+ *
+ * @param mixed     $value    Candidate value.
+ * @param int|float $fallback Default.
+ * @return string
+ */
+$aos_number = static function ( $value, $fallback ): string {
+	$number = is_numeric( $value ) ? (float) $value : (float) $fallback;
+	if ( ! is_finite( $number ) ) {
+		$number = (float) $fallback;
 	}
+	return (string) round( $number, 4 );
+};
 
-	// Add direction for animations that support it.
-	if ( ! empty( $attributes['direction'] ) &&
-		in_array( $attributes['animation'], array( 'slide', 'flip', 'rotate', 'zoom', 'bounce', 'reveal' ), true ) ) {
-		$default_classes[] = esc_attr( $attributes['direction'] );
+/**
+ * An easing keyword or cubic-bezier(), or `ease`.
+ *
+ * @param mixed $value Candidate easing.
+ * @return string
+ */
+$aos_easing = static function ( $value ): string {
+	$value    = is_string( $value ) ? trim( $value ) : '';
+	$keywords = array( 'ease', 'linear', 'ease-in', 'ease-out', 'ease-in-out' );
+	if ( in_array( $value, $keywords, true ) ) {
+		return $value;
+	}
+	$number = '\s*-?(?:\d+\.?\d*|\.\d+)\s*';
+	if ( preg_match( '/^cubic-bezier\(' . $number . '(?:,' . $number . '){3}\)$/', $value ) ) {
+		return $value;
+	}
+	return 'ease';
+};
+
+/**
+ * Class name for an animation ('blur' avoids Tailwind's .blur utility).
+ *
+ * @param string $animation Validated animation.
+ * @return string
+ */
+$aos_animation_class = static function ( string $animation ): string {
+	return 'blur' === $animation ? 'blur-in' : $animation;
+};
+
+$aos_animation = is_string( $attributes['animation'] ?? null ) && isset( $aos_directions[ $attributes['animation'] ] )
+	? $attributes['animation']
+	: 'fade';
+$aos_direction = is_string( $attributes['direction'] ?? null )
+	&& in_array( $attributes['direction'], $aos_directions[ $aos_animation ], true )
+	? $attributes['direction']
+	: '';
+
+// Sequence items that are well formed and use a known animation.
+$aos_sequence = array();
+if ( ! empty( $attributes['useSequence'] ) && is_array( $attributes['animationSequence'] ?? null ) ) {
+	foreach ( $attributes['animationSequence'] as $aos_item ) {
+		if ( ! is_array( $aos_item ) || ! is_string( $aos_item['animation'] ?? null ) || ! isset( $aos_directions[ $aos_item['animation'] ] ) ) {
+			continue;
+		}
+		$aos_sequence[] = $aos_item;
 	}
 }
+$use_sequence = array() !== $aos_sequence;
 
-// Join classes with spaces.
-$combined_classes = implode( ' ', array_filter( $default_classes ) );
+$default_classes = array( 'wp-block-animate-on-scroll' );
+if ( $use_sequence ) {
+	$default_classes[] = 'has-animation-sequence';
+} else {
+	$default_classes[] = $aos_animation_class( $aos_animation );
+	if ( '' !== $aos_direction ) {
+		$default_classes[] = $aos_direction;
+	}
+}
 
 // Capability-gated: never expose debug tooling to visitors even when
 // the attribute was saved enabled.
@@ -54,151 +119,149 @@ if ( $aos_debug_mode ) {
 	aggressive_blocks_enqueue_block_debug_assets();
 }
 
-	$wrapper_attributes_array = array(
-		'class'                       => $combined_classes,
-		'data-wp-interactive'         => 'aggressive-blocks/animate-on-scroll',
-		'data-wp-context'             => wp_json_encode(
-			array(
-				'isVisible'              => false,
-				'hasAnimated'            => false,
-				'isExiting'              => false,
-				'debugMode'              => $aos_debug_mode,
-				'visibilityTrigger'      => $attributes['threshold'],
-				'detectionBoundary'      => $attributes['detectionBoundary'],
-				'id'                     => uniqid(),
-				'reverseOnScrollBack'    => $attributes['reverseOnScrollBack'] ?? false,
-				'useSequence'            => $attributes['useSequence'] ?? false,
-				'animationSequence'      => $attributes['animationSequence'] ?? array(),
-				'staggerPattern'         => $attributes['staggerPattern'] ?? 'sequential',
-				'staggerDelay'           => $attributes['staggerDelay'] ?? 0.2,
-				'staggerWaveFrequency'   => $attributes['staggerWaveFrequency'] ?? 1,
-				'staggerRandomMin'       => $attributes['staggerRandomMin'] ?? 0,
-				'staggerRandomMax'       => $attributes['staggerRandomMax'] ?? 0.5,
-				'staggerSeed'            => absint( $attributes['staggerSeed'] ?? 0 ),
-				'respectReducedMotion'   => $attributes['respectReducedMotion'] ?? true,
-				'announceToScreenReader' => $attributes['announceToScreenReader'] ?? false,
-			)
-		),
-		'data-wp-init'                => 'callbacks.initObserver',
-		'data-wp-class--is-visible'   => 'context.isVisible',
-		// All wrapper classes must be context-driven: this element's class
-		// attribute is vdom-controlled by the class directives, so any
-		// imperatively added class is wiped on the next re-render.
-		'data-wp-class--has-animated' => 'context.hasAnimated',
-		'data-wp-class--is-exiting'   => 'context.isExiting',
-		'data-stagger-children'       => $attributes['staggerChildren'] ? 'true' : 'false',
-	);
+$aos_id                     = uniqid();
+$aos_respect_reduced_motion = $attributes['respectReducedMotion'] ?? true;
+$aos_stagger_delay          = $aos_number( $attributes['staggerDelay'] ?? 0.2, 0.2 );
 
-	// Add data attribute for animation sequence if enabled.
-	if ( $use_sequence ) {
-		$wrapper_attributes_array['data-animation-sequence'] = wp_json_encode( $attributes['animationSequence'] );
+$wrapper_attributes_array = array(
+	'class'                       => implode( ' ', $default_classes ),
+	'data-wp-interactive'         => 'aggressive-blocks/animate-on-scroll',
+	'data-wp-context'             => wp_json_encode(
+		array(
+			'isVisible'              => false,
+			'hasAnimated'            => false,
+			'isExiting'              => false,
+			'debugMode'              => $aos_debug_mode,
+			'visibilityTrigger'      => $attributes['threshold'] ?? '0.3',
+			'detectionBoundary'      => $attributes['detectionBoundary'] ?? array(),
+			'id'                     => $aos_id,
+			'reverseOnScrollBack'    => $attributes['reverseOnScrollBack'] ?? false,
+			'useSequence'            => $use_sequence,
+			'animationSequence'      => $aos_sequence,
+			'staggerPattern'         => $attributes['staggerPattern'] ?? 'sequential',
+			'staggerDelay'           => (float) $aos_stagger_delay,
+			'staggerWaveFrequency'   => $attributes['staggerWaveFrequency'] ?? 1,
+			'staggerRandomMin'       => $attributes['staggerRandomMin'] ?? 0,
+			'staggerRandomMax'       => $attributes['staggerRandomMax'] ?? 0.5,
+			'staggerSeed'            => absint( $attributes['staggerSeed'] ?? 0 ),
+			'respectReducedMotion'   => $aos_respect_reduced_motion,
+			'announceToScreenReader' => $attributes['announceToScreenReader'] ?? false,
+			'i18n'                   => array(
+				'announce' => __( 'Content animated into view', 'aggressive-blocks' ),
+			),
+		)
+	),
+	'data-wp-init'                => 'callbacks.initObserver',
+	'data-wp-class--is-visible'   => 'context.isVisible',
+	// All wrapper classes must be context-driven: this element's class
+	// attribute is vdom-controlled by the class directives, so any
+	// imperatively added class is wiped on the next re-render.
+	'data-wp-class--has-animated' => 'context.hasAnimated',
+	'data-wp-class--is-exiting'   => 'context.isExiting',
+	'data-stagger-children'       => ! empty( $attributes['staggerChildren'] ) ? 'true' : 'false',
+	// Armed from the first paint; the store marks data-animate-ready.
+	'data-animate-id'             => $aos_id,
+	'data-respect-reduced-motion' => false !== $aos_respect_reduced_motion ? 'true' : false,
+);
+
+if ( $use_sequence ) {
+	$wrapper_attributes_array['data-animation-sequence'] = wp_json_encode( $aos_sequence );
+}
+
+/*
+ * The animation settings are merged into the style attribute core writes
+ * for spacing, not emitted as a second style attribute (browsers ignore a
+ * duplicate). They are appended after core's safecss pass, which would
+ * strip the cubic-bezier() easings; every value is validated above.
+ */
+$aos_style_vars = array(
+	'--wp-block-animate-on-scroll-animation-duration' => $aos_number( $attributes['duration'] ?? 0.5, 0.5 ) . 's',
+	'--wp-block-animate-on-scroll-stagger-delay'      => $aos_stagger_delay . 's',
+	'--wp-block-animate-on-scroll-initial-delay'      => $aos_number( $attributes['initialDelay'] ?? 0, 0 ) . 's',
+	'--wp-block-animate-on-scroll-animation-timing'   => $aos_easing( $attributes['easing'] ?? 'ease' ),
+	'--wp-block-animate-on-scroll-slide-distance'     => $aos_number( $attributes['slideDistance'] ?? 50, 50 ) . 'px',
+	'--wp-block-animate-on-scroll-zoom-in-start'      => $aos_number( $attributes['zoomInStart'] ?? 0.5, 0.5 ),
+	'--wp-block-animate-on-scroll-zoom-out-start'     => $aos_number( $attributes['zoomOutStart'] ?? 1.5, 1.5 ),
+	'--wp-block-animate-on-scroll-rotate-angle'       => $aos_number( $attributes['rotationAngle'] ?? 90, 90 ) . 'deg',
+	'--wp-block-animate-on-scroll-blur-amount'        => $aos_number( $attributes['blurAmount'] ?? 20, 20 ) . 'px',
+	'--wp-block-animate-on-scroll-perspective'        => $aos_number( $attributes['perspective'] ?? 1000, 1000 ) . 'px',
+	'--wp-block-animate-on-scroll-bounce-distance'    => $aos_number( $attributes['bounceDistance'] ?? 30, 30 ) . 'px',
+	'--wp-block-animate-on-scroll-elastic-distance'   => $aos_number( $attributes['elasticDistance'] ?? 50, 50 ) . 'px',
+);
+
+/**
+ * Serialize custom properties as `name: value;` declarations.
+ *
+ * @param array<string, string> $vars Custom properties.
+ * @return string
+ */
+$aos_declarations = static function ( array $vars ): string {
+	$declarations = '';
+	foreach ( $vars as $name => $value ) {
+		$declarations .= $name . ': ' . $value . ';';
 	}
+	return $declarations;
+};
 
-	$wrapper_attributes = aggressive_blocks_get_block_wrapper_attributes( $wrapper_attributes_array );
-	?>
+$aos_opening = new WP_HTML_Tag_Processor(
+	'<div ' . aggressive_blocks_get_block_wrapper_attributes( $wrapper_attributes_array ) . '>'
+);
+$aos_opening->next_tag();
+$aos_core_style = trim( (string) $aos_opening->get_attribute( 'style' ) );
+if ( '' !== $aos_core_style && ! str_ends_with( $aos_core_style, ';' ) ) {
+	$aos_core_style .= ';';
+}
+$aos_opening->set_attribute( 'style', $aos_core_style . $aos_declarations( $aos_style_vars ) );
 
-<div
-	<?php echo wp_kses_post( $wrapper_attributes ); ?>
-	style="
-		--wp-block-animate-on-scroll-animation-duration: <?php echo esc_attr( $attributes['duration'] ); ?>s;
-		--wp-block-animate-on-scroll-stagger-delay: <?php echo esc_attr( $attributes['staggerDelay'] ); ?>s;
-		--wp-block-animate-on-scroll-initial-delay: <?php echo esc_attr( $attributes['initialDelay'] ?? 0 ); ?>s;
-		--wp-block-animate-on-scroll-animation-timing: <?php echo esc_attr( $attributes['easing'] ?? 'ease' ); ?>;
-		--wp-block-animate-on-scroll-slide-distance: <?php echo esc_attr( $attributes['slideDistance'] ?? 50 ); ?>px;
-		--wp-block-animate-on-scroll-zoom-in-start: <?php echo esc_attr( $attributes['zoomInStart'] ?? 0.5 ); ?>;
-		--wp-block-animate-on-scroll-zoom-out-start: <?php echo esc_attr( $attributes['zoomOutStart'] ?? 1.5 ); ?>;
-		--wp-block-animate-on-scroll-rotate-angle: <?php echo esc_attr( $attributes['rotationAngle'] ?? 90 ); ?>deg;
-		--wp-block-animate-on-scroll-blur-amount: <?php echo esc_attr( $attributes['blurAmount'] ?? 20 ); ?>px;
-		--wp-block-animate-on-scroll-perspective: <?php echo esc_attr( $attributes['perspective'] ?? 1000 ); ?>px;
-		--wp-block-animate-on-scroll-bounce-distance: <?php echo esc_attr( $attributes['bounceDistance'] ?? 30 ); ?>px;
-		--wp-block-animate-on-scroll-elastic-distance: <?php echo esc_attr( $attributes['elasticDistance'] ?? 50 ); ?>px;
-	"
->
-	<?php
-	if ( $use_sequence && ! empty( $attributes['animationSequence'] ) ) {
-		// For InnerBlocks, access inner blocks directly from the $block object
-		// This is more reliable than parsing the $content string.
-		$inner_blocks = $block->parsed_block['innerBlocks'] ?? array();
+// Per-item overrides for sequence children.
+$aos_sequence_vars = array(
+	'slideDistance'   => array( '--wp-block-animate-on-scroll-slide-distance', 'px' ),
+	'zoomInStart'     => array( '--wp-block-animate-on-scroll-zoom-in-start', '' ),
+	'zoomOutStart'    => array( '--wp-block-animate-on-scroll-zoom-out-start', '' ),
+	'rotationAngle'   => array( '--wp-block-animate-on-scroll-rotate-angle', 'deg' ),
+	'blurAmount'      => array( '--wp-block-animate-on-scroll-blur-amount', 'px' ),
+	'perspective'     => array( '--wp-block-animate-on-scroll-perspective', 'px' ),
+	'bounceDistance'  => array( '--wp-block-animate-on-scroll-bounce-distance', 'px' ),
+	'elasticDistance' => array( '--wp-block-animate-on-scroll-elastic-distance', 'px' ),
+);
 
-		// Fallback: if innerBlocks is empty, try parsing the content.
-		if ( empty( $inner_blocks ) ) {
-			$parsed_blocks = array_values(
-				array_filter(
-					(array) parse_blocks( $content ),
-					static function ( $parsed_block ): bool {
-						return is_array( $parsed_block ) && ! empty( $parsed_block['blockName'] );
-					}
-				)
-			);
-			$inner_blocks  = $parsed_blocks;
+echo aggressive_blocks_trusted_html( $aos_opening->get_updated_html() );
+
+if ( $use_sequence ) {
+	$aos_sequence_count = count( $aos_sequence );
+	$child_index        = 0;
+
+	foreach ( $block->parsed_block['innerBlocks'] ?? array() as $inner_block ) {
+		$sequence_item = $aos_sequence[ $child_index % $aos_sequence_count ];
+		$item_type     = $sequence_item['animation'];
+
+		$item = new WP_HTML_Tag_Processor( '<div>' );
+		$item->next_tag();
+		$item->set_attribute( 'data-animate-sequence-type', $aos_animation_class( $item_type ) );
+
+		if ( is_string( $sequence_item['direction'] ?? null )
+			&& in_array( $sequence_item['direction'], $aos_directions[ $item_type ], true ) ) {
+			$item->set_attribute( 'data-animate-sequence-direction', $sequence_item['direction'] );
 		}
 
-		$child_index = 0;
-
-		foreach ( $inner_blocks as $inner_block ) {
-			$sequence_index = $child_index % count( $attributes['animationSequence'] );
-			$sequence_item  = $attributes['animationSequence'][ $sequence_index ];
-
-			// Map 'blur' to 'blur-in' to avoid conflict with Tailwind's .blur utility.
-			$animation_type = 'blur' === $sequence_item['animation'] ? 'blur-in' : $sequence_item['animation'];
-
-			// Build wrapper div with sequence attributes.
-			$wrapper_attrs = array(
-				'data-animate-sequence-type' => esc_attr( $animation_type ),
-			);
-
-			// Add direction if animation supports it.
-			if ( ! empty( $sequence_item['direction'] ) &&
-				in_array( $sequence_item['animation'], array( 'slide', 'flip', 'rotate', 'zoom', 'bounce', 'reveal' ), true ) ) {
-				$wrapper_attrs['data-animate-sequence-direction'] = esc_attr( $sequence_item['direction'] );
+		$item_vars = array();
+		foreach ( $aos_sequence_vars as $key => list( $property, $unit ) ) {
+			if ( isset( $sequence_item[ $key ] ) && is_numeric( $sequence_item[ $key ] ) ) {
+				$item_vars[ $property ] = $aos_number( $sequence_item[ $key ], 0 ) . $unit;
 			}
-
-			// Build inline styles for custom CSS variables.
-			$inline_styles = array();
-			if ( isset( $sequence_item['slideDistance'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-slide-distance: ' . esc_attr( $sequence_item['slideDistance'] ) . 'px';
-			}
-			if ( isset( $sequence_item['zoomInStart'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-zoom-in-start: ' . esc_attr( $sequence_item['zoomInStart'] );
-			}
-			if ( isset( $sequence_item['zoomOutStart'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-zoom-out-start: ' . esc_attr( $sequence_item['zoomOutStart'] );
-			}
-			if ( isset( $sequence_item['rotationAngle'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-rotate-angle: ' . esc_attr( $sequence_item['rotationAngle'] ) . 'deg';
-			}
-			if ( isset( $sequence_item['blurAmount'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-blur-amount: ' . esc_attr( $sequence_item['blurAmount'] ) . 'px';
-			}
-			if ( isset( $sequence_item['perspective'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-perspective: ' . esc_attr( $sequence_item['perspective'] ) . 'px';
-			}
-			if ( isset( $sequence_item['bounceDistance'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-bounce-distance: ' . esc_attr( $sequence_item['bounceDistance'] ) . 'px';
-			}
-			if ( isset( $sequence_item['elasticDistance'] ) ) {
-				$inline_styles[] = '--wp-block-animate-on-scroll-elastic-distance: ' . esc_attr( $sequence_item['elasticDistance'] ) . 'px';
-			}
-
-			// Build attributes string.
-			$attrs_string = '';
-			foreach ( $wrapper_attrs as $key => $value ) {
-				$attrs_string .= ' ' . esc_attr( $key ) . '="' . esc_attr( $value ) . '"';
-			}
-			if ( ! empty( $inline_styles ) ) {
-				$attrs_string .= ' style="' . esc_attr( implode( '; ', $inline_styles ) ) . '"';
-			}
-
-			// Output wrapped block.
-			echo aggressive_blocks_trusted_html( '<div' . $attrs_string . '>' );
-			echo render_block( $inner_block );
-			echo '</div>';
-
-			++$child_index;
 		}
-	} else {
-		// Normal mode: output content as-is.
-		echo aggressive_blocks_trusted_html( $content );
+		if ( array() !== $item_vars ) {
+			$item->set_attribute( 'style', $aos_declarations( $item_vars ) );
+		}
+
+		echo aggressive_blocks_trusted_html( $item->get_updated_html() );
+		echo render_block( $inner_block ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Rendered block markup.
+		echo '</div>';
+
+		++$child_index;
 	}
-	?>
-</div>
+} else {
+	echo aggressive_blocks_trusted_html( $content );
+}
+
+echo '</div>';

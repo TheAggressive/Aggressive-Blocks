@@ -236,6 +236,114 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Opening tag of a rendered animate-on-scroll block.
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param array<int, mixed>    $inner      Optional innerBlocks tree.
+	 * @return string
+	 */
+	private function render_aos_opening( array $attributes, array $inner = array() ): string {
+		$html = $this->render( 'animate-on-scroll', $attributes, $inner );
+		$this->assertSame( 1, preg_match( '/<div[^>]*>/', $html, $match ) );
+		return $match[0];
+	}
+
+	/**
+	 * Animation settings share one style attribute with core's spacing styles.
+	 *
+	 * @return void
+	 */
+	public function test_animate_on_scroll_merges_settings_into_one_style_attribute(): void {
+		$opening = $this->render_aos_opening(
+			array(
+				'animation' => 'slide',
+				'direction' => 'up',
+				'duration'  => 2,
+				'easing'    => 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+				'style'     => array( 'spacing' => array( 'padding' => array( 'top' => '40px' ) ) ),
+			)
+		);
+
+		$this->assertSame( 1, preg_match_all( '/\sstyle="/', $opening ) );
+		$this->assertStringContainsString( 'padding-top:40px;', $opening );
+		$this->assertStringContainsString( '--wp-block-animate-on-scroll-animation-duration: 2s;', $opening );
+		$this->assertStringContainsString( '--wp-block-animate-on-scroll-animation-timing: cubic-bezier(0.34, 1.56, 0.64, 1);', $opening );
+	}
+
+	/**
+	 * Values that are not numbers or easings fall back instead of reaching the style.
+	 *
+	 * @return void
+	 */
+	public function test_animate_on_scroll_rejects_style_injection(): void {
+		$opening = $this->render_aos_opening(
+			array(
+				'animation'     => 'slide',
+				'direction'     => 'up; x',
+				'easing'        => 'ease; background-image: url(https://example.com/a.png)',
+				'slideDistance' => '10px; position: fixed',
+			)
+		);
+
+		$this->assertStringNotContainsString( 'example.com', $opening );
+		$this->assertStringNotContainsString( 'position: fixed', $opening );
+		$this->assertStringContainsString( '--wp-block-animate-on-scroll-animation-timing: ease;', $opening );
+		$this->assertStringContainsString( '--wp-block-animate-on-scroll-slide-distance: 50px;', $opening );
+		$this->assertStringNotContainsString( 'up; x', $opening );
+	}
+
+	/**
+	 * The block is armed server-side and flags whether it respects reduced motion.
+	 *
+	 * @return void
+	 */
+	public function test_animate_on_scroll_is_armed_server_side(): void {
+		$respects = $this->render_aos_opening( array() );
+		$this->assertMatchesRegularExpression( '/\sdata-animate-id="[^"]+"/', $respects );
+		$this->assertStringContainsString( 'data-respect-reduced-motion="true"', $respects );
+		$this->assertStringNotContainsString( 'data-animate-ready', $respects );
+
+		$opted_out = $this->render_aos_opening( array( 'respectReducedMotion' => false ) );
+		$this->assertStringNotContainsString( 'data-respect-reduced-motion', $opted_out );
+	}
+
+	/**
+	 * Malformed sequence items are skipped rather than breaking the render.
+	 *
+	 * @return void
+	 */
+	public function test_animate_on_scroll_skips_malformed_sequence_items(): void {
+		$paragraph = array(
+			'blockName'    => 'core/paragraph',
+			'attrs'        => array(),
+			'innerBlocks'  => array(),
+			'innerContent' => array( '<p>Child</p>' ),
+		);
+
+		$html = $this->render(
+			'animate-on-scroll',
+			array(
+				'useSequence'       => true,
+				'animationSequence' => array(
+					'broken',
+					array( 'direction' => 'up' ),
+					array(
+						'animation'     => 'slide',
+						'direction'     => 'left',
+						'slideDistance' => 80,
+					),
+				),
+			),
+			array( $paragraph, $paragraph )
+		);
+
+		$this->assertStringContainsString( 'has-animation-sequence', $html );
+		$this->assertSame( 2, substr_count( $html, 'data-animate-sequence-type="slide"' ) );
+		$this->assertStringContainsString( 'data-animate-sequence-direction="left"', $html );
+		$this->assertStringContainsString( '--wp-block-animate-on-scroll-slide-distance: 80px;', $html );
+	}
+
+	/**
 	 * Card flip always renders the accessible disclosure shell.
 	 *
 	 * @return void
