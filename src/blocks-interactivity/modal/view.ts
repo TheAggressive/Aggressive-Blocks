@@ -143,14 +143,6 @@ function bindDialogDismiss(id: string): void {
   });
 }
 
-function getAnnouncer(id: string): HTMLElement | null {
-  const shell = getShell(id);
-  const announcer = shell?.parentElement?.querySelector<HTMLElement>(
-    '.wp-block-aggressive-apparel-modal__announcer'
-  );
-  return announcer?.dataset.modalId === id ? announcer : null;
-}
-
 function getExternalTriggers(id: string): HTMLElement[] {
   const classHolders = Array.from(
     document.getElementsByClassName(`modal-trigger-${id}`)
@@ -180,27 +172,10 @@ function getExternalTriggers(id: string): HTMLElement[] {
   return Array.from(targets);
 }
 
-function getBuiltInTrigger(id: string): HTMLElement | null {
-  return (
-    getShell(id)?.parentElement?.querySelector<HTMLElement>(
-      '.wp-block-aggressive-apparel-modal__trigger'
-    ) ?? null
-  );
-}
-
-/**
- * Keep built-in and external trigger ARIA in sync.
- */
-function syncTriggerExpanded(id: string, isOpen: boolean): void {
-  const expanded = isOpen ? 'true' : 'false';
-  getBuiltInTrigger(id)?.setAttribute('aria-expanded', expanded);
-  getExternalTriggers(id).forEach(el => {
-    el.setAttribute('aria-expanded', expanded);
-  });
-}
-
 /**
  * Bind click / keyboard open behavior and dialog ARIA on external triggers.
+ * No aria-expanded: the page is inert while the dialog is open, so the state
+ * is never announced, and the dialog pattern does not use it.
  */
 function bindExternalTrigger(
   el: HTMLElement,
@@ -214,7 +189,6 @@ function bindExternalTrigger(
 
   el.setAttribute('aria-haspopup', 'dialog');
   el.setAttribute('aria-controls', id);
-  el.setAttribute('aria-expanded', modalsState[id]?.isOpen ? 'true' : 'false');
 
   const isNativeControl =
     el instanceof HTMLButtonElement ||
@@ -340,23 +314,11 @@ function openModal(id: string, modalsState: Record<string, ModalState>): void {
   }
 
   modalsState[id].isOpen = true;
-  syncTriggerExpanded(id, true);
-
-  // Announce to screen readers that do not fire on programmatic focus alone.
-  const announcer = getAnnouncer(id);
-  if (announcer) {
-    announcer.textContent = ''; // Clear so re-opening re-triggers aria-live.
-    requestAnimationFrame(() => {
-      if (modalsState[id]?.isOpen) {
-        announcer.textContent = announcer.dataset.label ?? 'Dialog opened';
-      }
-    });
-  }
 
   requestAnimationFrame(() => {
     const dialog = getDialog(id);
     if (dialog && modalsState[id]?.isOpen) {
-      // Focus the dialog so screen readers announce it before content.
+      // Focus the dialog so screen readers announce its name before content.
       dialog.focus();
     }
   });
@@ -366,11 +328,7 @@ function closeModal(id: string, modalsState: Record<string, ModalState>): void {
   if (!id || !modalsState[id]?.isOpen) return;
 
   modalsState[id].isOpen = false;
-  syncTriggerExpanded(id, false);
   document.dispatchEvent(new CustomEvent('aa:modal:close', { detail: { id } }));
-
-  const announcer = getAnnouncer(id);
-  if (announcer) announcer.textContent = '';
 
   const refs = modalRefs.get(id);
   if (refs) refs.isClosing = true;
@@ -438,22 +396,37 @@ function closeModal(id: string, modalsState: Record<string, ModalState>): void {
   if (refs) refs.closeTimer = closeTimer;
 }
 
-/** Escape remains reliable even if focus is moved outside the modal. */
+/**
+ * Close the top-most modal on Escape with its exit transition.
+ *
+ * The native close request would do this through 'cancel', but the browser
+ * only lets 'cancel' be prevented once per user activation, so a second
+ * Escape (for example, in stacked modals) would skip the transition.
+ * Preventing the keydown stops that close request. Runs in the bubble phase
+ * and skips keys already handled, so a menu or combobox inside the dialog
+ * can use Escape to close itself first.
+ */
 function handleDocumentKeydown(event: KeyboardEvent): void {
-  if (event.key !== 'Escape' || modalStack.length === 0) return;
+  if (
+    event.key !== 'Escape' ||
+    event.defaultPrevented ||
+    event.isComposing ||
+    modalStack.length === 0
+  ) {
+    return;
+  }
 
   const id = modalStack[modalStack.length - 1];
   const refs = modalRefs.get(id);
   if (!refs) return;
 
   event.preventDefault();
-  event.stopPropagation();
   if (refs.modalsState[id]?.isOpen) {
     closeModal(id, refs.modalsState);
   }
 }
 
-document.addEventListener('keydown', handleDocumentKeydown, true);
+document.addEventListener('keydown', handleDocumentKeydown);
 
 // ── Auto-trigger registry ─────────────────────────────────────────────────────
 // Add entries here to wire up new automatic open triggers without touching init().
@@ -538,7 +511,6 @@ const { state } = store<ModalStore>('aggressive-blocks/modal', {
       if (!id || !state.modals[id]) return;
 
       bindDialogDismiss(id);
-      getBuiltInTrigger(id)?.setAttribute('aria-expanded', 'false');
       getExternalTriggers(id).forEach(el =>
         bindExternalTrigger(el, id, state.modals)
       );

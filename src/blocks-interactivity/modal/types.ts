@@ -63,8 +63,7 @@ export type ModalAttributes = {
   scrollDepthTrigger: boolean;
   scrollDepthPercent: number;
   dialogMaxWidth: string;
-  dialogPadding: string;
-  dialogBorderRadius: string;
+  dialogLabel: string;
   overlayOpacity: number;
   overlayBlur: number;
   overlayColor: string;
@@ -85,7 +84,10 @@ export type ModalAttributes = {
   closeButtonBgColor: string;
   closeButtonHoverColor: string;
   closeButtonHoverBgColor: string;
-  style?: Record<string, string | number | undefined>;
+  backgroundColor?: string;
+  textColor?: string;
+  borderColor?: string;
+  style?: Record<string, unknown>;
 };
 
 /**

@@ -7,7 +7,7 @@
  * @package Aggressive_Apparel
  */
 
-import type { ComponentType } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 
 declare module '@wordpress/block-editor' {
   export interface ColorGradientSetting {
@@ -57,6 +57,32 @@ declare module '@wordpress/block-editor' {
     string,
     unknown
   >;
+
+  /**
+   * Class names and inline styles a block support would serialize. Blocks
+   * that skip serialization use these to style an inner element instead.
+   * Runtime exports; missing from `@types/wordpress__block-editor`.
+   */
+  export interface BlockSupportClassesAndStyles {
+    className?: string;
+    style?: CSSProperties;
+  }
+
+  export function __experimentalUseBorderProps(
+    attributes: object
+  ): BlockSupportClassesAndStyles;
+
+  export function __experimentalUseColorProps(
+    attributes: object
+  ): BlockSupportClassesAndStyles;
+
+  export function __experimentalGetSpacingClassesAndStyles(
+    attributes: object
+  ): BlockSupportClassesAndStyles;
+
+  export function __experimentalGetShadowClassesAndStyles(
+    attributes: object
+  ): BlockSupportClassesAndStyles;
 
   /**
    * InspectorControls accepts a resetAllFilter when rendered inside a ToolsPanel

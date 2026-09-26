@@ -1,20 +1,14 @@
-import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+import { InnerBlocks } from '@wordpress/block-editor';
 
 /**
  * Save function for the modal block.
  *
- * The close button is now rendered server-side in render.php so placement,
- * icon, size, variant and colors can be changed without deprecations.
- * This function stores only the InnerBlocks content in the post database.
+ * Only the inner blocks are stored. render.php builds the wrapper, trigger,
+ * dialog, and close button, and applies the color, border, padding, and
+ * shadow supports to the dialog panel alone.
  *
  * @return Element to render.
  */
 export default function save(): JSX.Element {
-  const blockProps = useBlockProps.save();
-
-  return (
-    <div {...blockProps}>
-      <InnerBlocks.Content />
-    </div>
-  );
+  return <InnerBlocks.Content />;
 }

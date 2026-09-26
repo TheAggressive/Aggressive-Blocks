@@ -16,6 +16,7 @@ async function insertModalPage(
     beforeHtml?: string;
     tallContent?: boolean;
     innerHtml?: string[];
+    heading?: string;
     additionalModals?: Array<Record<string, unknown>>;
   }
 ): Promise<{ id: number; url: string }> {
@@ -27,6 +28,7 @@ async function insertModalPage(
       beforeHtml,
       tallContent,
       innerHtml,
+      heading,
       additionalModals,
     }) => {
       const { createBlock } = window.wp.blocks;
@@ -60,6 +62,11 @@ async function insertModalPage(
       const inner = (innerHtml?.length ? innerHtml : ['Modal body copy']).map(
         (content: string) => createBlock('core/paragraph', { content })
       );
+      if (heading) {
+        inner.unshift(
+          createBlock('core/heading', { level: 2, content: heading })
+        );
+      }
 
       blocks.push(createBlock('aggressive-blocks/modal', modalAttrs, inner));
 
@@ -84,6 +91,7 @@ async function insertModalPage(
       beforeHtml: extras?.beforeHtml ?? '',
       tallContent: extras?.tallContent ?? false,
       innerHtml: extras?.innerHtml ?? [],
+      heading: extras?.heading ?? '',
       additionalModals: extras?.additionalModals ?? [],
     }
   );
@@ -233,13 +241,13 @@ test.describe('Modal — front end', () => {
     const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
     const dialog = page.locator('#e2e-modal');
     const close = page.locator('.wp-block-aggressive-apparel-modal__close');
-    const announcer = page.locator(
-      '.wp-block-aggressive-apparel-modal__announcer'
-    );
 
     await expect(shell).toBeHidden();
     await expect(shell).not.toHaveAttribute('open', '');
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(
+      page.locator('.wp-block-aggressive-blocks-modal [aria-live]')
+    ).toHaveCount(0);
+    await expect(trigger).not.toHaveAttribute('aria-expanded');
     await expect(trigger).toHaveAttribute('aria-controls', 'e2e-modal');
     await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
 
@@ -247,9 +255,7 @@ test.describe('Modal — front end', () => {
     await expect(shell).toBeVisible();
     await expect(shell).toHaveAttribute('open', '');
     await expect(shell).toHaveCSS('position', 'fixed');
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expectModal(dialog, true);
-    await expect(dialog).toHaveAttribute('aria-labelledby', 'e2e-modal-label');
     await expect(dialog).toHaveAccessibleName('Open test modal');
     await expect(dialog).toBeFocused();
     await expect(page.getByText('Modal body copy')).toBeVisible();
@@ -261,12 +267,10 @@ test.describe('Modal — front end', () => {
       )
       .toBe('0.5');
     await expect(close).toHaveAttribute('aria-label', 'Close modal');
-    await expect(announcer).toHaveText('Open test modal');
 
     await page.keyboard.press('Escape');
     await expect(shell).toBeHidden();
     await expect(shell).not.toHaveAttribute('open', '');
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await expect(trigger).toBeFocused();
 
     await trigger.click();
@@ -323,11 +327,11 @@ test.describe('Modal — front end', () => {
     await trigger.click();
     await expect(shell).toBeVisible();
     await close.click();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(shell).not.toHaveClass(/\bis-open\b/);
     await trigger.evaluate(element => (element as HTMLElement).click());
 
     await expect(shell).toBeVisible();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(shell).toHaveClass(/\bis-open\b/);
     await page.waitForTimeout(1250);
     await expect(shell).toBeVisible();
     await expectModal(shell, true);
@@ -479,24 +483,106 @@ test.describe('Modal — front end', () => {
     await expect(builtIn).toHaveCount(0);
     await expect(button).toHaveAttribute('aria-haspopup', 'dialog');
     await expect(button).toHaveAttribute('aria-controls', 'e2e-ext');
-    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await expect(button).not.toHaveAttribute('aria-expanded');
     await expect(link).toHaveAttribute('aria-haspopup', 'dialog');
     await expect(link).toHaveAttribute('aria-controls', 'e2e-ext');
 
     await button.click();
     await expect(shell).toBeVisible();
-    await expect(button).toHaveAttribute('aria-expanded', 'true');
-    await expect(link).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#e2e-ext')).toHaveAccessibleName('Dialog');
 
     await page.keyboard.press('Escape');
     await expect(shell).toBeHidden();
-    await expect(button).toHaveAttribute('aria-expanded', 'false');
     await expect(button).toBeFocused();
 
     await link.focus();
     await page.keyboard.press('Space');
     await expect(shell).toBeVisible();
-    await expect(link).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('names the dialog from its heading and styles only the panel', async ({
+    page,
+  }) => {
+    const { id, url } = await insertModalPage(
+      page,
+      {
+        modalId: 'e2e-styled',
+        triggerLabel: 'Open styled modal',
+        style: {
+          color: { background: '#0a141e' },
+          border: { width: '6px', style: 'solid', color: '#c80000' },
+          spacing: { padding: { top: '40px', bottom: '40px' } },
+        },
+      },
+      { heading: 'Size guide' }
+    );
+    pageIds.push(id);
+
+    await page.goto(url);
+
+    const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
+    const wrapper = page.locator('.wp-block-aggressive-blocks-modal');
+    const dialog = page.locator('#e2e-styled');
+    const body = dialog.locator(
+      '.wp-block-aggressive-apparel-modal__dialog-body'
+    );
+
+    // The block's styles belong to the dialog, not the trigger's wrapper.
+    await expect(wrapper).toHaveCount(1);
+    await expect(wrapper).toHaveCSS('border-top-width', '0px');
+    await expect(wrapper).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+
+    await trigger.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveAccessibleName('Size guide');
+    await expect(dialog).toHaveCSS('background-color', 'rgb(10, 20, 30)');
+    await expect(dialog).toHaveCSS('border-top-width', '6px');
+    await expect(dialog).toHaveCSS('border-top-color', 'rgb(200, 0, 0)');
+    await expect(dialog).toHaveCSS('padding-top', '40px');
+
+    // The inner blocks sit directly in the body, with no styled copy around them.
+    await expect(body.locator('> h2')).toHaveText('Size guide');
+    await expect(
+      body.locator('[style*="border"], .has-background')
+    ).toHaveCount(0);
+  });
+
+  test('lets a widget inside the dialog handle Escape first', async ({
+    page,
+  }) => {
+    const { id, url } = await insertModalPage(page, {
+      modalId: 'e2e-inner-escape',
+      triggerLabel: 'Open inner-escape modal',
+    });
+    pageIds.push(id);
+
+    await page.goto(url);
+
+    const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
+    const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
+
+    await trigger.click();
+    await expect(shell).toBeVisible();
+
+    // Stand-in for a menu or combobox that closes itself on Escape.
+    await shell.evaluate(element => {
+      element.addEventListener(
+        'keydown',
+        event => {
+          if ((event as KeyboardEvent).key === 'Escape') event.preventDefault();
+        },
+        { once: true }
+      );
+    });
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    await expect(shell).toBeVisible();
+    await expectModal(shell, true);
+
+    await page.keyboard.press('Escape');
+    await expect(shell).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 
   test('outside close stays in the Tab cycle and dismisses the dialog', async ({
@@ -785,5 +871,63 @@ test.describe('Modal — front end', () => {
     await expect(trigger).toBeFocused();
     await expectModal(shell, false);
     await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+  });
+});
+
+test.describe('Modal — editor', () => {
+  test('migrates content saved inside the old wrapper copy', async ({
+    page,
+  }) => {
+    await openPageEditor(page);
+
+    const results = await page.evaluate(() => {
+      const v2 = [
+        '<!-- wp:aggressive-blocks/modal {"modalId":"legacy-v2","dialogPadding":"2rem 1rem","dialogBorderRadius":"12px","style":{"color":{"background":"var(\\u002d\\u002dwp\\u002d\\u002dpreset\\u002d\\u002dcolor\\u002d\\u002dsurface)"},"spacing":{"margin":{"top":"8px"}},"border":{"width":"24px"}},"borderColor":"surface-elevated"} -->',
+        '<div class="wp-block-aggressive-blocks-modal has-border-color has-surface-elevated-border-color has-background" style="border-width:24px;background-color:var(--wp--preset--color--surface);margin-top:8px"><!-- wp:paragraph -->',
+        '<p>Legacy body</p>',
+        '<!-- /wp:paragraph --></div>',
+        '<!-- /wp:aggressive-blocks/modal -->',
+      ].join('\n');
+      const v1 = [
+        '<!-- wp:aggressive-blocks/modal {"modalId":"legacy-v1"} -->',
+        '<div class="wp-block-aggressive-blocks-modal has-background" style="background-color:var(--wp--preset--color--surface)"><button class="wp-block-aggressive-apparel-modal__close" type="button" data-wp-on--click="actions.closeModal" aria-label="Close modal">✕</button><!-- wp:paragraph -->',
+        '<p>Older body</p>',
+        '<!-- /wp:paragraph --></div>',
+        '<!-- /wp:aggressive-blocks/modal -->',
+      ].join('\n');
+
+      const { parse, serialize } = window.wp.blocks;
+      return [v2, v1].map(markup => {
+        const [block] = parse(markup);
+        return {
+          isValid: block.isValid,
+          attributes: block.attributes,
+          innerBlocks: block.innerBlocks.length,
+          saved: serialize([block]),
+        };
+      });
+    });
+
+    const [v2, v1] = results;
+
+    expect(v2.isValid).toBe(true);
+    expect(v2.innerBlocks).toBe(1);
+    expect(v2.attributes.dialogPadding).toBeUndefined();
+    expect(v2.attributes.dialogBorderRadius).toBeUndefined();
+    expect(v2.attributes.borderColor).toBe('surface-elevated');
+    expect(v2.attributes.style).toEqual({
+      color: { background: 'var(--wp--preset--color--surface)' },
+      spacing: {
+        padding: { top: '2rem', right: '1rem', bottom: '2rem', left: '1rem' },
+      },
+      border: { width: '24px', radius: '12px' },
+    });
+    expect(v2.saved).not.toContain('<div');
+    expect(v2.saved).toContain('<p>Legacy body</p>');
+
+    expect(v1.isValid).toBe(true);
+    expect(v1.innerBlocks).toBe(1);
+    expect(v1.saved).not.toContain('<div');
+    expect(v1.saved).not.toContain('<button');
   });
 });
