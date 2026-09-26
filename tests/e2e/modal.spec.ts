@@ -330,7 +330,7 @@ test.describe('Modal — front end', () => {
     await expect(shell).toBeHidden();
   });
 
-  test('traps Tab / Shift+Tab among focusables and keeps focus in the shell', async ({
+  test('keeps Tab and Shift+Tab focus off the inert page behind the modal', async ({
     page,
   }) => {
     const { id, url } = await insertModalPage(
@@ -367,13 +367,27 @@ test.describe('Modal — front end', () => {
     await expect(first).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(second).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(close).toBeFocused();
 
+    // A native modal dialog does not wrap Tab: from the last control, focus
+    // may leave the document for browser UI. It must never land on the
+    // inert page behind the dialog.
+    const focusOutsideDialog = (): Promise<boolean> =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        return (
+          active !== null &&
+          active !== document.body &&
+          active.closest('dialog[open]') === null
+        );
+      });
+    for (let press = 0; press < 3; press++) {
+      await page.keyboard.press('Tab');
+      expect(await focusOutsideDialog()).toBe(false);
+    }
+
+    await second.focus();
     await page.keyboard.press('Shift+Tab');
-    await expect(second).toBeFocused();
-
-    // Focus must remain inside the shell (not leak to the page trigger).
+    await expect(first).toBeFocused();
     await expect(trigger).not.toBeFocused();
   });
 
@@ -501,9 +515,13 @@ test.describe('Modal — front end', () => {
     await trigger.click();
     await expect(shell).toBeVisible();
 
+    // The outside close is positioned outside the panel but stays inside the
+    // <dialog>, so it remains in the top layer and not in the inert page.
     await expect(
-      dialog.locator('.wp-block-aggressive-apparel-modal__close')
-    ).toHaveCount(0);
+      dialog.locator(
+        '.wp-block-aggressive-apparel-modal__close.close-placement-outside-top-right'
+      )
+    ).toHaveCount(1);
     await expect(close).toBeVisible();
 
     await dialog.focus();

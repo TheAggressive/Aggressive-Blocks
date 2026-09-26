@@ -235,6 +235,13 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
  * Dialog panel
  * ────────────────────────────────────────────── */
 
+/* The UA hides a closed dialog with display: none, but any author display
+   beats a UA rule. Restore it, or the display: flex below keeps a closed
+   modal rendered in the page flow. */
+.wp-block-aggressive-apparel-modal__dialog:not([open]) {
+	display: none;
+}
+
 .wp-block-aggressive-apparel-modal__dialog {
 
 	/* Shared by the panel and its ::backdrop, which inherits from the dialog. */
