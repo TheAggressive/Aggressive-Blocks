@@ -22,6 +22,8 @@ pnpm qa:fast
 
 `pnpm qa:fast` is the pre-push check. It does not start containers. `pnpm qa` rehearses the same wp-env lanes CI runs.
 
+Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Release notes live on the [Releases page](https://github.com/TheAggressive/Aggressive-Blocks/releases).
+
 See [docs/ci.md](docs/ci.md) for workflows, required branch checks, the PHP/WordPress matrix, packaging, and VIP-oriented gates.
 
 ## Build

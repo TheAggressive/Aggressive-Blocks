@@ -83,14 +83,17 @@ VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`t
 * `pnpm audit --prod --audit-level high` is part of `ci:frontend`.
 * `composer audit` runs in the PHP lane. Composer has no runtime PHP dependencies; advisories in development tools are informational.
 * Dependabot opens grouped minor/patch updates. Majors are not scheduled; security updates still open.
-* Workflows pin third-party Actions to commit SHAs. Checkout uses `persist-credentials: false` unless the publishing job needs a credential.
+* Workflows pin third-party Actions to commit SHAs. Every checkout uses `persist-credentials: false`; `bin/ci/contracts.mjs` enforces it for every job, including the release job.
+* Release ZIPs carry a signed build-provenance attestation. See [SECURITY.md](../SECURITY.md) for how to verify a download.
 * Write-capable `pull_request_target` jobs check out the protected base SHA only.
 
 ## Release
 
 Merging to `main` does not publish. A release is an explicit `workflow_dispatch` with `publish: true` on `main`. The release job runs only after package verification and artifact acceptance succeed.
 
-Recovery procedure: `.github/workflows/release-recovery.yml`.
+The release tags the commit the run tested, attests the ZIP, and publishes the conventional-commit notes that release planning generated (Features, Bug Fixes, and any breaking changes).
+
+Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to rebuild. It rebuilds from the tag, re-runs package verification and artifact acceptance, refuses to replace a published asset with different bytes, then re-attaches the ZIP.
 
 ## Scheduled informational workflows
 
@@ -101,6 +104,15 @@ Recovery procedure: `.github/workflows/release-recovery.yml`.
 | CodeQL baseline | Mondays | Alerts via code scanning |
 | Workflow security | Mondays | Same Actionlint/Zizmor checks |
 | Ruleset drift | Mondays | No; fails if live rules diverge |
+| Release recovery rehearsal | Tuesdays | No; fails if the latest release no longer rebuilds byte for byte |
+
+## Single-maintainer controls
+
+The repository has one maintainer, so no pull request gets a second human review. The ruleset requires no approvals because an author cannot approve their own pull request. That gap is real; these controls narrow it rather than close it:
+
+* Nothing reaches `main` without a pull request, the required checks, signed commits, and linear history.
+* Checks test outcomes, not only their own output. The POT must cover every translated script, stylesheets must style migrated blocks, packaging must reproduce the published bytes, and Jest coverage cannot fall below its floor.
+* Publishing is a separate, deliberate act: a manual dispatch through the `production` environment, never a side effect of merging.
 
 ## Failure policy
 
