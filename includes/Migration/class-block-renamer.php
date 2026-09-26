@@ -9,12 +9,34 @@ declare(strict_types=1);
 
 namespace Aggressive_Blocks\Migration;
 
-use Aggressive_Blocks\Blocks\Aliases;
-
 /**
  * Renames aggressive-apparel/* comments to aggressive-blocks/* via parse_blocks().
  */
 class Block_Renamer {
+
+	/**
+	 * Slugs that moved from aggressive-apparel to aggressive-blocks.
+	 *
+	 * Only these are renamed; other aggressive-apparel/* blocks still belong
+	 * to the theme.
+	 *
+	 * @var array<int, string>
+	 */
+	public const SLUGS = array(
+		'animate-on-scroll',
+		'parallax',
+		'modal',
+		'card-flip',
+		'card-flip-front',
+		'card-flip-back',
+		'horizontal-scroll',
+		'hero-carousel',
+		'ticker',
+		'split-story',
+		'split-story-media',
+		'split-story-content',
+		'copyright',
+	);
 
 	/**
 	 * Candidate LIKE fragment.
@@ -70,7 +92,7 @@ class Block_Renamer {
 
 			if ( '' !== $name && str_starts_with( $name, 'aggressive-apparel/' ) ) {
 				$slug = substr( $name, strlen( 'aggressive-apparel/' ) );
-				if ( in_array( $slug, Aliases::SLUGS, true ) ) {
+				if ( in_array( $slug, self::SLUGS, true ) ) {
 					$blocks[ $index ]['blockName'] = 'aggressive-blocks/' . $slug;
 					++$count;
 				}

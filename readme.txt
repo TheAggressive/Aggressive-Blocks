@@ -21,3 +21,8 @@ Release notes for every version are published on the [GitHub Releases page](http
 
 = 1.0.0 =
 * Initial standalone plugin release.
+
+== Upgrade Notice ==
+
+= 2.0.0 =
+Removes the aggressive-apparel/* block names. Before updating, run `wp aggressive-blocks migrate-blocks --dry-run`, then `wp aggressive-blocks migrate-blocks`, on every site. Content that still uses an old name stops rendering after the update.

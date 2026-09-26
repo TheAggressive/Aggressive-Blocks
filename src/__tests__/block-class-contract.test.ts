@@ -1,11 +1,12 @@
 /**
- * Stylesheets must style migrated blocks, not only their legacy aliases.
+ * Stylesheets must not target a wrapper class no block renders.
  *
  * WordPress derives a block's wrapper class from its name, so
- * aggressive-blocks/<slug> renders wp-block-aggressive-blocks-<slug> while the
- * temporary aggressive-apparel/<slug> alias renders
- * wp-block-aggressive-apparel-<slug>. A selector on the legacy wrapper class
- * alone silently stops matching once content is migrated.
+ * aggressive-blocks/<slug> renders wp-block-aggressive-blocks-<slug>. The
+ * aggressive-apparel/<slug> aliases that rendered
+ * wp-block-aggressive-apparel-<slug> were removed in 2.0.0, so a selector on
+ * that generated class matches nothing. Markup that writes a legacy-prefixed
+ * class out literally (BEM elements, the ticker root) is unaffected.
  */
 
 import { readFileSync } from 'node:fs';
@@ -64,16 +65,9 @@ function findViolations(file: string, css: string): Violation[] {
       const slug = legacyWrapperIn(selector);
       if (!slug) continue;
 
-      const legacy = `wp-block-aggressive-apparel-${slug}`;
-      if (isEmittedLiterally(legacy)) continue;
+      if (isEmittedLiterally(`wp-block-aggressive-apparel-${slug}`)) continue;
 
-      const canonical = selector.replace(
-        new RegExp(`\\.${legacy}(?![\\w-])`, 'g'),
-        `.wp-block-aggressive-blocks-${slug}`
-      );
-      if (!selectors.includes(canonical)) {
-        violations.push({ file, selector });
-      }
+      violations.push({ file, selector });
     }
   });
 
@@ -86,7 +80,7 @@ describe('block wrapper classes in stylesheets', () => {
     expect(slugs.length).toBeGreaterThanOrEqual(13);
   });
 
-  it('never targets only the legacy alias wrapper class', () => {
+  it('never targets the removed alias wrapper class', () => {
     const violations = fg
       .sync('src/**/*.css', { cwd: root })
       .flatMap(file => findViolations(file, read(file)));
@@ -94,7 +88,7 @@ describe('block wrapper classes in stylesheets', () => {
     expect(violations).toEqual([]);
   });
 
-  it('flags a legacy-only wrapper selector', () => {
+  it('flags a selector on the removed alias wrapper class', () => {
     expect(
       findViolations('fixture.css', '.wp-block-aggressive-apparel-copyright {}')
     ).toHaveLength(1);
@@ -103,6 +97,9 @@ describe('block wrapper classes in stylesheets', () => {
         'fixture.css',
         '.wp-block-aggressive-blocks-copyright, .wp-block-aggressive-apparel-copyright {}'
       )
+    ).toHaveLength(1);
+    expect(
+      findViolations('fixture.css', '.wp-block-aggressive-apparel-ticker {}')
     ).toEqual([]);
     expect(
       findViolations(

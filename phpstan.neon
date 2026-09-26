@@ -24,12 +24,6 @@ parameters:
 	ignoreErrors:
 		-
 			identifier: missingType.iterableValue
-		# WP_Block_Type properties are array<int, string>|string|null at
-		# runtime; the register_block_type stub wants array<string>|null.
-		-
-			identifier: argument.type
-			message: '#Parameter \#2 \$args of function register_block_type#'
-			path: includes/Blocks/class-aliases.php
 
 	universalObjectCratesClasses:
 		- WP_Post

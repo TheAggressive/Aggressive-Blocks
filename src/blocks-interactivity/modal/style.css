@@ -11,9 +11,7 @@
  * Wrapper (data-wp-interactive root)
  * ────────────────────────────────────────────── */
 
-/* The old block name covers content not yet migrated to aggressive-blocks/modal. */
-.wp-block-aggressive-blocks-modal,
-.wp-block-aggressive-apparel-modal {
+.wp-block-aggressive-blocks-modal {
 	box-sizing: border-box;
 
 	/* Inline trigger sits naturally in document flow. */
@@ -175,10 +173,8 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	}
 }
 
-/* When trigger is full width the wrapper needs to match. The old block name
-   covers content not yet migrated to aggressive-blocks/modal. */
-.wp-block-aggressive-blocks-modal:has(.trigger-full-width),
-.wp-block-aggressive-apparel-modal:has(.trigger-full-width) {
+/* When trigger is full width the wrapper needs to match. */
+.wp-block-aggressive-blocks-modal:has(.trigger-full-width) {
 	display: block;
 }
 
