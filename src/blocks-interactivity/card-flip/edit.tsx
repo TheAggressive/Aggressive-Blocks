@@ -17,8 +17,6 @@ import {
 import { PanelBody, SelectControl } from '@wordpress/components';
 import type { BlockEditProps } from '@wordpress/blocks';
 
-import './editor.css';
-
 type CardFlipAttributes = {
   flipOn: 'hover' | 'click';
 };

@@ -8,8 +8,10 @@
  *
  * The flip is a button-driven disclosure: the button toggles `context.isFlipped`,
  * CSS performs the 3D flip, and view.ts marks the away-facing side `inert` so it
- * leaves the tab order / accessibility tree. The hover variant adds a pure-CSS
- * flip on top; the button keeps it reachable by keyboard, touch and reduced-motion.
+ * leaves the tab order / accessibility tree. The back face is rendered `inert`
+ * here too, so it is never focusable before the store hydrates. The hover
+ * variant drives the same state from a mouse pointer; the button keeps it
+ * reachable by keyboard, touch and reduced-motion, and Escape turns it back.
  *
  * @var array    $attributes Block attributes.
  * @var string   $content    InnerBlocks HTML (front + back face blocks).
@@ -39,12 +41,39 @@ $wrapper_extra = array(
 	),
 	'data-wp-class--is-flipped' => 'context.isFlipped',
 	'data-wp-watch--faces'      => 'callbacks.syncFaces',
+	'data-wp-on--keydown'       => 'actions.keydown',
 );
 
 if ( 'hover' === $flip_on ) {
-	$wrapper_extra['data-wp-on--mouseenter'] = 'actions.pointerEnter';
-	$wrapper_extra['data-wp-on--mouseleave'] = 'actions.pointerLeave';
+	$wrapper_extra['data-wp-on--pointerenter'] = 'actions.pointerEnter';
+	$wrapper_extra['data-wp-on--pointerleave'] = 'actions.pointerLeave';
 }
+
+/**
+ * Render the back face `inert`, matching the store's unflipped state.
+ *
+ * Only a top-level face counts, so a card nested in a face is left to its own
+ * render. Content the HTML API cannot parse is returned unchanged; the store
+ * marks the face once it hydrates.
+ *
+ * @param string $html Inner block content (front + back face blocks).
+ * @return string
+ */
+$inert_back_face = static function ( string $html ): string {
+	$processor = \WP_HTML_Processor::create_fragment( $html );
+	if ( null === $processor ) {
+		return $html;
+	}
+	$top = null;
+	while ( $processor->next_tag() ) {
+		$top = $top ?? $processor->get_current_depth();
+		if ( $processor->get_current_depth() === $top && $processor->has_class( 'aa-card-flip__face--back' ) ) {
+			$processor->set_attribute( 'inert', true );
+			break;
+		}
+	}
+	return null === $processor->get_last_error() ? $processor->get_updated_html() : $html;
+};
 
 $flip_icon = aggressive_blocks_get_icon(
 	'returns-arrows',
@@ -56,7 +85,7 @@ $flip_icon = aggressive_blocks_get_icon(
 	)
 );
 ?>
-<div <?php echo wp_kses_post( get_block_wrapper_attributes( $wrapper_extra ) ); ?>>
+<div <?php echo aggressive_blocks_get_block_wrapper_attributes( $wrapper_extra ); ?>>
 	<button
 		type="button"
 		class="aa-card-flip__toggle aa-icon-button aa-icon-button--only"
@@ -68,6 +97,6 @@ $flip_icon = aggressive_blocks_get_icon(
 		<?php echo aggressive_blocks_trusted_html( $flip_icon ); ?>
 	</button>
 	<div class="aa-card-flip__inner">
-		<?php echo aggressive_blocks_trusted_html( $content ); ?>
+		<?php echo aggressive_blocks_trusted_html( $inert_back_face( $content ) ); ?>
 	</div>
 </div>

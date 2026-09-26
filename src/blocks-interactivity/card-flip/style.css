@@ -15,8 +15,8 @@
 }
 
 /* Flip control — always present for keyboard / touch / reduced-motion.
-   On the hover variant it stays out of the way until the card is hovered or
-   focused (but is always operable). */
+   On the hover variant with a real hover pointer it stays out of the way until
+   the card is hovered or focused (but is always operable). */
 .aa-card-flip__toggle {
   --aa-icon-button-background: color-mix(in srgb, canvas 86%, transparent);
   --aa-icon-button-border: color-mix(in srgb, currentcolor 28%, transparent);
@@ -40,20 +40,25 @@
   transform: rotate(180deg);
 }
 
-/* Hover variant: reveal the control on hover/focus, keep it reachable always. */
-.aa-card-flip--hover .aa-card-flip__toggle {
-  opacity: 0;
+/* Hover variant: reveal the control on hover/focus, keep it reachable always.
+   Touch screens have no hover to reveal it, so there it always shows. */
+@media (hover: hover) and (pointer: fine) {
+
+  .aa-card-flip--hover .aa-card-flip__toggle {
+    opacity: 0;
+  }
+
+  .aa-card-flip--hover:hover .aa-card-flip__toggle,
+  .aa-card-flip--hover:focus-within .aa-card-flip__toggle,
+  .aa-card-flip--hover .aa-card-flip__toggle:focus-visible {
+    opacity: 1;
+  }
 }
 
-.aa-card-flip--hover:hover .aa-card-flip__toggle,
-.aa-card-flip--hover:focus-within .aa-card-flip__toggle,
-.aa-card-flip--hover .aa-card-flip__toggle:focus-visible {
-  opacity: 1;
-}
-
-/* Inner: 3D transform stage. */
+/* Inner: 3D transform stage. Carries the card's radius through to the faces. */
 .aa-card-flip__inner {
   display: grid;
+  border-radius: inherit;
   transform-style: preserve-3d;
   transition: transform 600ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -71,8 +76,8 @@
   transform: rotateY(180deg);
 }
 
-/* Flip: hover variant (pure CSS) and button variant (is-flipped from JS). */
-.aa-card-flip--hover:hover .aa-card-flip__inner,
+/* Flip. Both variants follow is-flipped from the store, so the visible face
+   always matches the one left out of `inert`. */
 .aa-card-flip.is-flipped .aa-card-flip__inner {
   transform: rotateY(180deg);
 }

@@ -253,7 +253,7 @@ msgstr ""
 msgid "Content animated into view"
 msgstr ""
 
-#: src/blocks-interactivity/card-flip/render.php:64
+#: src/blocks-interactivity/card-flip/render.php:93
 msgid "Flip card"
 msgstr ""
 
