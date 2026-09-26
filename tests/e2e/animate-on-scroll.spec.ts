@@ -104,20 +104,23 @@ test.describe('Animate On Scroll — front end', () => {
     const { id, url } = await publishAndGetUrl(page);
     pageId = id;
 
-    // The entrance starts on first paint, so record the bounce wrapper's
-    // transform from the first frame rather than sampling after hydration.
+    // The entrance starts on first paint; record it as it starts.
     await page.addInitScript(() => {
-      const transforms: string[] = [];
-      (window as unknown as { bounceTransforms: string[] }).bounceTransforms =
-        transforms;
-      const sample = () => {
-        const wrap = document.querySelector(
-          '[data-animate-sequence-type="bounce"]'
-        );
-        if (wrap) transforms.push(getComputedStyle(wrap).transform);
-        if (performance.now() < 4000) requestAnimationFrame(sample);
-      };
-      requestAnimationFrame(sample);
+      const started: string[] = [];
+      (window as unknown as { bounceStarts: string[] }).bounceStarts = started;
+      document.addEventListener(
+        'animationstart',
+        event => {
+          const target = event.target;
+          if (
+            target instanceof Element &&
+            target.matches('[data-animate-sequence-type="bounce"]')
+          ) {
+            started.push(event.animationName);
+          }
+        },
+        true
+      );
     });
 
     await page.goto(url);
@@ -129,25 +132,35 @@ test.describe('Animate On Scroll — front end', () => {
     const bounceWrap = root.locator('[data-animate-sequence-type="bounce"]');
     await expect(bounceWrap).toHaveCount(1);
 
-    // Bounce uses keyframes; a stuck `transform: none !important` would keep
-    // the matrix at identity for the whole entrance.
-    const bounceState = await bounceWrap.evaluate(el => {
-      const style = getComputedStyle(el as HTMLElement);
-      return {
-        animationName: style.animationName,
-        animationDuration: style.animationDuration,
-      };
+    // The bounce keyframes ran.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as { bounceStarts: string[] }).bounceStarts
+        )
+      )
+      .toContain('bounce-in');
+
+    // A stuck `transform: none !important` would beat any animation of
+    // transform, so drive one directly (paused, timing-independent).
+    const probed = await bounceWrap.evaluate(el => {
+      const probe = el.animate(
+        [{ transform: 'translateY(30px)' }, { transform: 'none' }],
+        { duration: 1000 }
+      );
+      probe.pause();
+      const transform = getComputedStyle(el).transform;
+      probe.cancel();
+      return transform;
     });
+    expect(probed).toBe('matrix(1, 0, 0, 1, 0, 30)');
 
-    expect(bounceState.animationName).toMatch(/bounce/i);
-    expect(parseFloat(bounceState.animationDuration)).toBeGreaterThan(0);
-
-    // Keyframes must be able to move transform during the entrance.
-    const transforms = await page.evaluate(
-      () =>
-        (window as unknown as { bounceTransforms: string[] }).bounceTransforms
-    );
-    expect(transforms.some(transform => transform !== 'none')).toBe(true);
+    // Settled on none, not an identity matrix that would trap fixed content.
+    await expect
+      .poll(() => bounceWrap.evaluate(el => getComputedStyle(el).transform), {
+        timeout: 5_000,
+      })
+      .toBe('none');
   });
 
   test('an in-view block animates in on first paint, without the view script', async ({
@@ -172,15 +185,30 @@ test.describe('Animate On Scroll — front end', () => {
     // The entrance is CSS only: block the store's script entirely.
     await page.route(/animate-on-scroll\/view\.js/, route => route.abort());
 
-    // Record every change in the child's opacity from the first frame.
+    // Record the entrance: every opacity change from the first frame, and
+    // the opacity transitions the CSS starts on the child.
     await page.addInitScript(() => {
-      const trace: number[] = [];
-      (window as unknown as { aosTrace: number[] }).aosTrace = trace;
+      const state = { trace: [] as number[], transitions: 0 };
+      (window as unknown as { aos: typeof state }).aos = state;
+      document.addEventListener(
+        'transitionrun',
+        event => {
+          const target = event.target;
+          if (
+            event.propertyName === 'opacity' &&
+            target instanceof Element &&
+            target.parentElement?.matches('.wp-block-animate-on-scroll')
+          ) {
+            state.transitions++;
+          }
+        },
+        true
+      );
       const sample = () => {
         const child = document.querySelector('.wp-block-animate-on-scroll > *');
         if (child) {
           const opacity = Number(getComputedStyle(child).opacity);
-          if (trace.at(-1) !== opacity) trace.push(opacity);
+          if (state.trace.at(-1) !== opacity) state.trace.push(opacity);
         }
         if (performance.now() < 4000) requestAnimationFrame(sample);
       };
@@ -193,12 +221,17 @@ test.describe('Animate On Scroll — front end', () => {
     const root = page.locator('.wp-block-animate-on-scroll').first();
     await expect(root).not.toHaveAttribute('data-animate-id');
 
-    const trace = await page.evaluate(
-      () => (window as unknown as { aosTrace: number[] }).aosTrace
+    const { trace, transitions } = await page.evaluate(
+      () =>
+        (window as unknown as { aos: { trace: number[]; transitions: number } })
+          .aos
     );
-    // Hidden on the first frame, then only rising to fully visible: never
-    // shown, hidden, and shown again.
-    expect(trace[0]).toBe(0);
+    // The CSS entrance ran with the store's script blocked. Whether the
+    // first sampled frame catches it mid-flight depends on how soon the
+    // runner presents that frame, so the event, not the first sample,
+    // proves it.
+    expect(transitions).toBeGreaterThan(0);
+    // Never shown, hidden, and shown again: opacity only rises, to 1.
     expect(trace.at(-1)).toBe(1);
     trace.slice(1).forEach((opacity, i) => {
       expect(opacity).toBeGreaterThanOrEqual(trace[i]);

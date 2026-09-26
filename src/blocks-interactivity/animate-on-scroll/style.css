@@ -265,10 +265,12 @@
 	/* Played on first paint (front end, not yet armed) and whenever the
 	   block becomes visible. Both conditions give the same animation, so a
 	   block in view at load keeps its running entrance when the store adds
-	   .is-visible. `both` holds the first frame through the stagger delay. */
+	   .is-visible. `backwards` holds the first frame through the stagger
+	   delay; no forwards fill, which would keep the final frame as an
+	   identity matrix (a containing block) instead of the natural none. */
 	&.bounce:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
 	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"] {
-		animation: bounce-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) both;
+		animation: bounce-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) backwards;
 	}
 
 	&.bounce.elastic:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,

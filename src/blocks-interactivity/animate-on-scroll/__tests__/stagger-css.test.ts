@@ -72,6 +72,16 @@ describe('animate-on-scroll stylesheet', () => {
     expect(rules).not.toMatch(/rotate\(0deg\)/);
   });
 
+  it('does not hold the final frame of an entrance animation', () => {
+    // A forwards fill keeps the last keyframe as an identity matrix, which
+    // is not none. Exits may hold theirs: the block is hidden afterwards.
+    const entrances = rules.match(/animation:\s*[a-z]+-in [^;]+;/g) ?? [];
+    expect(entrances.length).toBeGreaterThan(0);
+    entrances.forEach(entrance => {
+      expect(entrance).toMatch(/ backwards;$/);
+    });
+  });
+
   it('plays the first-paint entrance on the front end only', () => {
     expect(rules).toMatch(
       /&\[data-wp-interactive\] > \* \{\s*@starting-style \{/
