@@ -7,7 +7,7 @@
  * errors. That keeps CI fail-closed without parsing human-readable CLI output.
  */
 
-import { appendFile } from 'node:fs/promises';
+import { appendFile, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 
 import semanticRelease from 'semantic-release';
@@ -35,7 +35,15 @@ async function planRelease() {
     return;
   }
 
-  const { type, version } = result.nextRelease;
+  const { type, version, notes } = result.nextRelease;
+
+  if (!notes) {
+    throw new Error('semantic-release produced no release notes.');
+  }
+
+  // Conventional-commit notes, grouped into Features / Bug Fixes with any
+  // BREAKING CHANGES called out. The release job publishes this file.
+  await writeFile('release-notes.md', `${notes.trim()}\n`, 'utf8');
 
   await appendFile(
     outputPath,
