@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Set by bin/local/studio-e2e.sh. The independent-site spec proves the plugin
+// runs where Aggressive Apparel is not installed, which only CI's clean wp-env
+// can show: a Studio site that serves the theme's own checkout always has it.
+const studioRun = process.env.AB_E2E_STUDIO === '1';
+
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: studioRun ? ['**/independent-site.spec.ts'] : [],
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,

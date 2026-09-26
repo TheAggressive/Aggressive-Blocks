@@ -22,6 +22,8 @@ pnpm qa:fast
 
 `pnpm qa:fast` is the pre-push check. It does not start containers. `pnpm qa` rehearses the same wp-env lanes CI runs.
 
+For browser tests without Docker, `pnpm test:e2e:studio` runs Playwright against your Studio site. Opt the site in once with `touch <site>/.aggressive-blocks-e2e-site`; the script restores everything it changes. Pass Playwright arguments through, e.g. `pnpm test:e2e:studio tests/e2e/modal.spec.ts`.
+
 Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Release notes live on the [Releases page](https://github.com/TheAggressive/Aggressive-Blocks/releases).
 
 See [docs/ci.md](docs/ci.md) for workflows, required branch checks, the PHP/WordPress matrix, packaging, and VIP-oriented gates.

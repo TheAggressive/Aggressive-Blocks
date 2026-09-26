@@ -51,13 +51,16 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | PHPCS + VIPCS + PHPStan + PHPUnit | `pnpm ci:php` |
 | i18n POT/catalog check | `pnpm ci:i18n` or `pnpm i18n:check` |
 | Production build | `pnpm ci:build` |
-| Isolated E2E | `pnpm ci:e2e` |
+| Isolated E2E (Docker) | `pnpm ci:e2e` |
+| E2E against the Studio site | `pnpm test:e2e:studio` |
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 
 Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-push check and does not start containers. `pnpm qa` rehearses the containerized CI lanes: it routes through the same pinned Node as Actions (`bin/ci/node.sh`) and then `bin/ci/verify.sh`.
+
+`pnpm test:e2e:studio` runs the Playwright suite against the Studio site that serves this checkout, with no Docker. `bin/local/studio-e2e.sh` finds the site, logs in with Studio's auto-login URL, and for the length of the run switches to Twenty Twenty-Five and hides the admin bar. It records both first and restores them afterwards, even after a killed run. The site must opt in once with `touch <site>/.aggressive-blocks-e2e-site`. It runs other plugins and its own theme, so a local pass is a fast signal; the wp-env lane in CI remains the release proof.
 
 ## Independent-site proof
 

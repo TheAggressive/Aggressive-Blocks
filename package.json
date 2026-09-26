@@ -150,6 +150,7 @@
     "ci:verify:pinned": "bash bin/ci/verify.sh",
     "ci:wp-env": "wp-env",
     "test:e2e": "playwright test",
+    "test:e2e:studio": "bash bin/local/studio-e2e.sh",
     "test:e2e:ci": "bash bin/ci/node.sh test:e2e:pinned",
     "test:e2e:pinned": "pnpm ci:build && pnpm ci:browser:install && pnpm ci:e2e",
     "test:e2e:install": "playwright install --with-deps chromium"
