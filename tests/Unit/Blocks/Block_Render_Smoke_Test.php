@@ -293,18 +293,86 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The block is armed server-side and flags whether it respects reduced motion.
+	 * The block renders unarmed (visible) and flags whether it respects reduced motion.
 	 *
 	 * @return void
 	 */
-	public function test_animate_on_scroll_is_armed_server_side(): void {
+	public function test_animate_on_scroll_renders_unarmed(): void {
 		$respects = $this->render_aos_opening( array() );
-		$this->assertMatchesRegularExpression( '/\sdata-animate-id="[^"]+"/', $respects );
+		$this->assertStringNotContainsString( 'data-animate-id', $respects );
 		$this->assertStringContainsString( 'data-respect-reduced-motion="true"', $respects );
-		$this->assertStringNotContainsString( 'data-animate-ready', $respects );
 
 		$opted_out = $this->render_aos_opening( array( 'respectReducedMotion' => false ) );
 		$this->assertStringNotContainsString( 'data-respect-reduced-motion', $opted_out );
+	}
+
+	/**
+	 * Stagger delays are written on each top-level child for the first-paint entrance.
+	 *
+	 * @return void
+	 */
+	public function test_animate_on_scroll_writes_stagger_delays(): void {
+		$html = $this->render(
+			'animate-on-scroll',
+			array(
+				'staggerChildren' => true,
+				'staggerDelay'    => 0.25,
+				'staggerSeed'     => 42,
+			),
+			array()
+		);
+		$this->assertStringContainsString( 'data-aos-stagger-seed="42"', $html );
+
+		$markup = '<p>A</p><p style="color:red">B <span>not top level</span></p><ul><li>C</li></ul>';
+		$html   = (string) render_block(
+			array(
+				'blockName'    => 'aggressive-blocks/animate-on-scroll',
+				'attrs'        => array(
+					'staggerChildren' => true,
+					'staggerDelay'    => 0.25,
+				),
+				'innerBlocks'  => array(),
+				'innerContent' => array( $markup ),
+			)
+		);
+
+		$this->assertStringContainsString( '<p style="--wp-block-animate-on-scroll-stagger-delay: 0s;">A</p>', $html );
+		$this->assertStringContainsString( '<p style="color:red;--wp-block-animate-on-scroll-stagger-delay: 0.25s;">B <span>not top level</span></p>', $html );
+		$this->assertStringContainsString( '<ul style="--wp-block-animate-on-scroll-stagger-delay: 0.5s;"><li>C</li></ul>', $html );
+		$this->assertMatchesRegularExpression( '/data-aos-stagger-seed="\d+"/', $html );
+	}
+
+	/**
+	 * The PHP stagger port reproduces stagger-math.ts (values from the TypeScript).
+	 *
+	 * @return void
+	 */
+	public function test_stagger_matches_the_typescript_math(): void {
+		$config = static fn( string $pattern, int $seed = 0 ): array => array(
+			'pattern'       => $pattern,
+			'delay'         => 0.2,
+			'waveFrequency' => 2,
+			'randomMin'     => 0.1,
+			'randomMax'     => 0.9,
+			'seed'          => $seed,
+		);
+		$delays = static fn( int $total, array $cfg ): array => array_map(
+			static fn( int $i ): float => \Aggressive_Blocks\Blocks\Stagger::delay( $i, $total, $cfg ),
+			range( 0, $total - 1 )
+		);
+
+		$expected = array(
+			'sequential' => array( 0, 0.2, 0.4, 0.6000000000000001 ),
+			'wave'       => array( 0, 0.19999999999999998, 0.4, 0.20000000000000007, 0 ),
+			'random42'   => array( 0.25677229966968296, 0.8269392337650061, 0.713194564729929, 0.5967313813045622 ),
+			'randomHigh' => array( 0.5559136474505068, 0.6179716810584068, 0.23744765147566796 ),
+		);
+
+		$this->assertEqualsWithDelta( $expected['sequential'], $delays( 4, $config( 'sequential' ) ), 1e-12 );
+		$this->assertEqualsWithDelta( $expected['wave'], $delays( 5, $config( 'wave' ) ), 1e-12 );
+		$this->assertEqualsWithDelta( $expected['random42'], $delays( 4, $config( 'random', 42 ) ), 1e-12 );
+		$this->assertEqualsWithDelta( $expected['randomHigh'], $delays( 3, $config( 'random', 4000000000 ) ), 1e-12 );
+		$this->assertSame( 1015199447, \Aggressive_Blocks\Blocks\Stagger::hash_to_seed( '6ab762bc38231' ) );
 	}
 
 	/**

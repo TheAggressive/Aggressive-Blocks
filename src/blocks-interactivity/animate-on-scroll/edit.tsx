@@ -77,6 +77,8 @@ export default function Edit({
   const blockProps = useBlockProps({
     ref: blockRef,
     className: [
+      // The class render.php writes; style.css and editor.css key off it.
+      'wp-block-animate-on-scroll',
       isPreviewing ? 'is-aos-previewing' : '',
       isPreviewing && useSequencePreview ? 'has-animation-sequence' : '',
       isPreviewing && !useSequencePreview ? previewAnimationClass : '',
@@ -90,9 +92,6 @@ export default function Edit({
     ...(isPreviewing
       ? {
           'data-animate-id': 'editor-preview',
-          // The preview drives the states itself; keep the front-end
-          // failsafe reveal from firing mid-preview.
-          'data-animate-ready': '',
           'data-stagger-children':
             attributes.staggerChildren || useSequencePreview ? 'true' : 'false',
         }

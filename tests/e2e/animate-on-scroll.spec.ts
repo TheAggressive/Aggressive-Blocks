@@ -104,6 +104,22 @@ test.describe('Animate On Scroll — front end', () => {
     const { id, url } = await publishAndGetUrl(page);
     pageId = id;
 
+    // The entrance starts on first paint, so record the bounce wrapper's
+    // transform from the first frame rather than sampling after hydration.
+    await page.addInitScript(() => {
+      const transforms: string[] = [];
+      (window as unknown as { bounceTransforms: string[] }).bounceTransforms =
+        transforms;
+      const sample = () => {
+        const wrap = document.querySelector(
+          '[data-animate-sequence-type="bounce"]'
+        );
+        if (wrap) transforms.push(getComputedStyle(wrap).transform);
+        if (performance.now() < 4000) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+
     await page.goto(url);
     const root = page.locator('.wp-block-animate-on-scroll').first();
     await root.waitFor();
@@ -126,15 +142,15 @@ test.describe('Animate On Scroll — front end', () => {
     expect(bounceState.animationName).toMatch(/bounce/i);
     expect(parseFloat(bounceState.animationDuration)).toBeGreaterThan(0);
 
-    // Sample mid-flight: keyframes must be able to move transform.
-    await page.waitForTimeout(120);
-    const transform = await bounceWrap.evaluate(
-      el => getComputedStyle(el as HTMLElement).transform
+    // Keyframes must be able to move transform during the entrance.
+    const transforms = await page.evaluate(
+      () =>
+        (window as unknown as { bounceTransforms: string[] }).bounceTransforms
     );
-    expect(transform).not.toBe('none');
+    expect(transforms.some(transform => transform !== 'none')).toBe(true);
   });
 
-  test('an in-view block starts hidden and animates in once', async ({
+  test('an in-view block animates in on first paint, without the view script', async ({
     page,
   }) => {
     await openPageEditor(page);
@@ -153,6 +169,9 @@ test.describe('Animate On Scroll — front end', () => {
     const { id, url } = await publishAndGetUrl(page);
     pageId = id;
 
+    // The entrance is CSS only: block the store's script entirely.
+    await page.route(/animate-on-scroll\/view\.js/, route => route.abort());
+
     // Record every change in the child's opacity from the first frame.
     await page.addInitScript(() => {
       const trace: number[] = [];
@@ -163,22 +182,22 @@ test.describe('Animate On Scroll — front end', () => {
           const opacity = Number(getComputedStyle(child).opacity);
           if (trace.at(-1) !== opacity) trace.push(opacity);
         }
-        if (performance.now() < 5000) requestAnimationFrame(sample);
+        if (performance.now() < 4000) requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
     });
 
     await page.goto(url);
+    await page.waitForTimeout(1500);
+
     const root = page.locator('.wp-block-animate-on-scroll').first();
-    await expect(root).toHaveClass(/is-visible/, { timeout: 10_000 });
-    await expect(root).toHaveAttribute('data-animate-ready', '');
-    await page.waitForTimeout(800);
+    await expect(root).not.toHaveAttribute('data-animate-id');
 
     const trace = await page.evaluate(
       () => (window as unknown as { aosTrace: number[] }).aosTrace
     );
-    // Hidden on the first frame, then only rising: never shown, hidden, and
-    // shown again.
+    // Hidden on the first frame, then only rising to fully visible: never
+    // shown, hidden, and shown again.
     expect(trace[0]).toBe(0);
     expect(trace.at(-1)).toBe(1);
     trace.slice(1).forEach((opacity, i) => {

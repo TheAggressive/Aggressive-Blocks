@@ -2,11 +2,12 @@
 /**
  * Animate On Scroll — server render.
  *
- * The block is armed here (data-animate-id), so children render in their
- * hidden initial state from the first paint and an in-view block animates
- * in once, instead of painting, hiding when the script arms it, and then
- * animating. style.css reveals everything for visitors without scripting and,
- * as a failsafe, when the script has not taken over after a few seconds.
+ * Children render in their natural, visible state; style.css plays the
+ * entrance on first paint (@starting-style), so a block in view at load
+ * animates without waiting for the store and content never depends on
+ * JavaScript. The store then arms only the blocks that are off screen
+ * (data-animate-id) and reveals them as they scroll in. Stagger delays are
+ * written here so the first-paint entrance staggers too.
  *
  * @var array<string, mixed> $attributes Block attributes.
  * @var string               $content    Block default content.
@@ -122,6 +123,36 @@ if ( $aos_debug_mode ) {
 $aos_id                     = uniqid();
 $aos_respect_reduced_motion = $attributes['respectReducedMotion'] ?? true;
 $aos_stagger_delay          = $aos_number( $attributes['staggerDelay'] ?? 0.2, 0.2 );
+$aos_stagger                = ! empty( $attributes['staggerChildren'] );
+
+// Same inputs the store's stagger-math.ts reads. A zero seed gets one
+// derived from the block id, shared with the store via data-aos-stagger-seed.
+$aos_stagger_config = array(
+	'pattern'       => $attributes['staggerPattern'] ?? 'sequential',
+	'delay'         => (float) $aos_stagger_delay,
+	'waveFrequency' => (float) $aos_number( $attributes['staggerWaveFrequency'] ?? 1, 1 ),
+	'randomMin'     => (float) $aos_number( $attributes['staggerRandomMin'] ?? 0, 0 ),
+	'randomMax'     => (float) $aos_number( $attributes['staggerRandomMax'] ?? 0.5, 0.5 ),
+	'seed'          => absint( $attributes['staggerSeed'] ?? 0 ),
+);
+if ( 0 === $aos_stagger_config['seed'] ) {
+	$aos_stagger_config['seed'] = \Aggressive_Blocks\Blocks\Stagger::hash_to_seed( $aos_id );
+}
+
+/**
+ * The stagger delay declaration for one child, or '' without stagger.
+ *
+ * @param int $index Zero-based child index.
+ * @param int $total Number of children.
+ * @return string
+ */
+$aos_child_delay = static function ( int $index, int $total ) use ( $aos_stagger, $aos_stagger_config ): string {
+	if ( ! $aos_stagger ) {
+		return '';
+	}
+	$delay = \Aggressive_Blocks\Blocks\Stagger::delay( $index, $total, $aos_stagger_config );
+	return '--wp-block-animate-on-scroll-stagger-delay: ' . round( $delay, 4 ) . 's;';
+};
 
 $wrapper_attributes_array = array(
 	'class'                       => implode( ' ', $default_classes ),
@@ -158,9 +189,8 @@ $wrapper_attributes_array = array(
 	// imperatively added class is wiped on the next re-render.
 	'data-wp-class--has-animated' => 'context.hasAnimated',
 	'data-wp-class--is-exiting'   => 'context.isExiting',
-	'data-stagger-children'       => ! empty( $attributes['staggerChildren'] ) ? 'true' : 'false',
-	// Armed from the first paint; the store marks data-animate-ready.
-	'data-animate-id'             => $aos_id,
+	'data-stagger-children'       => $aos_stagger ? 'true' : 'false',
+	'data-aos-stagger-seed'       => $aos_stagger ? (string) $aos_stagger_config['seed'] : false,
 	'data-respect-reduced-motion' => false !== $aos_respect_reduced_motion ? 'true' : false,
 );
 
@@ -225,13 +255,60 @@ $aos_sequence_vars = array(
 	'elasticDistance' => array( '--wp-block-animate-on-scroll-elastic-distance', 'px' ),
 );
 
+/**
+ * Add the stagger delay to each top-level element of the inner content.
+ *
+ * Content the HTML API cannot parse is returned unchanged; the store writes
+ * the same delays once it hydrates.
+ *
+ * @param string $html Inner block content.
+ * @return string
+ */
+$aos_stagger_content = static function ( string $html ) use ( $aos_child_delay ): string {
+	$count_pass = \WP_HTML_Processor::create_fragment( $html );
+	if ( null === $count_pass ) {
+		return $html;
+	}
+	$top   = null;
+	$total = 0;
+	while ( $count_pass->next_tag() ) {
+		$top = $top ?? $count_pass->get_current_depth();
+		if ( $count_pass->get_current_depth() === $top ) {
+			++$total;
+		}
+	}
+	if ( 0 === $total || null !== $count_pass->get_last_error() ) {
+		return $html;
+	}
+
+	$write = \WP_HTML_Processor::create_fragment( $html );
+	if ( null === $write ) {
+		return $html;
+	}
+	$index = 0;
+	while ( $write->next_tag() ) {
+		if ( $write->get_current_depth() !== $top ) {
+			continue;
+		}
+		$style = trim( (string) $write->get_attribute( 'style' ) );
+		if ( '' !== $style && ! str_ends_with( $style, ';' ) ) {
+			$style .= ';';
+		}
+		$write->set_attribute( 'style', $style . $aos_child_delay( $index, $total ) );
+		++$index;
+	}
+	return null === $write->get_last_error() ? $write->get_updated_html() : $html;
+};
+
 echo aggressive_blocks_trusted_html( $aos_opening->get_updated_html() );
 
 if ( $use_sequence ) {
 	$aos_sequence_count = count( $aos_sequence );
+	$aos_inner_blocks   = $block->parsed_block['innerBlocks'] ?? array();
+	$aos_inner_total    = count( $aos_inner_blocks );
 	$child_index        = 0;
 
-	foreach ( $block->parsed_block['innerBlocks'] ?? array() as $inner_block ) {
+	foreach ( $aos_inner_blocks as $inner_block ) {
 		$sequence_item = $aos_sequence[ $child_index % $aos_sequence_count ];
 		$item_type     = $sequence_item['animation'];
 
@@ -250,8 +327,9 @@ if ( $use_sequence ) {
 				$item_vars[ $property ] = $aos_number( $sequence_item[ $key ], 0 ) . $unit;
 			}
 		}
-		if ( array() !== $item_vars ) {
-			$item->set_attribute( 'style', $aos_declarations( $item_vars ) );
+		$item_style = $aos_declarations( $item_vars ) . $aos_child_delay( $child_index, $aos_inner_total );
+		if ( '' !== $item_style ) {
+			$item->set_attribute( 'style', $item_style );
 		}
 
 		echo aggressive_blocks_trusted_html( $item->get_updated_html() );
@@ -261,7 +339,7 @@ if ( $use_sequence ) {
 		++$child_index;
 	}
 } else {
-	echo aggressive_blocks_trusted_html( $content );
+	echo aggressive_blocks_trusted_html( $aos_stagger ? $aos_stagger_content( $content ) : $content );
 }
 
 echo '</div>';

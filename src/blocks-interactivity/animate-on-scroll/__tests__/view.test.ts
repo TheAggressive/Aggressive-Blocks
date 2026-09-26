@@ -401,6 +401,18 @@ describe('initObserver reduced motion', () => {
 });
 
 describe('initObserver arming and entry', () => {
+  const inViewport = (el: HTMLElement) => {
+    el.getBoundingClientRect = () =>
+      ({
+        top: 100,
+        bottom: 300,
+        left: 0,
+        right: 800,
+        width: 800,
+        height: 200,
+      }) as DOMRect;
+  };
+
   const setup = (
     ctxOverrides: Record<string, unknown> = {},
     prepare?: (ref: HTMLElement) => void
@@ -408,7 +420,6 @@ describe('initObserver arming and entry', () => {
     observers.length = 0;
     holder.ref = document.createElement('div');
     holder.ref.className = 'wp-block-animate-on-scroll';
-    holder.ref.setAttribute('data-animate-id', 'server');
     holder.ref.appendChild(document.createElement('p'));
     prepare?.(holder.ref);
     document.body.appendChild(holder.ref);
@@ -437,9 +448,29 @@ describe('initObserver arming and entry', () => {
     document.body.innerHTML = '';
   });
 
-  it('marks the block ready once it is observed', () => {
+  it('arms a block that is off screen at hydration', () => {
     const { ref } = setup();
-    expect(ref.hasAttribute('data-animate-ready')).toBe(true);
+    expect(ref.getAttribute('data-animate-id')).toBe('test');
+    expect(holder.ctx.isVisible).toBe(false);
+  });
+
+  it('leaves a block in view at hydration unarmed and visible', () => {
+    const { ref } = setup({}, inViewport);
+    expect(ref.hasAttribute('data-animate-id')).toBe(false);
+    expect(holder.ctx.isVisible).toBe(true);
+  });
+
+  it('arms an in-view block only when it first exits', () => {
+    const { ref, observer } = setup({ reverseOnScrollBack: true }, inViewport);
+
+    // A sliver on screen at load: below the exit threshold, but no exit.
+    observer.callback([{ intersectionRatio: 0.05, isIntersecting: true }]);
+    expect(holder.ctx.isVisible).toBe(true);
+    expect(ref.hasAttribute('data-animate-id')).toBe(false);
+
+    observer.callback([{ intersectionRatio: 0, isIntersecting: false }]);
+    expect(holder.ctx.isVisible).toBe(false);
+    expect(ref.getAttribute('data-animate-id')).toBe('test');
   });
 
   it('does not enter off-screen at a visibility trigger of 0', () => {
@@ -453,7 +484,7 @@ describe('initObserver arming and entry', () => {
     expect(holder.ctx.isVisible).toBe(true);
   });
 
-  it('shows the content when the observer cannot be created', () => {
+  it('leaves the content visible when the observer cannot be created', () => {
     const original = window.IntersectionObserver;
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     window.IntersectionObserver = class {
@@ -466,23 +497,10 @@ describe('initObserver arming and entry', () => {
 
     const { ref } = setup();
     expect(holder.ctx.isVisible).toBe(true);
-    expect(ref.hasAttribute('data-animate-ready')).toBe(true);
+    expect(ref.hasAttribute('data-animate-id')).toBe(false);
 
     window.IntersectionObserver = original;
     warn.mockRestore();
-  });
-
-  it('leaves content the CSS failsafe already revealed', () => {
-    const { ref } = setup({}, block => {
-      (block.firstElementChild as HTMLElement).getAnimations = () =>
-        [
-          { animationName: 'aos-failsafe-reveal', playState: 'finished' },
-        ] as unknown as Animation[];
-    });
-
-    expect(observers).toHaveLength(0);
-    expect(ref.hasAttribute('data-animate-ready')).toBe(false);
-    expect(holder.ctx.hasAnimated).toBe(true);
   });
 
   it('announces with the translated message', () => {

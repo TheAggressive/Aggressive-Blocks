@@ -9,10 +9,11 @@
  * blocks. Debug tooling lives in debug.ts and is only downloaded when a
  * block enables Debug Mode.
  *
- * render.php arms each block (data-animate-id), so children paint in their
- * hidden initial state and an in-view block animates in once. This store
- * marks data-animate-ready when it takes over, which cancels the CSS
- * failsafe that otherwise reveals the content after a few seconds.
+ * Children render visible and play their entrance on first paint in CSS
+ * (@starting-style), so a block in view at load never waits for this store.
+ * On hydration the store arms (data-animate-id) only the blocks that are off
+ * screen, which returns them to their hidden "from" state unseen; a block
+ * in view at load is armed only when it first exits.
  *
  * @package Aggressive Apparel
  */
@@ -69,27 +70,17 @@ interface AnimateOnScrollContext {
   i18n?: { announce?: string };
 }
 
-/** Set once the store owns a block; cancels the CSS failsafe reveal. */
-const READY_ATTR = 'data-animate-ready';
-const FAILSAFE_ANIMATION = 'aos-failsafe-reveal';
-
-/**
- * True when the CSS failsafe already revealed the children (the store took
- * longer than the failsafe delay to arm). Animating now would hide content
- * the visitor is already reading.
- */
-export const failsafeRevealed = (element: HTMLElement): boolean => {
-  const child = element.firstElementChild;
-  if (!child || typeof child.getAnimations !== 'function') {
-    return false;
-  }
-  return child
-    .getAnimations()
-    .some(
-      animation =>
-        (animation as CSSAnimation).animationName === FAILSAFE_ANIMATION &&
-        animation.playState === 'finished'
-    );
+/** True when any part of the element is inside the viewport. */
+export const isInViewport = (element: HTMLElement): boolean => {
+  const rect = element.getBoundingClientRect();
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.bottom > 0 &&
+    rect.right > 0 &&
+    rect.top < window.innerHeight &&
+    rect.left < window.innerWidth
+  );
 };
 
 /**
@@ -214,15 +205,10 @@ store('aggressive-blocks/animate-on-scroll', {
         setupStaggerDelays(ref, getStaggerConfig(ctx), false);
       }
 
-      // Already revealed by the CSS failsafe: leave it shown (the failsafe's
-      // fill keeps it visible) rather than hiding it to animate again.
-      if (failsafeRevealed(ref)) {
-        ctx.hasAnimated = true;
-        return;
-      }
-
-      // render.php arms the block; kept for markup cached from before it did.
-      ref.setAttribute('data-animate-id', ctx.id);
+      // Arming returns the children to their hidden "from" state (CSS).
+      const arm = (): void => {
+        ref.setAttribute('data-animate-id', ctx.id);
+      };
 
       // Cache timing once — avoid getComputedStyle on every exit.
       const computedStyles = window.getComputedStyle(ref);
@@ -247,7 +233,6 @@ store('aggressive-blocks/animate-on-scroll', {
       if (prefersReducedMotion && ctx.respectReducedMotion !== false) {
         ctx.isVisible = true;
         ctx.hasAnimated = true;
-        ref.setAttribute(READY_ATTR, '');
         return;
       }
 
@@ -306,6 +291,8 @@ store('aggressive-blocks/animate-on-scroll', {
       };
 
       const handleExit = (): void => {
+        // A block in view at load is armed only now, as it leaves.
+        arm();
         ctx.isVisible = false;
         ctx.isExiting = true;
 
@@ -335,6 +322,8 @@ store('aggressive-blocks/animate-on-scroll', {
         }, holdMs);
       };
 
+      let reportedOnce = false;
+      let inViewAtLoad = false;
       let observer: IntersectionObserver;
       try {
         observer = new IntersectionObserver(
@@ -343,6 +332,12 @@ store('aggressive-blocks/animate-on-scroll', {
               if (isSequenceMode && !hasAnimationSequenceAttributes(ref)) {
                 return;
               }
+
+              // The first report for a block in view at load can sit below
+              // the thresholds (a sliver on screen); it already played its
+              // entrance, so that report must not start an exit.
+              const firstReport = !reportedOnce;
+              reportedOnce = true;
 
               if (isEntering(entry, threshold)) {
                 if (!ctx.isVisible) {
@@ -361,6 +356,7 @@ store('aggressive-blocks/animate-on-scroll', {
                   }
                 }
               } else if (
+                !(firstReport && inViewAtLoad) &&
                 ctx.reverseOnScrollBack &&
                 ctx.isVisible &&
                 (entry.intersectionRatio <= exitThreshold ||
@@ -384,17 +380,25 @@ store('aggressive-blocks/animate-on-scroll', {
           }
         );
       } catch (error) {
-        // An invalid boundary (e.g. a unitless margin) throws here. Show the
-        // content rather than leave the armed block hidden.
+        // An invalid boundary (e.g. a unitless margin) throws here. The
+        // block is not armed yet, so its content simply stays visible.
         console.warn('[AnimateOnScroll] Could not observe block', error);
         ctx.isVisible = true;
         ctx.hasAnimated = true;
-        ref.setAttribute(READY_ATTR, '');
         return;
       }
 
+      // In view now: it played its entrance on first paint, so mark it
+      // visible and leave it unarmed. Off screen: arm it, unseen.
+      inViewAtLoad = isInViewport(ref);
+      if (inViewAtLoad) {
+        ctx.isVisible = true;
+        ctx.hasAnimated = true;
+      } else {
+        arm();
+      }
+
       observer.observe(ref);
-      ref.setAttribute(READY_ATTR, '');
 
       return () => {
         observer.disconnect();
