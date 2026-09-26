@@ -28,7 +28,7 @@ import {
   isSlideFocused,
   syncDeepLinkHash,
 } from './a11y';
-import { AutoplayEngine } from './autoplay';
+import { AutoplayEngine, type HoldReason } from './autoplay';
 import {
   CLONE_ATTR,
   COVER_BG_SELECTOR,
@@ -113,7 +113,7 @@ class HeroController {
   private isVisible = true;
   private syncingFromScroll = false;
   private wrapping = false;
-  private readonly isRtl: boolean;
+  readonly isRtl: boolean;
   private readonly seamless: boolean;
   private lastEmitted: number;
   private lastTrackWidth = 0;
@@ -287,12 +287,18 @@ class HeroController {
     const width = mountEdgeClones(this.track, this.slides);
     this.lastTrackWidth = width;
 
+    // Align to the active slide, read when the frame runs: a deep link
+    // resolved later in the constructor has moved it off slide 1 by then.
     const align = (): void => {
       if (!this.track) return;
       this.lastTrackWidth = this.track.clientWidth || 1;
       this.scrollGuard.begin();
       this.track.scrollTo({
-        left: scrollLeftForIndex(1, this.lastTrackWidth, this.isRtl),
+        left: scrollLeftForIndex(
+          logicalToPhysical(this.ctx.activeIndex, this.ctx.count),
+          this.lastTrackWidth,
+          this.isRtl
+        ),
         behavior: 'auto',
       });
     };
@@ -548,8 +554,8 @@ class HeroController {
     this.autoplay.togglePlay();
   }
 
-  hold(hold: boolean): void {
-    this.autoplay.hold(hold);
+  hold(reason: HoldReason, held: boolean): void {
+    this.autoplay.hold(reason, held);
   }
 
   destroy(): void {
@@ -592,6 +598,17 @@ function slideIsCurrentChrome(ctx: HeroContext): boolean {
 
 function isStackedInactive(ctx: HeroContext): boolean {
   return ctx.transition !== 'slide' && !slideIsActive(ctx);
+}
+
+/** True when focus arrived by keyboard (or programmatically after it). */
+function isKeyboardFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  try {
+    return target.matches(':focus-visible');
+  } catch {
+    // No :focus-visible support: treat all focus as keyboard focus.
+    return true;
+  }
 }
 
 function boolAttr(value: boolean): 'true' | 'false' {
@@ -692,12 +709,15 @@ store<HeroStore>('aggressive-blocks/hero-carousel', {
       const ctx = getContext<HeroContext>();
       const controller = controllerFor(getElement().ref);
       if (!controller) return;
+      // The track runs right-to-left in RTL, so the arrow keys swap.
+      const forward = controller.isRtl ? 'ArrowLeft' : 'ArrowRight';
+      const back = controller.isRtl ? 'ArrowRight' : 'ArrowLeft';
       switch (event.key) {
-        case 'ArrowRight':
+        case forward:
           event.preventDefault();
           controller.next();
           break;
-        case 'ArrowLeft':
+        case back:
           event.preventDefault();
           controller.prev();
           break;
@@ -714,15 +734,24 @@ store<HeroStore>('aggressive-blocks/hero-carousel', {
     }),
     pause(): void {
       const ctx = getContext<HeroContext>();
-      if (ctx.pauseOnHover) controllerFor(getElement().ref)?.hold(true);
+      if (ctx.pauseOnHover) {
+        controllerFor(getElement().ref)?.hold('hover', true);
+      }
     },
     resume(): void {
       const ctx = getContext<HeroContext>();
-      if (ctx.pauseOnHover) controllerFor(getElement().ref)?.hold(false);
+      if (ctx.pauseOnHover) {
+        controllerFor(getElement().ref)?.hold('hover', false);
+      }
     },
-    pauseFocus(): void {
-      controllerFor(getElement().ref)?.hold(true);
-    },
+    // Sync: :focus-visible must be read before focus can move on.
+    pauseFocus: withSyncEvent((event: FocusEvent): void => {
+      // Keyboard focus only. A mouse click also focuses the arrow or dot it
+      // hit, and holding on that would stop autoplay until the visitor
+      // clicked elsewhere; hover already covers the pointer.
+      if (!isKeyboardFocus(event.target)) return;
+      controllerFor(getElement().ref)?.hold('focus', true);
+    }),
     resumeFocus(event: FocusEvent): void {
       const { ref } = getElement();
       const root = ref?.closest<HTMLElement>(ROOT_SELECTOR) ?? null;
@@ -733,7 +762,7 @@ store<HeroStore>('aggressive-blocks/hero-carousel', {
       ) {
         return;
       }
-      controllers.get(root)?.hold(false);
+      controllers.get(root)?.hold('focus', false);
     },
   },
 

@@ -12,6 +12,13 @@ import { canAdvance, normalizeAutoplaySpeed } from './logic';
 import { RESUME_DELAY_MS } from './constants';
 import { prefersReducedData, prefersReducedMotion } from './prefs';
 
+/**
+ * Why autoplay is held. Each is tracked separately so clearing one (the
+ * pointer leaving, the post-click delay ending) cannot resume autoplay while
+ * another still applies (keyboard focus inside, pointer still over it).
+ */
+export type HoldReason = 'hover' | 'focus' | 'interaction';
+
 export interface AutoplayHost {
   readonly root: HTMLElement;
   readonly autoplay: boolean;
@@ -36,22 +43,35 @@ export class AutoplayEngine {
   private remainingMs = 0;
   /** `Date.now()` when the current timeout was scheduled (Jest-friendly). */
   private runningSince = 0;
+  private readonly holds = new Set<HoldReason>();
+  /**
+   * Set when the visitor presses Play. An explicit request overrides the
+   * reduced-motion / reduced-data defaults that otherwise keep autoplay off.
+   */
+  private userStarted = false;
 
   constructor(private readonly host: AutoplayHost) {}
 
-  /** Hover / focus pause. `hold` true = pause, false = allow resume. */
-  hold(paused: boolean): void {
-    this.host.isPaused = paused;
+  /** Add or clear one hold reason; autoplay runs only when none remain. */
+  hold(reason: HoldReason, held: boolean): void {
+    if (held) {
+      this.holds.add(reason);
+    } else {
+      this.holds.delete(reason);
+    }
+    this.host.isPaused = this.holds.size > 0;
     this.reconcile();
   }
 
   togglePlay(): void {
     this.host.isPlaying = !this.host.isPlaying;
+    this.userStarted = this.host.isPlaying;
     this.reconcile();
   }
 
   stop(): void {
     this.host.isPlaying = false;
+    this.userStarted = false;
     this.remainingMs = 0;
     this.reconcile();
   }
@@ -75,12 +95,10 @@ export class AutoplayEngine {
     if (!this.host.autoplay || !this.host.isPlaying) return;
     // New slide / user nav — next dwell should be full length.
     this.remainingMs = 0;
-    this.host.isPaused = true;
-    this.reconcile();
+    this.hold('interaction', true);
     window.clearTimeout(this.resumeTimer);
     this.resumeTimer = window.setTimeout(() => {
-      this.host.isPaused = false;
-      this.reconcile();
+      this.hold('interaction', false);
     }, RESUME_DELAY_MS);
   }
 
@@ -146,8 +164,8 @@ export class AutoplayEngine {
       !this.host.isPaused &&
       !this.host.wrapping &&
       !document.hidden &&
-      !prefersReducedMotion() &&
-      !prefersReducedData() &&
+      (this.userStarted ||
+        (!prefersReducedMotion() && !prefersReducedData())) &&
       this.host.count > 1 &&
       canAdvance(this.host.activeIndex, this.host.count, this.host.loop)
     );

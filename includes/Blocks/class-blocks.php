@@ -73,7 +73,7 @@ class Blocks {
 	}
 
 	/**
-	 * Register the pre-compiled block metadata manifest (WP 6.7+).
+	 * Register the pre-compiled block metadata manifest.
 	 *
 	 * @return void
 	 */

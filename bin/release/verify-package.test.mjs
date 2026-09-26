@@ -42,7 +42,7 @@ const PLUGIN_HEADER = `<?php
 /**
  * Plugin Name:       Aggressive Blocks
  * Version:           ${FIXTURE_VERSION}
- * Requires at least: 6.7
+ * Requires at least: 7.0
  * Requires PHP:      8.2
  * Text Domain:       aggressive-blocks
  * @package Aggressive_Blocks

@@ -4,7 +4,7 @@
  * Plugin URI:        https://github.com/TheAggressive/Aggressive-Apparel
  * Description:       Reusable Gutenberg blocks extracted from Aggressive Apparel.
  * Version:           1.0.0
- * Requires at least: 6.7
+ * Requires at least: 7.0
  * Requires PHP:      8.2
  * Author:            The Aggressive Network, LLC
  * License:           GPL-2.0-or-later

@@ -9,8 +9,8 @@ This document is the contract between local development, GitHub Actions, and the
 | Surface | Version | Enforced by |
 | --- | --- | --- |
 | PHP floor | 8.2 | plugin header, `composer.json`, `phpstan.neon`, `bin/ci/.wp-env.json` |
-| WordPress floor | 6.7+ | plugin header |
-| Primary CI WordPress | 6.8.3 | `bin/ci/.wp-env.json` |
+| WordPress floor | 7.0+ | plugin header |
+| Primary CI WordPress | 7.1.2 | `bin/ci/.wp-env.json` |
 | Node | 24.18.0 | `.node-version`, `bin/ci/node.sh`, workflow `NODE_VERSION` |
 | pnpm | 11.21.0 | `packageManager` |
 

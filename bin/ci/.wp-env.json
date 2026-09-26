@@ -1,5 +1,5 @@
 {
-  "core": "https://wordpress.org/wordpress-6.8.3.zip",
+  "core": "https://wordpress.org/wordpress-7.1.2.zip",
   "phpVersion": "8.2",
   "config": {
     "WP_DEBUG": true,
