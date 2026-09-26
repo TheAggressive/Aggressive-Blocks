@@ -14,10 +14,14 @@ import {
   useBlockProps,
   useInnerBlocksProps,
 } from '@wordpress/block-editor';
-import { PanelBody, SelectControl } from '@wordpress/components';
+import {
+  PanelBody,
+  // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+  __experimentalToggleGroupControl as ToggleGroupControl,
+  // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+  __experimentalToggleGroupControlOption as ToggleGroupControlOption,
+} from '@wordpress/components';
 import type { BlockEditProps } from '@wordpress/blocks';
-
-import './editor.css';
 
 type CardFlipAttributes = {
   flipOn: 'hover' | 'click';
@@ -50,23 +54,31 @@ export default function Edit({
     <>
       <InspectorControls>
         <PanelBody title={__('Card Flip', 'aggressive-blocks')}>
-          <SelectControl
+          <ToggleGroupControl
+            __next40pxDefaultSize
+            __nextHasNoMarginBottom
+            isBlock
             label={__('Flip on', 'aggressive-blocks')}
             help={__(
               'Both variants stay keyboard-accessible via the flip button.',
               'aggressive-blocks'
             )}
             value={flipOn}
-            options={[
-              { label: __('Hover', 'aggressive-blocks'), value: 'hover' },
-              { label: __('Click', 'aggressive-blocks'), value: 'click' },
-            ]}
-            onChange={val =>
-              setAttributes({ flipOn: val as CardFlipAttributes['flipOn'] })
+            onChange={value =>
+              setAttributes({
+                flipOn: String(value) as CardFlipAttributes['flipOn'],
+              })
             }
-            __nextHasNoMarginBottom
-            __next40pxDefaultSize
-          />
+          >
+            <ToggleGroupControlOption
+              value='hover'
+              label={__('Hover', 'aggressive-blocks')}
+            />
+            <ToggleGroupControlOption
+              value='click'
+              label={__('Click', 'aggressive-blocks')}
+            />
+          </ToggleGroupControl>
         </PanelBody>
       </InspectorControls>
 

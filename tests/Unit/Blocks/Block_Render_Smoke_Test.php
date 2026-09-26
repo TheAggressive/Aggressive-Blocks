@@ -436,10 +436,11 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 	public function test_card_flip_hover_variant_adds_pointer_handlers(): void {
 		$hover = $this->render_card_flip( 'hover' );
 		$this->assertStringContainsString( 'aa-card-flip--hover', $hover );
-		$this->assertStringContainsString( 'data-wp-on--mouseenter="actions.pointerEnter"', $hover );
+		$this->assertStringContainsString( 'data-wp-on--pointerenter="actions.pointerEnter"', $hover );
+		$this->assertStringContainsString( 'data-wp-on--pointerleave="actions.pointerLeave"', $hover );
 
 		$click = $this->render_card_flip( 'click' );
-		$this->assertStringNotContainsString( 'data-wp-on--mouseenter', $click );
+		$this->assertStringNotContainsString( 'data-wp-on--pointerenter', $click );
 	}
 
 	/**
