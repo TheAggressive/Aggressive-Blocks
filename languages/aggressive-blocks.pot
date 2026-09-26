@@ -249,6 +249,10 @@ msgstr ""
 msgid "Entry threshold {pct}% is unreachable: the element ({elem}px) is taller than the detection area ({root}px). Max visibility ≈ {max}%."
 msgstr ""
 
+#: src/blocks-interactivity/animate-on-scroll/render.php:181
+msgid "Content animated into view"
+msgstr ""
+
 #: src/blocks-interactivity/card-flip/render.php:64
 msgid "Flip card"
 msgstr ""

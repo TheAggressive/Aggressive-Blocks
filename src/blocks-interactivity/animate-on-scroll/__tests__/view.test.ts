@@ -399,3 +399,116 @@ describe('initObserver reduced motion', () => {
     expect(observers).toHaveLength(0);
   });
 });
+
+describe('initObserver arming and entry', () => {
+  const inViewport = (el: HTMLElement) => {
+    el.getBoundingClientRect = () =>
+      ({
+        top: 100,
+        bottom: 300,
+        left: 0,
+        right: 800,
+        width: 800,
+        height: 200,
+      }) as DOMRect;
+  };
+
+  const setup = (
+    ctxOverrides: Record<string, unknown> = {},
+    prepare?: (ref: HTMLElement) => void
+  ) => {
+    observers.length = 0;
+    holder.ref = document.createElement('div');
+    holder.ref.className = 'wp-block-animate-on-scroll';
+    holder.ref.appendChild(document.createElement('p'));
+    prepare?.(holder.ref);
+    document.body.appendChild(holder.ref);
+    holder.ctx = {
+      isVisible: false,
+      hasAnimated: false,
+      isExiting: false,
+      debugMode: false,
+      visibilityTrigger: '0.3',
+      detectionBoundary: {
+        top: '100%',
+        right: '0%',
+        bottom: '-25%',
+        left: '0%',
+      },
+      id: 'test',
+      reverseOnScrollBack: false,
+      announceToScreenReader: false,
+      ...ctxOverrides,
+    };
+    holder.config!.callbacks.initObserver();
+    return { ref: holder.ref, observer: observers[0] };
+  };
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('arms a block that is off screen at hydration', () => {
+    const { ref } = setup();
+    expect(ref.getAttribute('data-animate-id')).toBe('test');
+    expect(holder.ctx.isVisible).toBe(false);
+  });
+
+  it('leaves a block in view at hydration unarmed and visible', () => {
+    const { ref } = setup({}, inViewport);
+    expect(ref.hasAttribute('data-animate-id')).toBe(false);
+    expect(holder.ctx.isVisible).toBe(true);
+  });
+
+  it('arms an in-view block only when it first exits', () => {
+    const { ref, observer } = setup({ reverseOnScrollBack: true }, inViewport);
+
+    // A sliver on screen at load: below the exit threshold, but no exit.
+    observer.callback([{ intersectionRatio: 0.05, isIntersecting: true }]);
+    expect(holder.ctx.isVisible).toBe(true);
+    expect(ref.hasAttribute('data-animate-id')).toBe(false);
+
+    observer.callback([{ intersectionRatio: 0, isIntersecting: false }]);
+    expect(holder.ctx.isVisible).toBe(false);
+    expect(ref.getAttribute('data-animate-id')).toBe('test');
+  });
+
+  it('does not enter off-screen at a visibility trigger of 0', () => {
+    const { observer } = setup({ visibilityTrigger: '0' });
+
+    // The observer's first report for an off-screen block.
+    observer.callback([{ intersectionRatio: 0, isIntersecting: false }]);
+    expect(holder.ctx.isVisible).toBe(false);
+
+    observer.callback([{ intersectionRatio: 0, isIntersecting: true }]);
+    expect(holder.ctx.isVisible).toBe(true);
+  });
+
+  it('leaves the content visible when the observer cannot be created', () => {
+    const original = window.IntersectionObserver;
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    window.IntersectionObserver = class {
+      constructor() {
+        throw new SyntaxError(
+          'rootMargin must be specified in pixels or percent.'
+        );
+      }
+    } as unknown as typeof IntersectionObserver;
+
+    const { ref } = setup();
+    expect(holder.ctx.isVisible).toBe(true);
+    expect(ref.hasAttribute('data-animate-id')).toBe(false);
+
+    window.IntersectionObserver = original;
+    warn.mockRestore();
+  });
+
+  it('announces with the translated message', () => {
+    const { observer } = setup({
+      announceToScreenReader: true,
+      i18n: { announce: 'Contenu affiché' },
+    });
+    observer.callback([{ intersectionRatio: 0.5, isIntersecting: true }]);
+    expect(document.body.textContent).toContain('Contenu affiché');
+  });
+});

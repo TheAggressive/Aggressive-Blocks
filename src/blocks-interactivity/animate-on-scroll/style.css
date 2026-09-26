@@ -14,16 +14,29 @@
 /**
  * Animate On Scroll Block Styles
  *
- * Styles for the aggressive-blocks/animate-on-scroll block.
- * Applied to both front-end and editor.
+ * How a block animates:
+ *
+ * - Children render in their natural, visible state. On the front end
+ *   (render.php's [data-wp-interactive]) each child's first paint starts
+ *   from its animation's "from" values via @starting-style, so a block in
+ *   view at load animates in without waiting for JavaScript, and content
+ *   never depends on it.
+ * - When the store hydrates it arms ([data-animate-id]) only the blocks
+ *   that are off screen, which returns them to their "from" values unseen,
+ *   and toggles .is-visible as they scroll in. A block in view at load is
+ *   armed only when it first exits (reverse on scroll back).
+ * - The editor preview sets the same attribute and classes itself.
+ *
+ * Each animation declares its "from" values once, as custom properties on
+ * the children; the entrance, the armed state and the exit all read them.
  *
  * Table of Contents:
  * 1. CSS Custom Properties
- * 2. Base Animation Framework
- * 3. Individual Animation Types
- * 4. Animation Sequence Support
- * 5. Reverse Animation States
- * 6. Stagger Animation Support
+ * 2. Children: transitions and default "from" values
+ * 3. Per-animation "from" values
+ * 4. Entrance on first paint, and the armed (hidden) state
+ * 5. Bounce family (keyframes)
+ * 6. Reduced motion and print
  * 7. Keyframe Animations
  *
  * Debug overlay/panel styles ship separately as
@@ -55,445 +68,267 @@
 	--wp-block-animate-on-scroll-bounce-distance: 30px;
 	--wp-block-animate-on-scroll-elastic-distance: 50px;
 
-	/* Base Styles - Optimized for animations.
-	   No permanent will-change: browsers promote layers automatically for
-	   running transitions/animations; holding GPU layers for every block
-	   on the page costs memory (especially on mobile) for no benefit. */
+	/* No permanent will-change: browsers promote layers for running
+	   transitions/animations on their own. */
 	display: block;
-	overflow: visible; /* Prevent animations from being clipped - no CSS containment to avoid layout restrictions */
+	overflow: visible;
 
-	/* Accessibility: Respect prefers-reduced-motion */
+	/* ==========================================================================
+	   2. CHILDREN: TRANSITIONS AND DEFAULT "FROM" VALUES
+	   ========================================================================== */
+
+	/* Children keep their natural display: forcing inline-block made
+	   block-level children shrink-to-fit. Sequence mode wraps each child in
+	   a [data-animate-sequence-type] div, so `> *` covers both modes.
+
+	   The "from" defaults are reset on every child so a nested block never
+	   inherits its parent's values. Settled states are the natural values
+	   (none), never an identity like blur(0) or translate(0, 0): any other
+	   filter or transform makes the child the containing block for
+	   position: fixed content inside it. */
+	& > * {
+		--aos-from-transform: none;
+		--aos-from-filter: none;
+		--aos-from-clip-path: none;
+		--wp-block-animate-on-scroll-effective-delay: var(--wp-block-animate-on-scroll-initial-delay);
+	}
+
+	/* Front end and the editor preview only: in the editor canvas a transform
+	   transition would drag behind the block-moving animation. */
+	&:is([data-wp-interactive], .is-aos-previewing) > * {
+		transition:
+			opacity var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
+			transform var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
+			filter var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
+			clip-path var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing);
+		transition-delay: var(--wp-block-animate-on-scroll-effective-delay);
+	}
+
+	/* Per-child stagger delay, written inline by render.php and the store. */
+	&[data-stagger-children="true"] > * {
+		--wp-block-animate-on-scroll-effective-delay: calc(
+			var(--wp-block-animate-on-scroll-initial-delay) +
+			var(--wp-block-animate-on-scroll-stagger-delay, 0s)
+		);
+	}
+
+	&.has-animation-sequence > [data-animate-sequence-type] {
+		display: block;
+		width: 100%;
+	}
+
+	/* ==========================================================================
+	   3. PER-ANIMATION "FROM" VALUES
+	   ========================================================================== */
+
+	/* Single-animation mode reads the wrapper's classes; sequence mode reads
+	   each wrapped child's data attributes. Fade has no values beyond
+	   opacity. The direction is the way the content travels in. */
+
+	/* Slide */
+	&.slide.up > *,
+	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="up"] {
+		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-slide-distance));
+	}
+
+	&.slide.down > *,
+	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="down"] {
+		--aos-from-transform: translateY(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
+	}
+
+	&.slide.left > *,
+	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="left"] {
+		--aos-from-transform: translateX(var(--wp-block-animate-on-scroll-slide-distance));
+	}
+
+	&.slide.right > *,
+	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="right"] {
+		--aos-from-transform: translateX(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
+	}
+
+	/* Zoom */
+	&.zoom.in > *,
+	& > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="in"] {
+		--aos-from-transform: scale(var(--wp-block-animate-on-scroll-zoom-in-start));
+	}
+
+	&.zoom.out > *,
+	& > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="out"] {
+		--aos-from-transform: scale(var(--wp-block-animate-on-scroll-zoom-out-start));
+	}
+
+	/* Flip */
+	&.flip.up > *,
+	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="up"] {
+		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(var(--wp-block-animate-on-scroll-rotate-angle));
+	}
+
+	&.flip.down > *,
+	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="down"] {
+		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
+	}
+
+	&.flip.left > *,
+	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="left"] {
+		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
+	}
+
+	&.flip.right > *,
+	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="right"] {
+		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(var(--wp-block-animate-on-scroll-rotate-angle));
+	}
+
+	/* Rotate */
+	&.rotate.left > *,
+	& > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="left"] {
+		--aos-from-transform: rotate(var(--wp-block-animate-on-scroll-rotate-angle));
+	}
+
+	&.rotate.right > *,
+	& > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="right"] {
+		--aos-from-transform: rotate(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
+	}
+
+	/* Blur */
+	&.blur-in > *,
+	& > [data-animate-sequence-type="blur-in"] {
+		--aos-from-filter: blur(var(--wp-block-animate-on-scroll-blur-amount));
+	}
+
+	/* Reveal (wipe). clip-path cannot interpolate to or from none, so the
+	   settled state is the full inset(0) box. */
+	&.reveal > *,
+	& > [data-animate-sequence-type="reveal"] {
+		clip-path: inset(0 0 0 0);
+	}
+
+	&.reveal.up > *,
+	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="up"] {
+		--aos-from-clip-path: inset(100% 0 0 0);
+	}
+
+	&.reveal.down > *,
+	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="down"] {
+		--aos-from-clip-path: inset(0 0 100% 0);
+	}
+
+	&.reveal.left > *,
+	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="left"] {
+		--aos-from-clip-path: inset(0 0 0 100%);
+	}
+
+	&.reveal.right > *,
+	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="right"] {
+		--aos-from-clip-path: inset(0 100% 0 0);
+	}
+
+	/* Bounce family: the armed state rests at the keyframes' first frame. */
+	&.bounce > *,
+	& > [data-animate-sequence-type="bounce"] {
+		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-bounce-distance));
+	}
+
+	&.bounce.elastic > *,
+	& > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
+		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-elastic-distance));
+	}
+
+	/* ==========================================================================
+	   4. ENTRANCE ON FIRST PAINT, AND THE ARMED (HIDDEN) STATE
+	   ========================================================================== */
+
+	/* Front end only: the editor renders no [data-wp-interactive], so
+	   inserting a child there does not animate it. */
+	&[data-wp-interactive] > * {
+
+		@starting-style {
+			opacity: 0;
+			transform: var(--aos-from-transform);
+			filter: var(--aos-from-filter);
+			clip-path: var(--aos-from-clip-path);
+		}
+	}
+
+	/* Armed and not in view (or exiting): rest at the "from" values. Leaving
+	   this state transitions back to the natural values. */
+	&[data-animate-id]:not(.is-visible) > * {
+		opacity: 0;
+		transform: var(--aos-from-transform);
+		filter: var(--aos-from-filter);
+		clip-path: var(--aos-from-clip-path);
+	}
+
+	/* ==========================================================================
+	   5. BOUNCE FAMILY (KEYFRAMES)
+	   ========================================================================== */
+
+	/* Played on first paint (front end, not yet armed) and whenever the
+	   block becomes visible. Both conditions give the same animation, so a
+	   block in view at load keeps its running entrance when the store adds
+	   .is-visible. `backwards` holds the first frame through the stagger
+	   delay; no forwards fill, which would keep the final frame as an
+	   identity matrix (a containing block) instead of the natural none. */
+	&.bounce:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
+	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"] {
+		animation: bounce-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) backwards;
+	}
+
+	&.bounce.elastic:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
+	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
+		animation-name: elastic-in;
+	}
+
+	&.bounce.spring:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
+	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
+		animation-name: spring-in;
+	}
+
+	/* Exit plays the mirrored keyframes; the store staggers them in reverse. */
+	&.bounce.is-exiting > *,
+	&.is-exiting > [data-animate-sequence-type="bounce"] {
+		animation: bounce-out var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) both;
+	}
+
+	&.bounce.elastic.is-exiting > *,
+	&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
+		animation-name: elastic-out;
+	}
+
+	&.bounce.spring.is-exiting > *,
+	&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
+		animation-name: spring-out;
+	}
+
+	/* ==========================================================================
+	   6. REDUCED MOTION AND PRINT
+	   ========================================================================== */
+
+	/* Only blocks that respect the preference (render.php writes the
+	   attribute unless the block opts out). */
 	@media (prefers-reduced-motion: reduce) {
 
-		& > * {
-			transition: none !important;
-			animation: none !important;
+		&[data-respect-reduced-motion] > * {
 			opacity: 1 !important;
 			transform: none !important;
 			filter: none !important;
 			clip-path: none !important;
+			animation: none !important;
+			transition: none !important;
 		}
 	}
 
-
-	/* ==========================================================================
-	   2. BASE ANIMATION FRAMEWORK
-	   ========================================================================== */
-
-	/* Base animation setup for all direct children.
-	   Children keep their natural display: forcing inline-block made
-	   block-level children shrink-to-fit and collapsed the layout the
-	   editor had established.
-
-	   EVERY initial hidden/offset state in this file is gated on
-	   [data-animate-id] — the attribute the store sets the moment it
-	   takes ownership. Until JS arms the block, content renders fully
-	   visible and unshifted: no-JS visitors and crashed hydration
-	   (hydrateRegions has no per-region error isolation) see normal
-	   content, the LCP element paints on first render instead of being
-	   opacity:0 (a hero cover inside this block once posted a 128s LCP),
-	   and offset transforms can't cause pre-hydration layout shift. */
-	&[data-animate-id]:not(.has-animation-sequence) > * {
-		opacity: 0;
-		transition:
-			opacity var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-			transform var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-			filter var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-			clip-path var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing);
-		transition-delay: var(--wp-block-animate-on-scroll-initial-delay);
-	}
-
-	/* Visible state - reset to natural appearance.
-	   Bounce is excluded from transform: none so its keyframes can drive
-	   translateY (animations lose to author !important, but win over
-	   non-important transform here). */
-	&:not(.has-animation-sequence).is-visible > * {
-		opacity: 1;
-		filter: blur(0);
-	}
-
-	&:not(.has-animation-sequence, .bounce).is-visible > * {
-		transform: none;
-	}
-
-	/* Exiting state — shared property-list transition; section 5 only sets
-	   per-animation transform/filter/clip-path targets. */
-	&:not(.has-animation-sequence).is-exiting > * {
-		opacity: 0;
-		transition:
-			opacity var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-			transform var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-			filter var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-			clip-path var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing);
-	}
-
-	/* ==========================================================================
-	   3. INDIVIDUAL ANIMATION TYPES
-	   ========================================================================== */
-
-	/* Transform origin for all transform-based animations */
-	&.slide > *,
-	&.zoom > *,
-	&.flip > *,
-	&.rotate > *,
-	&.bounce > * {
-		transform-origin: center center;
-	}
-
-	/* Slide Animation */
-	&[data-animate-id].slide {
-
-		&.up > * { transform: translateY(var(--wp-block-animate-on-scroll-slide-distance)); }
-
-		&.down > * { transform: translateY(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance))); }
-
-		&.left > * { transform: translateX(var(--wp-block-animate-on-scroll-slide-distance)); }
-
-		&.right > * { transform: translateX(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance))); }
-
-		&.is-visible > * { transform: translate(0, 0); }
-	}
-
-	/* Zoom Animation */
-	&[data-animate-id].zoom {
-
-		&.in > * { transform: scale(var(--wp-block-animate-on-scroll-zoom-in-start)); }
-
-		&.out > * { transform: scale(var(--wp-block-animate-on-scroll-zoom-out-start)); }
-
-		&.is-visible > * { transform: scale(1); }
-	}
-
-	/* Flip Animation */
-	&[data-animate-id].flip {
-
-		&.up > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(var(--wp-block-animate-on-scroll-rotate-angle)); }
-
-		&.down > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle))); }
-
-		&.left > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle))); }
-
-		&.right > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(var(--wp-block-animate-on-scroll-rotate-angle)); }
-
-		&.is-visible > * { transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(0) rotateY(0); }
-	}
-
-	/* Rotate Animation */
-	&[data-animate-id].rotate {
-
-		&.left > * { transform: rotate(var(--wp-block-animate-on-scroll-rotate-angle)); }
-
-		&.right > * { transform: rotate(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle))); }
-
-		&.is-visible > * { transform: rotate(0deg); }
-	}
-
-	/* Blur Animation */
-	&[data-animate-id].blur-in > * { filter: blur(var(--wp-block-animate-on-scroll-blur-amount)); }
-
-	&.blur-in.is-visible > * { filter: blur(0); }
-
-	/* Reveal (wipe) Animation — clip-path mask opens toward the named
-	   direction; pairs with the base opacity fade. The direction is the
-	   way the reveal edge travels (up = wipes in from the bottom). */
-	&[data-animate-id].reveal {
-
-		&.up > * { clip-path: inset(100% 0 0 0); }
-
-		&.down > * { clip-path: inset(0 0 100% 0); }
-
-		&.left > * { clip-path: inset(0 0 0 100%); }
-
-		&.right > * { clip-path: inset(0 100% 0 0); }
-
-		&.is-visible > * { clip-path: inset(0 0 0 0); }
-	}
-
-	/* Bounce Animation — keyframes own transform; do not set transform: none
-	   on the visible state (see section 2 bounce exclusion). */
-	&[data-animate-id].bounce > * {
-		transform: translateY(var(--wp-block-animate-on-scroll-bounce-distance));
-		opacity: 0;
-	}
-
-	&.bounce.standard.is-visible > *,
-	&.bounce.is-visible > * {
-		animation: bounce-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) forwards;
-	}
-
-	&[data-animate-id].bounce.elastic > * { transform: translateY(var(--wp-block-animate-on-scroll-elastic-distance)); }
-
-	&.bounce.elastic.is-visible > * {
-		animation: elastic-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) forwards;
-	}
-
-	&[data-animate-id].bounce.spring > * { transform: translateY(var(--wp-block-animate-on-scroll-bounce-distance)); }
-
-	&.bounce.spring.is-visible > * {
-		animation: spring-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) forwards;
-	}
-
-	/* ==========================================================================
-	   4. ANIMATION SEQUENCE SUPPORT
-	   ========================================================================== */
-
-	/* Sequence mode wraps each child in a [data-animate-sequence-type].
-	   Visible/exit end-states intentionally avoid !important on transform —
-	   that was killing bounce keyframes. Specificity is matched to the
-	   initial-offset selectors (source order wins the tie). Exit clears
-	   is-visible first (see view.ts), so initials return on their own —
-	   is-exiting only forces opacity and cancels bounce animations. */
-	&[data-animate-id].has-animation-sequence {
-
-		> [data-animate-sequence-type] {
-			opacity: 0;
-			display: block;
-			width: 100%;
-			transition: opacity var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-				transform var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-				filter var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
-				clip-path var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing);
-			transition-delay: var(--wp-block-animate-on-scroll-initial-delay);
-		}
-
-		/* Sequence: Slide */
-		> [data-animate-sequence-type="slide"] {
-			transform-origin: center center;
-
-			&[data-animate-sequence-direction="up"] {
-				transform: translateY(var(--wp-block-animate-on-scroll-slide-distance));
-			}
-
-			&[data-animate-sequence-direction="down"] {
-				transform: translateY(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
-			}
-
-			&[data-animate-sequence-direction="left"] {
-				transform: translateX(var(--wp-block-animate-on-scroll-slide-distance));
-			}
-
-			&[data-animate-sequence-direction="right"] {
-				transform: translateX(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
-			}
-		}
-
-		/* Sequence: Zoom */
-		> [data-animate-sequence-type="zoom"] {
-			transform-origin: center center;
-
-			&[data-animate-sequence-direction="in"] {
-				transform: scale(var(--wp-block-animate-on-scroll-zoom-in-start));
-			}
-
-			&[data-animate-sequence-direction="out"] {
-				transform: scale(var(--wp-block-animate-on-scroll-zoom-out-start));
-			}
-		}
-
-		/* Sequence: Flip */
-		> [data-animate-sequence-type="flip"] {
-			transform-origin: center center;
-
-			&[data-animate-sequence-direction="up"] {
-				transform: perspective(var(--wp-block-animate-on-scroll-perspective))
-					rotateX(var(--wp-block-animate-on-scroll-rotate-angle));
-			}
-
-			&[data-animate-sequence-direction="down"] {
-				transform: perspective(var(--wp-block-animate-on-scroll-perspective))
-					rotateX(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
-			}
-
-			&[data-animate-sequence-direction="left"] {
-				transform: perspective(var(--wp-block-animate-on-scroll-perspective))
-					rotateY(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
-			}
-
-			&[data-animate-sequence-direction="right"] {
-				transform: perspective(var(--wp-block-animate-on-scroll-perspective))
-					rotateY(var(--wp-block-animate-on-scroll-rotate-angle));
-			}
-		}
-
-		/* Sequence: Rotate */
-		> [data-animate-sequence-type="rotate"] {
-			transform-origin: center center;
-
-			&[data-animate-sequence-direction="left"] {
-				transform: rotate(var(--wp-block-animate-on-scroll-rotate-angle));
-			}
-
-			&[data-animate-sequence-direction="right"] {
-				transform: rotate(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
-			}
-		}
-
-		/* Sequence: Blur */
-		> [data-animate-sequence-type="blur-in"] {
-			filter: blur(var(--wp-block-animate-on-scroll-blur-amount));
-		}
-
-		/* Sequence: Reveal (wipe) */
-		> [data-animate-sequence-type="reveal"] {
-
-			&[data-animate-sequence-direction="up"] {
-				clip-path: inset(100% 0 0 0);
-			}
-
-			&[data-animate-sequence-direction="down"] {
-				clip-path: inset(0 0 100% 0);
-			}
-
-			&[data-animate-sequence-direction="left"] {
-				clip-path: inset(0 0 0 100%);
-			}
-
-			&[data-animate-sequence-direction="right"] {
-				clip-path: inset(0 100% 0 0);
-			}
-		}
-
-		/* Sequence: Bounce */
-		> [data-animate-sequence-type="bounce"] {
-			transform-origin: center center;
-
-			&[data-animate-sequence-direction="standard"],
-			&[data-animate-sequence-direction="spring"] {
-				transform: translateY(var(--wp-block-animate-on-scroll-bounce-distance));
-			}
-
-			&[data-animate-sequence-direction="elastic"] {
-				transform: translateY(var(--wp-block-animate-on-scroll-elastic-distance));
-			}
-		}
-
-		/* Visible end states — no !important (bounce keyframes need transform). */
-		&.is-visible > [data-animate-sequence-type] {
-			opacity: 1;
-			filter: blur(0);
-		}
-
-		/* :not([type=bounce]) adds an attribute to specificity so this ties
-		   the direction-scoped initial transforms; later source order wins. */
-		&.is-visible > [data-animate-sequence-type]:not([data-animate-sequence-type="bounce"]) {
-			transform: none;
-		}
-
-		&.is-visible > [data-animate-sequence-type="reveal"][data-animate-sequence-direction] {
-			clip-path: inset(0 0 0 0);
-		}
-
-		&.is-visible > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="standard"] {
-			animation: bounce-in
-				var(--wp-block-animate-on-scroll-animation-duration)
-				var(--wp-block-animate-on-scroll-animation-timing)
-				forwards;
-		}
-
-		&.is-visible > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
-			animation: elastic-in
-				var(--wp-block-animate-on-scroll-animation-duration)
-				var(--wp-block-animate-on-scroll-animation-timing)
-				forwards;
-		}
-
-		&.is-visible > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
-			animation: spring-in
-				var(--wp-block-animate-on-scroll-animation-duration)
-				var(--wp-block-animate-on-scroll-animation-timing)
-				forwards;
-		}
-
-		/* Exit: is-visible is already false, so initial offsets return via
-		   transition for non-bounce types. Bounce plays mirrored out keyframes. */
-		&.is-exiting > [data-animate-sequence-type]:not([data-animate-sequence-type="bounce"]) {
-			opacity: 0;
-			animation: none;
-		}
-
-		&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="standard"],
-		&.is-exiting > [data-animate-sequence-type="bounce"]:not([data-animate-sequence-direction]) {
-			animation: bounce-out
-				var(--wp-block-animate-on-scroll-animation-duration)
-				var(--wp-block-animate-on-scroll-animation-timing)
-				forwards;
-		}
-
-		&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
-			animation: elastic-out
-				var(--wp-block-animate-on-scroll-animation-duration)
-				var(--wp-block-animate-on-scroll-animation-timing)
-				forwards;
-		}
-
-		&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
-			animation: spring-out
-				var(--wp-block-animate-on-scroll-animation-duration)
-				var(--wp-block-animate-on-scroll-animation-timing)
-				forwards;
+	/* Blocks never scrolled into view are still armed; print them anyway. */
+	@media print {
+
+		& > * {
+			opacity: 1 !important;
+			transform: none !important;
+			filter: none !important;
+			clip-path: none !important;
+			animation: none !important;
+			transition: none !important;
 		}
 	}
-
-	/* ==========================================================================
-	   5. REVERSE ANIMATION STATES (non-sequence)
-	   ========================================================================== */
-
-	/* Non-bounce reverse: clearing `.is-visible` restores section-3 initial
-	   offsets via transition (section 2 sets opacity). Bounce needs mirrored
-	   out keyframes so exit matches entrance motion. */
-	&.bounce.standard.is-exiting > *,
-	&.bounce.is-exiting > * {
-		animation: bounce-out
-			var(--wp-block-animate-on-scroll-animation-duration)
-			var(--wp-block-animate-on-scroll-animation-timing)
-			forwards;
-	}
-
-	&.bounce.elastic.is-exiting > * {
-		animation: elastic-out
-			var(--wp-block-animate-on-scroll-animation-duration)
-			var(--wp-block-animate-on-scroll-animation-timing)
-			forwards;
-	}
-
-	&.bounce.spring.is-exiting > * {
-		animation: spring-out
-			var(--wp-block-animate-on-scroll-animation-duration)
-			var(--wp-block-animate-on-scroll-animation-timing)
-			forwards;
-	}
-
-	/* ==========================================================================
-	   6. STAGGER ANIMATION SUPPORT
-	   ========================================================================== */
-
-	/* Must match/exceed the base `[data-animate-id]:not(.has-animation-sequence) > *`
-	   rule (section 2) — that selector is more specific than a bare
-	   `[data-stagger-children]` and was winning, so computed transition-delay
-	   stayed at initial-delay (0s) and children all fired together.
-	   One effective-delay token feeds both transition and animation delay
-	   (bounce uses keyframes, not transitions). */
-	&[data-animate-id]:not(.has-animation-sequence)[data-stagger-children="true"] > * {
-		--wp-block-animate-on-scroll-effective-delay: calc(
-			var(--wp-block-animate-on-scroll-initial-delay) +
-			var(--wp-block-animate-on-scroll-stagger-delay, 0s)
-		);
-
-		transition-delay: var(--wp-block-animate-on-scroll-effective-delay);
-		animation-delay: var(--wp-block-animate-on-scroll-effective-delay);
-	}
-
-	/* Sequence mode: beat the section-4 initial-delay rule the same way. */
-	&[data-animate-id].has-animation-sequence[data-stagger-children="true"] > [data-animate-sequence-type] {
-		--wp-block-animate-on-scroll-effective-delay: calc(
-			var(--wp-block-animate-on-scroll-initial-delay) +
-			var(--wp-block-animate-on-scroll-stagger-delay, 0s)
-		);
-
-		transition-delay: var(--wp-block-animate-on-scroll-effective-delay);
-		animation-delay: var(--wp-block-animate-on-scroll-effective-delay);
-	}
-
 }
 
 /* ==========================================================================
@@ -517,7 +352,7 @@
 	}
 
 	100% {
-		transform: translateY(0);
+		transform: none;
 		opacity: 1;
 	}
 }
@@ -546,7 +381,7 @@
 	}
 
 	100% {
-		transform: translateY(0) scaleY(1);
+		transform: none;
 		opacity: 1;
 	}
 }
@@ -575,7 +410,7 @@
 	}
 
 	100% {
-		transform: translateY(0) scale(1);
+		transform: none;
 		opacity: 1;
 	}
 }
@@ -583,7 +418,7 @@
 @keyframes bounce-out {
 
 	0% {
-		transform: translateY(0);
+		transform: none;
 		opacity: 1;
 	}
 
@@ -606,7 +441,7 @@
 @keyframes elastic-out {
 
 	0% {
-		transform: translateY(0) scaleY(1);
+		transform: none;
 		opacity: 1;
 	}
 
@@ -635,7 +470,7 @@
 @keyframes spring-out {
 
 	0% {
-		transform: translateY(0) scale(1);
+		transform: none;
 		opacity: 1;
 	}
 
@@ -660,10 +495,3 @@
 		opacity: 0;
 	}
 }
-
-/* The former CSS scroll-driven "zero-JS" enhancement was removed: it
-   animated the WRAPPER while children stayed opacity:0 behind the
-   JS-gated reveal (so it never actually showed content), and it
-   targeted data-animation-type values ("fade-up", "fade-in") the
-   renderer never emits. The no-JS story is now handled at the root:
-   initial hidden states apply only once JS arms a block. */

@@ -77,6 +77,8 @@ export default function Edit({
   const blockProps = useBlockProps({
     ref: blockRef,
     className: [
+      // The class render.php writes; style.css and editor.css key off it.
+      'wp-block-animate-on-scroll',
       isPreviewing ? 'is-aos-previewing' : '',
       isPreviewing && useSequencePreview ? 'has-animation-sequence' : '',
       isPreviewing && !useSequencePreview ? previewAnimationClass : '',
