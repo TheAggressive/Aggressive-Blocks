@@ -78,8 +78,9 @@
 	   ========================================================================== */
 
 	/* Children keep their natural display: forcing inline-block made
-	   block-level children shrink-to-fit. Sequence mode wraps each child in
-	   a [data-animate-sequence-type] div, so `> *` covers both modes.
+	   block-level children shrink-to-fit. Sequence mode marks each child
+	   itself with [data-animate-sequence-type] (or a div around a block that
+	   has no single root element), so `> *` covers both modes.
 
 	   The "from" defaults are reset on every child so a nested block never
 	   inherits its parent's values. Settled states are the natural values
@@ -112,123 +113,119 @@
 		);
 	}
 
-	&.has-animation-sequence > [data-animate-sequence-type] {
-		display: block;
-		width: 100%;
-	}
-
 	/* ==========================================================================
 	   3. PER-ANIMATION "FROM" VALUES
 	   ========================================================================== */
 
-	/* Single-animation mode reads the wrapper's classes; sequence mode reads
-	   each wrapped child's data attributes. Fade has no values beyond
+	/* Single-animation mode reads the wrapper's data-animate-type and
+	   data-animate-direction; sequence mode reads each child's
+	   data-animate-sequence-* attributes. Fade has no values beyond
 	   opacity. The direction is the way the content travels in. */
 
 	/* Slide */
-	&.slide.up > *,
+	&[data-animate-type="slide"][data-animate-direction="up"] > *,
 	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="up"] {
 		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-slide-distance));
 	}
 
-	&.slide.down > *,
+	&[data-animate-type="slide"][data-animate-direction="down"] > *,
 	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="down"] {
 		--aos-from-transform: translateY(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
 	}
 
-	&.slide.left > *,
+	&[data-animate-type="slide"][data-animate-direction="left"] > *,
 	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="left"] {
 		--aos-from-transform: translateX(var(--wp-block-animate-on-scroll-slide-distance));
 	}
 
-	&.slide.right > *,
+	&[data-animate-type="slide"][data-animate-direction="right"] > *,
 	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="right"] {
 		--aos-from-transform: translateX(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
 	}
 
 	/* Zoom */
-	&.zoom.in > *,
+	&[data-animate-type="zoom"][data-animate-direction="in"] > *,
 	& > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="in"] {
 		--aos-from-transform: scale(var(--wp-block-animate-on-scroll-zoom-in-start));
 	}
 
-	&.zoom.out > *,
+	&[data-animate-type="zoom"][data-animate-direction="out"] > *,
 	& > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="out"] {
 		--aos-from-transform: scale(var(--wp-block-animate-on-scroll-zoom-out-start));
 	}
 
 	/* Flip */
-	&.flip.up > *,
+	&[data-animate-type="flip"][data-animate-direction="up"] > *,
 	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="up"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(var(--wp-block-animate-on-scroll-rotate-angle));
 	}
 
-	&.flip.down > *,
+	&[data-animate-type="flip"][data-animate-direction="down"] > *,
 	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="down"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
 	}
 
-	&.flip.left > *,
+	&[data-animate-type="flip"][data-animate-direction="left"] > *,
 	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="left"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
 	}
 
-	&.flip.right > *,
+	&[data-animate-type="flip"][data-animate-direction="right"] > *,
 	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="right"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(var(--wp-block-animate-on-scroll-rotate-angle));
 	}
 
 	/* Rotate */
-	&.rotate.left > *,
+	&[data-animate-type="rotate"][data-animate-direction="left"] > *,
 	& > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="left"] {
 		--aos-from-transform: rotate(var(--wp-block-animate-on-scroll-rotate-angle));
 	}
 
-	&.rotate.right > *,
+	&[data-animate-type="rotate"][data-animate-direction="right"] > *,
 	& > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="right"] {
 		--aos-from-transform: rotate(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
 	}
 
 	/* Blur */
-	&.blur-in > *,
+	&[data-animate-type="blur-in"] > *,
 	& > [data-animate-sequence-type="blur-in"] {
 		--aos-from-filter: blur(var(--wp-block-animate-on-scroll-blur-amount));
 	}
 
 	/* Reveal (wipe). clip-path cannot interpolate to or from none, so the
 	   settled state is the full inset(0) box. */
-	&.reveal > *,
+	&[data-animate-type="reveal"] > *,
 	& > [data-animate-sequence-type="reveal"] {
 		clip-path: inset(0 0 0 0);
 	}
 
-	&.reveal.up > *,
+	&[data-animate-type="reveal"][data-animate-direction="up"] > *,
 	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="up"] {
 		--aos-from-clip-path: inset(100% 0 0 0);
 	}
 
-	&.reveal.down > *,
+	&[data-animate-type="reveal"][data-animate-direction="down"] > *,
 	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="down"] {
 		--aos-from-clip-path: inset(0 0 100% 0);
 	}
 
-	&.reveal.left > *,
+	&[data-animate-type="reveal"][data-animate-direction="left"] > *,
 	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="left"] {
 		--aos-from-clip-path: inset(0 0 0 100%);
 	}
 
-	&.reveal.right > *,
+	&[data-animate-type="reveal"][data-animate-direction="right"] > *,
 	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="right"] {
 		--aos-from-clip-path: inset(0 100% 0 0);
 	}
 
 	/* Bounce family: the armed state rests at the keyframes' first frame. */
-	&.bounce > *,
+	&[data-animate-type="bounce"] > *,
 	& > [data-animate-sequence-type="bounce"] {
 		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-bounce-distance));
 	}
 
-	&.bounce.elastic > *,
+	&[data-animate-type="bounce"][data-animate-direction="elastic"] > *,
 	& > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
 		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-elastic-distance));
 	}
@@ -270,33 +267,33 @@
 	   .is-visible. `backwards` holds the first frame through the stagger
 	   delay; no forwards fill, which would keep the final frame as an
 	   identity matrix (a containing block) instead of the natural none. */
-	&.bounce:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
+	&[data-animate-type="bounce"]:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
 	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"] {
 		animation: bounce-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) backwards;
 	}
 
-	&.bounce.elastic:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
+	&[data-animate-type="bounce"][data-animate-direction="elastic"]:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
 	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
 		animation-name: elastic-in;
 	}
 
-	&.bounce.spring:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
+	&[data-animate-type="bounce"][data-animate-direction="spring"]:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > *,
 	&:is(.is-visible, [data-wp-interactive]:not([data-animate-id])) > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
 		animation-name: spring-in;
 	}
 
 	/* Exit plays the mirrored keyframes; the store staggers them in reverse. */
-	&.bounce.is-exiting > *,
+	&[data-animate-type="bounce"].is-exiting > *,
 	&.is-exiting > [data-animate-sequence-type="bounce"] {
 		animation: bounce-out var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) both;
 	}
 
-	&.bounce.elastic.is-exiting > *,
+	&[data-animate-type="bounce"][data-animate-direction="elastic"].is-exiting > *,
 	&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
 		animation-name: elastic-out;
 	}
 
-	&.bounce.spring.is-exiting > *,
+	&[data-animate-type="bounce"][data-animate-direction="spring"].is-exiting > *,
 	&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
 		animation-name: spring-out;
 	}
