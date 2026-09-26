@@ -71,7 +71,7 @@ export default function Edit({
   const isPreviewing = previewPhase !== 'idle';
   const useSequencePreview =
     attributes.useSequence && (attributes.animationSequence?.length ?? 0) > 0;
-  const previewAnimationClass =
+  const previewAnimationType =
     attributes.animation === 'blur' ? 'blur-in' : attributes.animation;
 
   const blockProps = useBlockProps({
@@ -81,10 +81,6 @@ export default function Edit({
       'wp-block-animate-on-scroll',
       isPreviewing ? 'is-aos-previewing' : '',
       isPreviewing && useSequencePreview ? 'has-animation-sequence' : '',
-      isPreviewing && !useSequencePreview ? previewAnimationClass : '',
-      isPreviewing && !useSequencePreview && attributes.direction
-        ? attributes.direction
-        : '',
       previewPhase === 'visible' ? 'is-visible' : '',
     ]
       .filter(Boolean)
@@ -92,6 +88,12 @@ export default function Edit({
     ...(isPreviewing
       ? {
           'data-animate-id': 'editor-preview',
+          ...(useSequencePreview
+            ? {}
+            : {
+                'data-animate-type': previewAnimationType,
+                'data-animate-direction': attributes.direction || undefined,
+              }),
           'data-stagger-children':
             attributes.staggerChildren || useSequencePreview ? 'true' : 'false',
         }
