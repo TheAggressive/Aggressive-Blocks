@@ -63,18 +63,18 @@ const depthHint = (depth: number): string => {
   if (depth <= -10) {
     return __(
       'Background — drifts slower on scroll and follows the pointer.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     );
   }
   if (depth >= 10) {
     return __(
       'Foreground — sweeps faster on scroll and moves against the pointer.',
-      'aggressive-apparel'
+      'aggressive-blocks'
     );
   }
   return __(
     'Focal plane — anchored; other layers move around it.',
-    'aggressive-apparel'
+    'aggressive-blocks'
   );
 };
 
@@ -211,7 +211,7 @@ export const ParallaxControls = ({ clientId }: { clientId: string }) => {
           onChange={value => updateParallaxSetting('enabled', value)}
           help={__(
             'The block becomes a layer inside the parallax scene.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
         />
 
@@ -243,7 +243,7 @@ export const ParallaxControls = ({ clientId }: { clientId: string }) => {
               step={1}
               help={__(
                 'Leave at 0 to stack automatically by depth (near layers in front).',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
               __next40pxDefaultSize
               __nextHasNoMarginBottom
@@ -348,7 +348,7 @@ function Edit({
             step={10}
             help={__(
               'Maximum distance layers travel while scrolling through the block, in pixels.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -367,7 +367,7 @@ function Edit({
             }
             help={__(
               'Default movement direction (each layer can override it).',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           >
             <ToggleGroupControlOption
@@ -393,7 +393,7 @@ function Edit({
             step={0.05}
             help={__(
               'Inertia of pointer motion. Low = snappy, high = floaty.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -405,7 +405,7 @@ function Edit({
             onChange={value => setAttributes({ disableOnMobile: value })}
             help={__(
               'Turn off parallax below 768px wide. Off by default — most phones handle scroll motion fine. Prefer “prefers-reduced-motion” for accessibility.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
         </PanelBody>
@@ -420,7 +420,7 @@ function Edit({
             onChange={value => setAttributes({ enableMouseInteraction: value })}
             help={__(
               'Layers get real 3D depth; the scene tilts and shifts with the pointer (or device tilt on mobile).',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
 
@@ -429,7 +429,7 @@ function Edit({
               <Notice status='info' isDismissible={false}>
                 {__(
                   'Select a block inside this container and set its Depth: negative sits behind the focal plane, positive floats in front. Near layers react more; far layers less.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               </Notice>
 
@@ -444,7 +444,7 @@ function Edit({
                 step={0.1}
                 help={__(
                   'How strongly layers shift as the pointer moves.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __next40pxDefaultSize
                 __nextHasNoMarginBottom
@@ -461,7 +461,7 @@ function Edit({
                 step={5}
                 help={__(
                   'Travel of a layer at full depth when the pointer reaches the screen edge.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __next40pxDefaultSize
                 __nextHasNoMarginBottom
@@ -476,7 +476,7 @@ function Edit({
                 step={1}
                 help={__(
                   'How far the whole scene tilts toward the pointer. 0 disables the tilt.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __next40pxDefaultSize
                 __nextHasNoMarginBottom
@@ -493,7 +493,7 @@ function Edit({
                 step={100}
                 help={__(
                   'Camera distance. Lower = exaggerated 3D, higher = flatter.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __next40pxDefaultSize
                 __nextHasNoMarginBottom
@@ -510,7 +510,7 @@ function Edit({
                 step={5}
                 help={__(
                   'Z distance between the focal plane and a layer at full depth.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __next40pxDefaultSize
                 __nextHasNoMarginBottom
@@ -522,7 +522,7 @@ function Edit({
                 onChange={value => setAttributes({ depthOfField: value })}
                 help={__(
                   'Softly blur layers the further they sit from the focal plane, like camera focus.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
             </>
@@ -542,7 +542,7 @@ function Edit({
             step={0.1}
             help={__(
               'When to start the effect. 0.1 = 10% visible, 0.5 = 50% visible.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -554,7 +554,7 @@ function Edit({
             label={__('Detection boundary', 'aggressive-blocks')}
             help={__(
               'Extend the trigger zone beyond the block. Use percentages, e.g. "100%" reaches one screen above.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           >
             <div
@@ -624,7 +624,7 @@ function Edit({
             step={5}
             help={__(
               'Extra margin (% of viewport height) where the motion engine warms up before the block reaches the detection boundary, so layers are already moving when they appear. 0 disables the buffer.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -636,7 +636,7 @@ function Edit({
             onChange={value => setAttributes({ debugMode: value })}
             help={__(
               'Show trigger lines, zone overlays, and a live metrics panel on the front end.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
         </PanelBody>

@@ -117,7 +117,7 @@ export function AosInspector({
             <p className='components-base-control__help aggressive-apparel-animate-on-scroll-preview__help'>
               {__(
                 'Sequence mode previews each direct child’s step in the canvas (types cycle when there are more children than steps).',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             </p>
           )}
@@ -127,7 +127,7 @@ export function AosInspector({
           <Notice status='warning' isDismissible={false}>
             {__(
               'Stagger and sequence only animate direct children. This block has a single Group/columns wrapper — move paragraphs or cards out of the Group, or they will animate as one unit.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           </Notice>
         )}
@@ -155,7 +155,7 @@ export function AosInspector({
           }}
           help={__(
             'Apply different animations to each child element in sequence',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -212,7 +212,7 @@ export function AosInspector({
           }
           help={__(
             'Animate elements out when scrolling back up past them. If stagger children is enabled, children will animate in reverse order.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -234,7 +234,7 @@ export function AosInspector({
               step={5}
               help={__(
                 'Distance the element slides during animation',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             />
           )}
@@ -250,7 +250,7 @@ export function AosInspector({
                 step={0.1}
                 help={__(
                   'Starting scale for zoom in animation',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
               <RangeControl
@@ -262,7 +262,7 @@ export function AosInspector({
                 step={0.1}
                 help={__(
                   'Starting scale for zoom out animation',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
             </>
@@ -278,7 +278,7 @@ export function AosInspector({
               step={15}
               help={__(
                 'Angle of rotation during animation',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             />
           )}
@@ -293,7 +293,7 @@ export function AosInspector({
               step={1}
               help={__(
                 'Intensity of blur effect during animation',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             />
           )}
@@ -308,7 +308,7 @@ export function AosInspector({
               step={100}
               help={__(
                 '3D perspective depth for flip animation',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
             />
           )}
@@ -324,7 +324,7 @@ export function AosInspector({
                 step={5}
                 help={__(
                   'Distance for standard and spring bounce animations',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
               {attributes.direction === 'elastic' && (
@@ -339,7 +339,7 @@ export function AosInspector({
                   step={5}
                   help={__(
                     'Distance for elastic bounce animation',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                 />
               )}
@@ -359,7 +359,7 @@ export function AosInspector({
           step={0.1}
           help={__(
             'How long the animation takes to complete',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
         />
 
@@ -397,7 +397,7 @@ export function AosInspector({
           onChange={easing => setAttributes({ easing: easing as EasingType })}
           help={__(
             'The timing function for the animation transition',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -412,7 +412,7 @@ export function AosInspector({
           step={0.1}
           help={__(
             "Delay before animation starts. When stagger is enabled, this delay is added to each child's stagger delay.",
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
         />
 
@@ -426,7 +426,7 @@ export function AosInspector({
               'Cascade each direct child with a delay between them. Currently %d direct child — add siblings (not a wrapping Group) for a cascade.',
               'Cascade each direct child with a delay between them. Currently %d direct children. Nested Groups count as one child.',
               childCount,
-              'aggressive-apparel'
+              'aggressive-blocks'
             ),
             childCount
           )}
@@ -460,7 +460,7 @@ export function AosInspector({
               }}
               help={__(
                 'How the stagger delay is applied to children',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
               __next40pxDefaultSize
               __nextHasNoMarginBottom
@@ -476,7 +476,7 @@ export function AosInspector({
                 step={0.1}
                 help={__(
                   'Delay between each child element animation',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
             )}
@@ -494,7 +494,7 @@ export function AosInspector({
                   step={1}
                   help={__(
                     'Number of wave cycles across all children',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                 />
                 <RangeControl
@@ -522,7 +522,7 @@ export function AosInspector({
                   step={0.1}
                   help={__(
                     'Minimum random delay for each child',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                 />
                 <RangeControl
@@ -536,7 +536,7 @@ export function AosInspector({
                   step={0.1}
                   help={__(
                     'Maximum random delay for each child',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                 />
                 <div className='aggressive-apparel-animate-on-scroll-preview'>
@@ -552,7 +552,7 @@ export function AosInspector({
                   <p className='components-base-control__help aggressive-apparel-animate-on-scroll-preview__help'>
                     {__(
                       'Random delays are seeded so the cascade stays the same across reloads. Reshuffle picks a new pattern.',
-                      'aggressive-apparel'
+                      'aggressive-blocks'
                     )}
                   </p>
                 </div>
@@ -618,7 +618,7 @@ export function AosInspector({
           }
           help={__(
             "What percentage of the target's visibility should be in the Detection Boundary before the animation triggers.",
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -629,7 +629,7 @@ export function AosInspector({
           label={__('Detection Boundary', 'aggressive-blocks')}
           help={__(
             'Negative values delay trigger until element is further in viewport. -50% means element must be halfway into viewport before triggering.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         >
@@ -687,7 +687,7 @@ export function AosInspector({
           onChange={debugMode => setAttributes({ debugMode })}
           help={__(
             'Shows visual indicators for the Detection Boundary & Visibility Trigger',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -700,7 +700,7 @@ export function AosInspector({
           }
           help={__(
             'Disable animations for users who prefer reduced motion',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -713,7 +713,7 @@ export function AosInspector({
           }
           help={__(
             'Announce when content animates into view. Off by default — enable only when a single block is critical to understand.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />

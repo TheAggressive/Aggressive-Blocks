@@ -231,7 +231,7 @@ export default function Edit({
             label={__('Edit mode: stack slides', 'aggressive-blocks')}
             help={__(
               'Stacks all slides vertically in the editor for easy editing. Does not affect the frontend.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={isStacked}
             onChange={setIsStacked}
@@ -246,7 +246,7 @@ export default function Edit({
             }
             help={__(
               'Slide uses a native swipeable track. Fade cross-fades stacked slides; Crossfade + zoom adds a subtle scale on entry.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -256,7 +256,7 @@ export default function Edit({
               label={__('Transition duration (ms)', 'aggressive-blocks')}
               help={__(
                 'Lower = snappier fade between slides. Higher = slower, softer crossfade.',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
               value={transitionMs}
               onChange={val => setAttributes({ transitionMs: val ?? 700 })}
@@ -282,7 +282,7 @@ export default function Edit({
             label={__('Loop', 'aggressive-blocks')}
             help={__(
               'Wrap from the last slide back to the first.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={loop}
             onChange={val => setAttributes({ loop: val })}
@@ -298,7 +298,7 @@ export default function Edit({
             label={__('Autoplay', 'aggressive-blocks')}
             help={__(
               'A visible pause button is always shown when autoplay is on. Autoplay is disabled for visitors who prefer reduced motion.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={autoplay}
             onChange={val => setAttributes({ autoplay: val })}
@@ -310,7 +310,7 @@ export default function Edit({
                 label={__('Slide duration (seconds)', 'aggressive-blocks')}
                 help={__(
                   'How long each slide stays before advancing. Lower = faster carousel. Higher = more time to read each slide.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 value={autoplaySpeed / 1000}
                 onChange={val =>
@@ -349,7 +349,7 @@ export default function Edit({
             onChange={val => setAttributes({ motion: val as HeroMotionMode })}
             help={__(
               'Ambient motion on the slide background. Transform effects pan around each Cover\u2019s focal point. Alternate switches zoom in/out; Random picks from the full motion set.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -359,7 +359,7 @@ export default function Edit({
               label={__('Motion duration (seconds)', 'aggressive-blocks')}
               help={__(
                 'How long one background motion cycle takes. Lower = faster, more noticeable motion. Higher = slower, subtler drift.',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
               value={motionDuration}
               onChange={val => setAttributes({ motionDuration: val ?? 12 })}
@@ -379,7 +379,7 @@ export default function Edit({
             }
             help={__(
               'Staggered entrance for slide content each time a slide becomes active.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -424,7 +424,7 @@ export default function Edit({
             label={__('Deep link to slides', 'aggressive-blocks')}
             help={__(
               'Reflects the active slide in the URL and opens the matching slide when the page loads with a #…-slide-N hash. Requires an HTML anchor (Advanced panel).',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={deepLink}
             onChange={val => setAttributes({ deepLink: val })}

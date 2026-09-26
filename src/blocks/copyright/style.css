@@ -4,24 +4,29 @@
  * @package Aggressive_Blocks
  */
 
+/* The generated wrapper class follows the block name; the old name covers
+   content not yet migrated to aggressive-blocks/copyright. */
+.wp-block-aggressive-blocks-copyright,
 .wp-block-aggressive-apparel-copyright {
   margin: 0;
+}
 
-  &__legal-links {
-    white-space: nowrap;
-  }
+/* Element classes are emitted literally by render and edit, so they keep
+   the original prefix. */
+.wp-block-aggressive-apparel-copyright__legal-links {
+  white-space: nowrap;
+}
 
-  &__legal-sep {
-    opacity: 0.7;
-  }
+.wp-block-aggressive-apparel-copyright__legal-sep {
+  opacity: 0.7;
+}
 
-  &__legal-link {
-    text-decoration: underline;
-    text-underline-offset: 0.15em;
+.wp-block-aggressive-apparel-copyright__legal-link {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 
-    &:hover,
-    &:focus-visible {
-      text-decoration-thickness: 2px;
-    }
+  &:hover,
+  &:focus-visible {
+    text-decoration-thickness: 2px;
   }
 }

@@ -159,7 +159,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
             step={1}
             help={__(
               'Duration in seconds for one full scroll loop. Lower = faster.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
 
@@ -184,7 +184,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
             step={4}
             help={__(
               'Space between items and between the original and duplicate tracks.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           />
         </PanelBody>
@@ -251,7 +251,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                     onChange={value => setAttributes({ labelIcon: value })}
                     help={__(
                       'Search by slug. Brand and UI icons share the same library.',
-                      'aggressive-apparel'
+                      'aggressive-blocks'
                     )}
                   />
 
@@ -354,7 +354,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                     resetFallbackValue={0}
                     help={__(
                       '0 inherits from the ticker block.',
-                      'aggressive-apparel'
+                      'aggressive-blocks'
                     )}
                   />
 
@@ -414,7 +414,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                 onChange={val => setAttributes({ patternBlendMode: val })}
                 help={__(
                   'How the pattern blends with the block background color.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __next40pxDefaultSize
                 __nextHasNoMarginBottom
@@ -442,7 +442,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                 resetFallbackValue={100}
                 help={__(
                   'Resize the pattern tile. Higher = larger, bolder. Lower = finer, denser.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
 
@@ -451,7 +451,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                 id='ticker-pattern-color'
                 help={__(
                   'Defaults to white 55% — visible on most colored backgrounds.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 __nextHasNoMarginBottom
               >

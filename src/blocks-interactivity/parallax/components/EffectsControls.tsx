@@ -194,7 +194,7 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                 step={0.1}
                 help={__(
                   'How much to zoom. Lower = Subtle, Higher = Dramatic.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
             </>
@@ -271,7 +271,7 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                   step={0.1}
                   help={__(
                     'Control how fast the rotation occurs. Lower = Slow, Higher = Fast.',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                 />
                 <SelectControl
@@ -294,7 +294,7 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                   onChange={value => updateEffect('rotation', 'mode', value)}
                   help={__(
                     'Range: rotates between start/end angles. Continuous: keeps spinning. Looping: repeats the rotation range.',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )}
                 />
 
@@ -337,7 +337,7 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                     step={0.1}
                     help={__(
                       'How strongly the element is pulled. Lower = Weak, Higher = Strong.',
-                      'aggressive-apparel'
+                      'aggressive-blocks'
                     )}
                   />
                   <RangeControl
@@ -353,7 +353,7 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                     step={10}
                     help={__(
                       'Distance from element where effect starts.',
-                      'aggressive-apparel'
+                      'aggressive-blocks'
                     )}
                   />
                   <SelectControl
@@ -440,7 +440,7 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                 }
                 help={__(
                   'Portion of viewport for fade transition',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               />
 

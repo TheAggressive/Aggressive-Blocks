@@ -115,7 +115,7 @@ function ownerSourceHelp(
         )
       : __(
           'Set under Settings → Terms. Falls back to the site title when empty.',
-          'aggressive-apparel'
+          'aggressive-blocks'
         );
   }
 
@@ -128,7 +128,7 @@ function ownerSourceHelp(
         )
       : __(
           'Pulls from Settings → General → Site Title (or the Site Editor site title).',
-          'aggressive-apparel'
+          'aggressive-blocks'
         );
   }
 
@@ -195,25 +195,25 @@ export default function Edit({
     if (!showLegalLinks) {
       return __(
         'Appends Privacy (Settings → Privacy) and Terms (Settings → Terms).',
-        'aggressive-apparel'
+        'aggressive-blocks'
       );
     }
     if (!hasPrivacy && !hasTerms) {
       return __(
         'No pages configured yet. Set Privacy under Settings → Privacy, and Terms under Settings → Terms.',
-        'aggressive-apparel'
+        'aggressive-blocks'
       );
     }
     if (!hasPrivacy) {
       return __(
         'Terms is set. Privacy is missing — choose and publish a Privacy Policy page under Settings → Privacy.',
-        'aggressive-apparel'
+        'aggressive-blocks'
       );
     }
     if (!hasTerms) {
       return __(
         'Privacy is set. Terms is missing — choose a Terms page under Settings → Terms (and publish it).',
-        'aggressive-apparel'
+        'aggressive-blocks'
       );
     }
     return __('Privacy and Terms pages are configured.', 'aggressive-blocks');
@@ -264,7 +264,7 @@ export default function Edit({
             label={__('Organization type', 'aggressive-blocks')}
             help={__(
               'Legal entity designation appended after the owner name (e.g. LLC, Inc.).',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={legalEntity || LEGAL_ENTITY_NONE}
             options={LEGAL_ENTITY_OPTIONS}
@@ -293,7 +293,7 @@ export default function Edit({
             label={__('Show Start Year', 'aggressive-blocks')}
             help={__(
               'Display a year range (e.g. 2012–2026) instead of just the current year.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={showStartYear}
             onChange={value => setAttributes({ showStartYear: value })}
@@ -360,7 +360,7 @@ export default function Edit({
               label={__('Link separator', 'aggressive-blocks')}
               help={__(
                 'Character between the notice and links, and between Privacy and Terms.',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
               value={linkSep}
               options={[
@@ -399,7 +399,7 @@ export default function Edit({
             label={__('Schema.org JSON-LD', 'aggressive-blocks')}
             help={__(
               'Outputs Organization + WebSite copyrightHolder / copyrightYear (once per page).',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             checked={showSchema}
             onChange={value => setAttributes({ showSchema: value })}

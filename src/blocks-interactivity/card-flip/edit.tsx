@@ -54,7 +54,7 @@ export default function Edit({
             label={__('Flip on', 'aggressive-blocks')}
             help={__(
               'Both variants stay keyboard-accessible via the flip button.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             value={flipOn}
             options={[

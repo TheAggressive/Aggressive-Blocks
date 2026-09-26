@@ -97,7 +97,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ modalId: value })}
           help={__(
             'Unique identifier for this modal. Used to link triggers to this modal.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -143,7 +143,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ dialogMaxWidth: value })}
           help={__(
             'e.g. 40rem, 600px, 80vw. Leave empty for default (40rem).',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -156,7 +156,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ openOnLoad: value })}
           help={__(
             'Automatically open the modal when the page loads.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -168,7 +168,7 @@ export function ModalInspector({
             onChange={value => setAttributes({ openOnLoadOnce: value })}
             help={__(
               "Don't reopen after the visitor has seen it once.",
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __nextHasNoMarginBottom
           />
@@ -181,7 +181,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ disableOverlay: value })}
           help={__(
             'When enabled, the modal will not have a background overlay',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -193,7 +193,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ exitIntentTrigger: value })}
           help={__(
             'Open the modal when the visitor shows intent to leave the page (mouse leaving viewport on desktop, rapid scroll-up on mobile)',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -208,7 +208,7 @@ export function ModalInspector({
             step={1}
             help={__(
               'Days before showing the exit intent modal again to the same visitor.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __nextHasNoMarginBottom
           />
@@ -221,7 +221,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ scrollDepthTrigger: value })}
           help={__(
             'Open when the visitor scrolls to a percentage of the page. Works on all devices.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />
@@ -236,7 +236,7 @@ export function ModalInspector({
             step={5}
             help={__(
               'Percentage of the page scrolled before the modal opens.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __nextHasNoMarginBottom
           />
@@ -248,10 +248,7 @@ export function ModalInspector({
           value={safeTriggerBlockId}
           options={availableTriggers}
           onChange={handleTriggerBlockChange}
-          help={__(
-            'Select a block to trigger this modal',
-            'aggressive-apparel'
-          )}
+          help={__('Select a block to trigger this modal', 'aggressive-blocks')}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
         />
@@ -261,7 +258,7 @@ export function ModalInspector({
           <Notice status='info' isDismissible={false}>
             {__(
               'Trigger block is highlighted in the editor',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           </Notice>
         )}
@@ -271,7 +268,7 @@ export function ModalInspector({
           <Notice status='warning' isDismissible={false}>
             {__(
               'Select this modal to highlight the trigger block',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
           </Notice>
         )}
@@ -283,7 +280,7 @@ export function ModalInspector({
               !isSelected
                 ? __(
                     'Select the modal first to use this button',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )
                 : ''
             }
@@ -321,7 +318,7 @@ export function ModalInspector({
         <p>
           {__(
             'To connect any HTML element to this modal, add this class:',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
         </p>
         {modalId && (
@@ -437,7 +434,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ exitAnimation: value })}
           help={__(
             'Drawers and sheets always exit off-screen regardless of this setting.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -499,12 +496,12 @@ export function ModalInspector({
             closeButtonPlacement === 'none'
               ? __(
                   'Modal closes via backdrop click or Escape only.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )
               : closeButtonPlacement.startsWith('outside-')
                 ? __(
                     'Button floats in the overlay corner, independent of the dialog.',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )
                 : undefined
           }
@@ -588,7 +585,7 @@ export function ModalInspector({
               onChange={value => setAttributes({ closeButtonLabel: value })}
               help={__(
                 'Optional visible text alongside the icon.',
-                'aggressive-apparel'
+                'aggressive-blocks'
               )}
               __next40pxDefaultSize
               __nextHasNoMarginBottom
@@ -686,7 +683,7 @@ export function ModalInspector({
             onChange={value => setAttributes({ triggerFullWidth: value })}
             help={__(
               'Stretch the button to fill its container.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __nextHasNoMarginBottom
           />
@@ -698,7 +695,7 @@ export function ModalInspector({
             onChange={value => setAttributes({ triggerBorderRadius: value })}
             help={__(
               'e.g. 0.25rem, 9999px for pill. Leave empty for square.',
-              'aggressive-apparel'
+              'aggressive-blocks'
             )}
             __next40pxDefaultSize
             __nextHasNoMarginBottom
@@ -745,7 +742,7 @@ export function ModalInspector({
         <p className='components-base-control__help' style={{ marginTop: 0 }}>
           {__(
             'Use theme color presets for automatic light/dark mode adaptation.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
         </p>
 
@@ -756,7 +753,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ dialogPadding: value })}
           help={__(
             'e.g. 1.5rem, 1.5rem 2rem. Leave empty for the system default (1.5rem). Use 0 for flush content.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -769,7 +766,7 @@ export function ModalInspector({
           onChange={value => setAttributes({ dialogBorderRadius: value })}
           help={__(
             'Overrides the panel radius / Border panel. Leave empty for the system panel radius.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __next40pxDefaultSize
           __nextHasNoMarginBottom
@@ -795,7 +792,7 @@ export function ModalInspector({
           step={1}
           help={__(
             'Backdrop blur behind the overlay. Set to 0 to disable.',
-            'aggressive-apparel'
+            'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
         />

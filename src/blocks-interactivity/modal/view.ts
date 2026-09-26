@@ -3,24 +3,16 @@
 /**
  * Modal Block — Interactivity API store.
  *
- * Follows the theme's established modal pattern:
- *  - lockScroll() immediately on open.
- *  - hidden attribute managed imperatively (remove + force reflow on open,
- *    set inside finish() on close).
- *  - unlockScroll() deferred to transitionend on the dialog (propertyName === 'opacity'),
- *    with a safety setTimeout fallback.
- *  - Return focus to the element that triggered the modal.
- *  - External trigger elements (.modal-trigger-{id}) are bound in actions.init()
- *    so the ob_start output-buffering hack is not needed.
- *  - aria-live announcer updated on open/close for screen readers that do not
- *    fire on programmatic focus alone.
+ * The panel is a native <dialog>. showModal() owns the top layer, initial
+ * focus, focus restore, Escape, and the backdrop. style.css locks background
+ * scroll while the dialog is :modal.
+ * This store still decides when the dialog opens, plays the exit transition
+ * before dialog.close(), and restores the trigger that opened it.
  *
  * @package Aggressive_Blocks
  */
 
 import { store, getContext } from '@wordpress/interactivity';
-import { lockScroll, unlockScroll } from '@aggressive-blocks/scroll-lock';
-import { setupFocusTrap } from '@aggressive-blocks/helpers';
 import {
   buildExitAnimation,
   calculateScrollDepth,
@@ -66,8 +58,6 @@ const FALLBACK_BUFFER_MS = 50;
 interface ModalRefs {
   /** Element that had focus before the modal opened; restored on close. */
   triggerElement: HTMLElement | null;
-  /** Cleanup function returned by setupFocusTrap(); called on close. */
-  focusTrapCleanup: (() => void) | null;
   /** Pending close fallback, cancelled when the modal reopens mid-transition. */
   closeTimer: ReturnType<typeof setTimeout> | null;
   /** Active transition listener, retained so rapid reopen can remove it. */
@@ -101,11 +91,56 @@ function getShell(id: string): HTMLElement | null {
   );
 }
 
-function getDialog(id: string): HTMLElement | null {
+function getDialog(id: string): HTMLDialogElement | null {
   const dialog = document.getElementById(id);
-  return dialog?.classList.contains('wp-block-aggressive-apparel-modal__dialog')
+  return dialog instanceof HTMLDialogElement &&
+    dialog.classList.contains('wp-block-aggressive-apparel-modal__dialog')
     ? dialog
     : null;
+}
+
+/** Keep the browser from closing the dialog before the exit transition ends. */
+function bindDialogDismiss(id: string): void {
+  const dialog = getDialog(id);
+  if (!dialog || dialog.dataset.aaDismissBound === 'true') return;
+  dialog.dataset.aaDismissBound = 'true';
+
+  const requestClose = (): void => {
+    const modalsState = modalRefs.get(id)?.modalsState;
+    if (modalsState?.[id]?.isOpen) {
+      closeModal(id, modalsState);
+    }
+  };
+
+  dialog.addEventListener('cancel', (event: Event) => {
+    event.preventDefault();
+    requestClose();
+  });
+
+  // A backdrop click is retargeted to the dialog, outside its border box.
+  // Ignore clicks on descendants so keyboard activation (clientX 0) is safe.
+  // closedby="any" also fires cancel for the same gesture.
+  dialog.addEventListener('click', (event: MouseEvent) => {
+    if (event.target !== dialog) return;
+    if (dialog.classList.contains('is-overlay-disabled')) return;
+    const rect = dialog.getBoundingClientRect();
+    const inside =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+    if (inside) return;
+    requestClose();
+  });
+
+  // The browser can still close the dialog without our transition: a
+  // non-cancelable cancel, or a form with method="dialog" in the content.
+  // close fires as a queued task, so after our own dialog.close() it can
+  // arrive once the modal has already been reopened. Only a dialog that is
+  // still closed needs its state brought in step.
+  dialog.addEventListener('close', () => {
+    if (!dialog.open) requestClose();
+  });
 }
 
 function getAnnouncer(id: string): HTMLElement | null {
@@ -272,22 +307,20 @@ function openModal(id: string, modalsState: Record<string, ModalState>): void {
   const dialogEl = getDialog(id);
   let refs = modalRefs.get(id);
   if (refs?.isClosing) {
-    // The existing scroll lock belongs to this modal; retain it across a
-    // close/reopen race instead of incrementing the global lock counter.
+    // The dialog is still modal through the exit transition, so reopening
+    // keeps that top layer instead of calling showModal() again.
     cancelPendingClose(dialogEl, refs);
     refs.triggerElement = document.activeElement as HTMLElement | null;
     refs.modalsState = modalsState;
   } else {
     refs = {
       triggerElement: document.activeElement as HTMLElement | null,
-      focusTrapCleanup: null,
       closeTimer: null,
       transitionEndHandler: null,
       isClosing: false,
       modalsState,
     };
     modalRefs.set(id, refs);
-    lockScroll();
   }
 
   removeFromModalStack(id);
@@ -298,11 +331,12 @@ function openModal(id: string, modalsState: Record<string, ModalState>): void {
   // the CSS enter animation starts from a clean state.
   if (dialogEl) clearExitStyles(dialogEl);
 
-  const shell = getShell(id);
-  if (shell) {
-    shell.hidden = false;
-    void shell.offsetHeight; // Force reflow so the browser captures the "before" state.
-    shell.classList.add('is-open');
+  if (dialogEl && !dialogEl.open) {
+    dialogEl.showModal();
+  }
+  if (dialogEl) {
+    void dialogEl.offsetHeight; // Force reflow so the browser captures the "before" state.
+    dialogEl.classList.add('is-open');
   }
 
   modalsState[id].isOpen = true;
@@ -321,15 +355,8 @@ function openModal(id: string, modalsState: Record<string, ModalState>): void {
 
   requestAnimationFrame(() => {
     const dialog = getDialog(id);
-    const shellEl = getShell(id);
-    if (dialog && shellEl && modalsState[id]?.isOpen) {
-      const currentRefs = modalRefs.get(id);
-      // Trap on the shell so outside-* close buttons stay in the Tab cycle.
-      if (currentRefs && !currentRefs.focusTrapCleanup) {
-        currentRefs.focusTrapCleanup = setupFocusTrap(shellEl);
-      }
-      // Focus the dialog (tabindex="-1") so screen readers announce
-      // "Dialog: [label]" before the user tabs into content.
+    if (dialog && modalsState[id]?.isOpen) {
+      // Focus the dialog so screen readers announce it before content.
       dialog.focus();
     }
   });
@@ -387,19 +414,13 @@ function closeModal(id: string, modalsState: Record<string, ModalState>): void {
     }
     // Clear inline exit styles so the next open starts from clean CSS state.
     if (dialog) clearExitStyles(dialog);
-    if (shell) shell.hidden = true;
-
-    if (refs?.focusTrapCleanup) {
-      refs.focusTrapCleanup();
-      refs.focusTrapCleanup = null;
-    }
+    if (dialog?.open) dialog.close();
 
     const returnFocus = refs?.triggerElement ?? null;
     if (canRestoreFocus(returnFocus)) {
       returnFocus.focus({ preventScroll: true });
     }
 
-    unlockScroll();
     removeFromModalStack(id);
     if (modalRefs.get(id) === refs) modalRefs.delete(id);
   };
@@ -516,6 +537,7 @@ const { state } = store<ModalStore>('aggressive-blocks/modal', {
       const { id } = getContext<ModalContext>();
       if (!id || !state.modals[id]) return;
 
+      bindDialogDismiss(id);
       getBuiltInTrigger(id)?.setAttribute('aria-expanded', 'false');
       getExternalTriggers(id).forEach(el =>
         bindExternalTrigger(el, id, state.modals)

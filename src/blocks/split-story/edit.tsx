@@ -94,7 +94,7 @@ export default function Edit({
               mediaHeight === 'viewport'
                 ? __(
                     'Media fills the viewport height and is cropped to cover.',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   )
                 : __('Media sizes to its own content.', 'aggressive-blocks')
             }
@@ -141,10 +141,7 @@ export default function Edit({
         </PanelBody>
         <PanelBody title={__('Sticky media', 'aggressive-blocks')}>
           <ToggleControl
-            label={__(
-              'Stick media while content scrolls',
-              'aggressive-apparel'
-            )}
+            label={__('Stick media while content scrolls', 'aggressive-blocks')}
             checked={sticky}
             onChange={val => setAttributes({ sticky: val })}
             __nextHasNoMarginBottom
@@ -155,7 +152,7 @@ export default function Edit({
                 label={__('Sticky offset (rem)', 'aggressive-blocks')}
                 help={__(
                   'Top gap for a fixed site header.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
                 value={stickyTop}
                 onChange={val => setAttributes({ stickyTop: val ?? 0 })}
@@ -167,7 +164,7 @@ export default function Edit({
               <Notice status='info' isDismissible={false}>
                 {__(
                   'The media only appears to stick when the content column is taller than it — add enough content to create scroll room.',
-                  'aggressive-apparel'
+                  'aggressive-blocks'
                 )}
               </Notice>
             </>

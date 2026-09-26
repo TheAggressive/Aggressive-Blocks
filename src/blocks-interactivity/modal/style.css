@@ -1,10 +1,9 @@
 /* ============================================================
  * Modal Block Styles
- * Follows the theme's modal/overlay pattern:
+ * The panel is a native <dialog> opened with showModal():
  *  - CSS transitions (not keyframes) so transitionend fires on 'opacity'.
  *  - @starting-style for smooth entry from display:none.
- *  - Animated backdrop blur: blur(0) → blur(4px).
- *  - [hidden] override for flex/grid containers.
+ *  - dialog::backdrop is the scrim: blur(0) → blur(4px).
  *  - prefers-reduced-motion: disables all transitions and backdrop-filter.
  * ============================================================ */
 
@@ -12,7 +11,9 @@
  * Wrapper (data-wp-interactive root)
  * ────────────────────────────────────────────── */
 
-.wp-block-aggressive-blocks-modal {
+/* The old block name covers content not yet migrated to aggressive-blocks/modal. */
+.wp-block-aggressive-blocks-modal,
+.wp-block-aggressive-apparel-modal {
 	box-sizing: border-box;
 
 	/* Inline trigger sits naturally in document flow. */
@@ -29,6 +30,18 @@
 	&.is-triggerless {
 		display: contents;
 	}
+}
+
+/* ──────────────────────────────────────────────
+ * Background scroll lock
+ * showModal() makes the page inert but does not stop it scrolling. The lock
+ * holds while the dialog is modal, which includes the exit transition, and
+ * the reserved gutter keeps the layout from shifting when the scrollbar goes.
+ * ────────────────────────────────────────────── */
+
+html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
+	overflow: hidden;
+	scrollbar-gutter: stable;
 }
 
 /* ──────────────────────────────────────────────
@@ -162,39 +175,18 @@
 	}
 }
 
-/* When trigger is full width the wrapper needs to match. */
+/* When trigger is full width the wrapper needs to match. The old block name
+   covers content not yet migrated to aggressive-blocks/modal. */
+.wp-block-aggressive-blocks-modal:has(.trigger-full-width),
 .wp-block-aggressive-apparel-modal:has(.trigger-full-width) {
 	display: block;
 }
 
 /* ──────────────────────────────────────────────
- * Modal shell — uses shared aggressive-apparel-overlay primitive
+ * Native dialog backdrop (the scrim)
  * ────────────────────────────────────────────── */
 
-.wp-block-aggressive-apparel-modal__shell {
-
-	/* Per-block overlay token overrides (--aa-overlay-opacity, --aa-overlay-blur). */
-	--aa-modal-duration: var(--aa-duration-normal);
-
-	/* Keep the block functional when the shared theme overlay bundle is
-	   deferred, disabled, or removed by an optimization plugin. */
-	position: fixed;
-	inset: 0;
-	z-index: var(--aa-z-modal, 1000);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	max-width: 100vw;
-	isolation: isolate;
-
-	&[hidden] {
-		display: none;
-	}
-}
-
-.wp-block-aggressive-apparel-modal__backdrop {
-	position: absolute;
-	inset: 0;
+.wp-block-aggressive-apparel-modal__dialog::backdrop {
 	background-color: transparent;
 	opacity: 0;
 	cursor: pointer;
@@ -202,21 +194,38 @@
 		background-color var(--aa-modal-duration) var(--aa-ease-default, ease),
 		opacity var(--aa-modal-duration) var(--aa-ease-default, ease),
 		backdrop-filter var(--aa-modal-duration) var(--aa-ease-default, ease);
+}
 
-	.wp-block-aggressive-apparel-modal__shell.is-open & {
-		background-color: var(--aa-color-scrim, rgb(0 0 0));
-		opacity: var(--aa-overlay-opacity, 0.5);
-	}
+.wp-block-aggressive-apparel-modal__dialog.is-open::backdrop {
+	background-color: var(--aa-color-scrim, rgb(0 0 0));
+	opacity: var(--aa-overlay-opacity, 0.5);
+}
 
-	@supports (backdrop-filter: blur(1px)) {
+.wp-block-aggressive-apparel-modal__dialog.is-overlay-disabled::backdrop {
+	background-color: transparent;
+	opacity: 0;
+	backdrop-filter: none;
+	cursor: auto;
+}
+
+@supports (backdrop-filter: blur(1px)) {
+
+	.wp-block-aggressive-apparel-modal__dialog::backdrop {
 		backdrop-filter: blur(0);
-
-		.wp-block-aggressive-apparel-modal__shell.is-open & {
-			backdrop-filter: blur(var(--aa-overlay-blur, 4px));
-		}
 	}
 
-	@media (prefers-reduced-motion: reduce) {
+	.wp-block-aggressive-apparel-modal__dialog.is-open::backdrop {
+		backdrop-filter: blur(var(--aa-overlay-blur, 4px));
+	}
+
+	.wp-block-aggressive-apparel-modal__dialog.is-overlay-disabled::backdrop {
+		backdrop-filter: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.wp-block-aggressive-apparel-modal__dialog::backdrop {
 		transition: none;
 		backdrop-filter: none;
 	}
@@ -226,9 +235,25 @@
  * Dialog panel
  * ────────────────────────────────────────────── */
 
+/* The UA hides a closed dialog with display: none, but any author display
+   beats a UA rule. Restore it, or the display: flex below keeps a closed
+   modal rendered in the page flow. */
+.wp-block-aggressive-apparel-modal__dialog:not([open]) {
+	display: none;
+}
+
 .wp-block-aggressive-apparel-modal__dialog {
-	position: relative;
-	z-index: 1;
+
+	/* Shared by the panel and its ::backdrop, which inherits from the dialog. */
+	--aa-modal-duration: var(--aa-duration-normal);
+
+	/* Reset the UA dialog box. The element is the panel, pinned to the viewport. */
+	position: fixed;
+	inset: auto;
+	z-index: var(--aa-z-modal, 1000);
+	margin: 0;
+	max-width: none;
+	height: fit-content;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
@@ -252,7 +277,7 @@
 		opacity var(--aa-modal-duration) var(--aa-ease-default),
 		transform var(--aa-modal-duration) var(--aa-ease-default);
 
-	.wp-block-aggressive-apparel-modal__shell.is-open & {
+	&.wp-block-aggressive-apparel-modal__shell.is-open {
 		opacity: 1;
 		transform: none;
 	}
@@ -267,30 +292,30 @@
 		top: 50%;
 		left: 50%;
 
-		/* Remove from flex centering since we position manually. */
-		position: absolute;
+		/* Pin to the viewport. 'translate' stays independent of the animation 'transform'. */
+		position: fixed;
 	}
 
 	&.modal-position-top-left {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		left: 0;
 	}
 
 	&.modal-position-top-right {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		right: 0;
 	}
 
 	&.modal-position-bottom-left {
-		position: absolute;
+		position: fixed;
 		bottom: 0;
 		left: 0;
 	}
 
 	&.modal-position-bottom-right {
-		position: absolute;
+		position: fixed;
 		bottom: 0;
 		right: 0;
 	}
@@ -298,7 +323,7 @@
 	/* ── Drawer / sheet positions ────── */
 
 	&.modal-position-bottom {
-		position: absolute;
+		position: fixed;
 		bottom: 0;
 		left: 0;
 		right: 0;
@@ -311,7 +336,7 @@
 	}
 
 	&.modal-position-top {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
@@ -324,7 +349,7 @@
 	}
 
 	&.modal-position-left {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		left: 0;
 		bottom: 0;
@@ -338,7 +363,7 @@
 	}
 
 	&.modal-position-right {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		right: 0;
 		bottom: 0;
@@ -450,7 +475,7 @@
 	}
 
 	/* Blur must be cleared while open — otherwise dialog content stays blurry. */
-	.wp-block-aggressive-apparel-modal__shell.is-open &.modal-enter-blur {
+	&.wp-block-aggressive-apparel-modal__shell.is-open.modal-enter-blur {
 		filter: blur(0);
 	}
 
@@ -565,7 +590,7 @@
 		--aa-icon-button-background: var(--aa-close-btn-bg, color-mix(in oklch, var(--aa-color-black) 40%, transparent));
 		--aa-icon-button-color: var(--aa-close-btn-color, var(--aa-color-on-scrim));
 
-		position: absolute;
+		position: fixed;
 		z-index: 2;
 		opacity: 0;
 		backdrop-filter: blur(4px);
@@ -595,7 +620,6 @@
 
 /* ============================================================
  * @starting-style — dialog entry from display:none → visible.
- * Backdrop entry handled by components/overlay.css.
  * ============================================================ */
 
 @supports selector(@starting-style) {
@@ -603,81 +627,60 @@
 	@starting-style {
 
 		/* Dialog fades in from opacity:0 on first paint. */
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog {
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog {
 			opacity: 0;
 		}
 
 		/* Enter animation starting states — one per animation type. */
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-down { transform: translateY(-2rem); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-down { transform: translateY(-2rem); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-up { transform: translateY(2rem); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-up { transform: translateY(2rem); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-left { transform: translateX(2rem); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-left { transform: translateX(2rem); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-right { transform: translateX(-2rem); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-slide-right { transform: translateX(-2rem); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-zoom-in { transform: scale(0.92); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-zoom-in { transform: scale(0.92); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-expand { transform: scale(0.96); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-expand { transform: scale(0.96); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-recede { transform: scale(1.04); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-recede { transform: scale(1.04); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-lift { transform: translateY(4px) scale(0.98); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-lift { transform: translateY(4px) scale(0.98); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-spring { transform: translateY(1.5rem) scale(0.96); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-spring { transform: translateY(1.5rem) scale(0.96); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-pop { transform: scale(0.88); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-pop { transform: scale(0.88); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-warp { transform: scale(0.92) translateY(8px); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-warp { transform: scale(0.92) translateY(8px); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-material { transform: translateY(1rem) scale(0.94); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-material { transform: translateY(1rem) scale(0.94); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-float { transform: translateY(1.5rem) scale(0.94); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-float { transform: translateY(1.5rem) scale(0.94); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-drift { transform: translateY(-1rem) scale(0.94); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-drift { transform: translateY(-1rem) scale(0.94); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-flip-up { transform: perspective(800px) rotateX(-80deg); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-flip-up { transform: perspective(800px) rotateX(-80deg); }
 
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-enter-blur { filter: blur(16px); }
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-enter-blur { filter: blur(16px); }
 
 		/* Bottom sheet: starts off-screen below. */
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-position-bottom {
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-position-bottom {
 			transform: translateY(100%);
 		}
 
 		/* Top drawer: starts off-screen above. */
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-position-top {
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-position-top {
 			transform: translateY(-100%);
 		}
 
 		/* Left panel: starts off-screen left. */
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-position-left {
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-position-left {
 			transform: translateX(-100%);
 		}
 
 		/* Right panel: starts off-screen right. */
-		.wp-block-aggressive-apparel-modal__shell.is-open
-		.wp-block-aggressive-apparel-modal__dialog.modal-position-right {
+		.wp-block-aggressive-apparel-modal__shell.is-open.wp-block-aggressive-apparel-modal__dialog.modal-position-right {
 			transform: translateX(100%);
 		}
 	}

@@ -367,9 +367,7 @@ if ( is_string( $shadow ) && '' !== $shadow ) {
 	}
 }
 
-$dialog_inline_style = implode( '; ', $dialog_css_vars );
-
-// ── Backdrop/shell inline style for overlay vars ──────────────────────────────
+// ── Overlay vars, inherited by dialog::backdrop ───────────────────────────────
 
 $backdrop_css_vars = array();
 // Only emit opacity var when it differs from the default (50).
@@ -384,7 +382,9 @@ if ( 4 !== $overlay_blur ) {
 if ( $overlay_color ) {
 	$backdrop_css_vars[] = '--aa-color-scrim: ' . esc_attr( $overlay_color );
 }
-$backdrop_style = $backdrop_css_vars ? ' style="' . implode( '; ', $backdrop_css_vars ) . '"' : '';
+$dialog_css_vars     = array_merge( $dialog_css_vars, $backdrop_css_vars );
+$dialog_inline_style = implode( '; ', $dialog_css_vars );
+$closed_by           = $disable_overlay ? 'closerequest' : 'any';
 
 // ── Miscellaneous ─────────────────────────────────────────────────────────────
 
@@ -392,6 +392,18 @@ $backdrop_style = $backdrop_css_vars ? ' style="' . implode( '; ', $backdrop_css
 $drawer_positions = array( 'bottom', 'top', 'left', 'right' );
 $is_drawer        = in_array( $position, $drawer_positions, true );
 $enter_animation  = $is_drawer ? 'fade' : $enter_animation;
+$dialog_classes   = implode(
+	' ',
+	array_filter(
+		array(
+			'wp-block-aggressive-apparel-modal__shell',
+			'wp-block-aggressive-apparel-modal__dialog',
+			'modal-position-' . $position,
+			'modal-enter-' . $enter_animation,
+			$disable_overlay ? 'is-overlay-disabled' : '',
+		)
+	)
+);
 
 // Register per-modal state.
 wp_interactivity_state(
@@ -449,49 +461,34 @@ wp_interactivity_state(
 		aria-atomic="true"
 	></div>
 
-	<div
-		class="aggressive-apparel-overlay wp-block-aggressive-apparel-modal__shell"
+	<dialog
+		id="<?php echo esc_attr( $unique_id ); ?>"
+		class="<?php echo esc_attr( $dialog_classes ); ?>"
+		aria-labelledby="<?php echo esc_attr( $unique_id ); ?>-label"
+		tabindex="-1"
 		data-modal-id="<?php echo esc_attr( $unique_id ); ?>"
-		hidden
-		<?php echo aggressive_blocks_trusted_html( $backdrop_style ); ?>
+		data-exit-animation="<?php echo esc_attr( $is_drawer ? 'position' : $exit_animation ); ?>"
+		closedby="<?php echo esc_attr( $closed_by ); ?>"
+		style="<?php echo esc_attr( $dialog_inline_style ); ?>"
 	>
-		<?php if ( ! $disable_overlay ) : ?>
-		<div
-			class="aggressive-apparel-overlay__backdrop wp-block-aggressive-apparel-modal__backdrop"
-			data-wp-on--click="actions.closeModal"
-			aria-hidden="true"
-		></div>
+		<span
+			id="<?php echo esc_attr( $unique_id ); ?>-label"
+			class="wp-block-aggressive-apparel-modal__dialog-label"
+		>
+			<?php echo esc_html( $trigger_label ); ?>
+		</span>
+
+		<?php if ( $show_close_btn && ! $is_outside ) : ?>
+			<?php echo aggressive_blocks_trusted_html( $close_btn_html ); ?>
 		<?php endif; ?>
 
-		<div
-			id="<?php echo esc_attr( $unique_id ); ?>"
-			class="wp-block-aggressive-apparel-modal__dialog modal-position-<?php echo esc_attr( $position ); ?> modal-enter-<?php echo esc_attr( $enter_animation ); ?>"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="<?php echo esc_attr( $unique_id ); ?>-label"
-			tabindex="-1"
-			data-exit-animation="<?php echo esc_attr( $is_drawer ? 'position' : $exit_animation ); ?>"
-			style="<?php echo esc_attr( $dialog_inline_style ); ?>"
-		>
-			<span
-				id="<?php echo esc_attr( $unique_id ); ?>-label"
-				class="wp-block-aggressive-apparel-modal__dialog-label"
-			>
-				<?php echo esc_html( $trigger_label ); ?>
-			</span>
-
-			<?php if ( $show_close_btn && ! $is_outside ) : ?>
-				<?php echo aggressive_blocks_trusted_html( $close_btn_html ); ?>
-			<?php endif; ?>
-
-			<div class="wp-block-aggressive-apparel-modal__dialog-body">
-				<?php echo aggressive_blocks_trusted_html( $content ); ?>
-			</div>
+		<div class="wp-block-aggressive-apparel-modal__dialog-body">
+			<?php echo aggressive_blocks_trusted_html( $content ); ?>
 		</div>
 
 		<?php if ( $show_close_btn && $is_outside ) : ?>
 			<?php echo aggressive_blocks_trusted_html( $close_btn_html ); ?>
 		<?php endif; ?>
-	</div>
+	</dialog>
 
 </div>

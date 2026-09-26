@@ -98,22 +98,23 @@ class Modal_Block_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * disableOverlay omits the dismissible backdrop.
+	 * The panel is a native dialog. disableOverlay keeps it modal without light dismiss.
 	 *
 	 * @return void
 	 */
 	public function test_disable_overlay_omits_backdrop(): void {
 		$with = $this->render_modal( array() );
-		$this->assertStringContainsString(
+		$this->assertStringContainsString( '<dialog', $with );
+		$this->assertStringContainsString( 'closedby="any"', $with );
+		$this->assertStringNotContainsString( 'role="dialog"', $with );
+		$this->assertStringNotContainsString(
 			'wp-block-aggressive-apparel-modal__backdrop',
 			$with
 		);
 
 		$without = $this->render_modal( array( 'disableOverlay' => true ) );
-		$this->assertStringNotContainsString(
-			'wp-block-aggressive-apparel-modal__backdrop',
-			$without
-		);
+		$this->assertStringContainsString( 'closedby="closerequest"', $without );
+		$this->assertStringContainsString( 'is-overlay-disabled', $without );
 	}
 
 	/**
@@ -161,7 +162,7 @@ class Modal_Block_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Outside close is rendered as a sibling of the dialog.
+	 * Outside close stays inside the dialog so it remains in the top layer.
 	 *
 	 * @return void
 	 */
@@ -174,7 +175,7 @@ class Modal_Block_Test extends WP_UnitTestCase {
 		);
 
 		$this->assertMatchesRegularExpression(
-			'/id="out-close"[\\s\\S]*<\\/div>\\s*<button[^>]*close-placement-outside-top-right/',
+			'/<dialog[^>]*id="out-close"[^>]*>[\\s\\S]*close-placement-outside-top-right[\\s\\S]*<\\/dialog>/',
 			$html
 		);
 	}

@@ -283,7 +283,7 @@ export default function Edit({
                 {
                   content: __(
                     'Add your modal content here…',
-                    'aggressive-apparel'
+                    'aggressive-blocks'
                   ),
                 },
               ],
