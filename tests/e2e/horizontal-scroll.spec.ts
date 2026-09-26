@@ -71,11 +71,37 @@ function trackTranslateX(page: Page): Promise<number> {
 }
 
 /** Absolute document scroll position of the sticky range's top. */
-function rangeTop(page: Page): Promise<number> {
-  return page
-    .locator('.aa-hscroll__range')
-    .first()
-    .evaluate(el => el.getBoundingClientRect().top + window.scrollY);
+/**
+ * Document top of the pinned range, once layout has settled.
+ *
+ * The step controller only takes input within RANGE_SLACK_PX (4px) of the
+ * range, and data-aa-hscroll-step-state="ready" does not mean it is in range.
+ * On a cold CI runner the theme's web fonts can finish loading after a first
+ * measurement and push the range down, so scrolling to that stale top lands
+ * above it and the first gesture is ignored. Wait for fonts, then for two
+ * equal measurements in a row.
+ */
+async function rangeTop(page: Page): Promise<number> {
+  const range = page.locator('.aa-hscroll__range').first();
+  const measure = (): Promise<number> =>
+    range.evaluate(el => el.getBoundingClientRect().top + window.scrollY);
+
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+
+  let previous = await measure();
+  await expect
+    .poll(
+      async () => {
+        const current = await measure();
+        const settled = current === previous;
+        previous = current;
+        return settled;
+      },
+      { intervals: [50] }
+    )
+    .toBe(true);
+
+  return previous;
 }
 
 let createdPageId = 0;
