@@ -277,14 +277,18 @@ if ( $hero_autoplay && $hero_pause_hover ) {
  * Tune cover slide images for LCP and editor resolution.
  *
  * Slide 1 is the likely LCP element: force eager + fetchpriority="high".
- * Later slides are off-screen at load: force lazy.
+ * Later slides are stacked in the same viewport box, so `loading="lazy"`
+ * never defers them; they load eagerly at fetchpriority="low" instead. Lazy
+ * would also make core prepend `sizes="auto"`, which measures only the img
+ * box width and undersizes an object-fit: cover image in a tall slide.
  *
- * Cover background images are locked to the editor `sizeSlug` (default
- * `full`). WordPress's later `wp_filter_content_tags` pass would otherwise
- * attach a content-width-capped `sizes` / truncated `srcset`, so the
- * browser picks a soft candidate while the editor still shows the sharp
- * `url` attribute. Pre-seeding a single-candidate srcset + `sizes="100vw"`
- * both serves the chosen file and prevents that rewrite.
+ * Cover background images resolve from the editor `sizeSlug` (default
+ * `full`) and carry the attachment's full srcset, so each device fetches
+ * only the resolution it needs instead of always the original. Pre-seeding
+ * srcset/sizes also stops `wp_filter_content_tags` replacing them with a
+ * content-width-capped set. `sizes` accounts for object-fit: cover — in a
+ * slide taller than the image's aspect ratio the image renders wider than
+ * the viewport (up to viewport height × aspect ratio).
  *
  * @param string $html        Rendered cover HTML.
  * @param bool   $first       Whether this is the first slide.
@@ -332,9 +336,10 @@ $hero_tune_images = static function ( string $html, bool $first, array $cover_at
 			if ( $resolved['height'] > 0 ) {
 				$processor->set_attribute( 'height', (string) $resolved['height'] );
 			}
-			// Single candidate at the chosen resolution — blocks core from
-			// replacing srcset/sizes with a content_width-capped set.
-			if ( $resolved['width'] > 0 ) {
+			$srcset = $id > 0 ? wp_get_attachment_image_srcset( $id, $size_slug ) : false;
+			if ( is_string( $srcset ) && '' !== $srcset ) {
+				$processor->set_attribute( 'srcset', $srcset );
+			} elseif ( $resolved['width'] > 0 ) {
 				$processor->set_attribute(
 					'srcset',
 					sprintf( '%s %dw', $resolved['url'], $resolved['width'] )
@@ -342,16 +347,23 @@ $hero_tune_images = static function ( string $html, bool $first, array $cover_at
 			} else {
 				$processor->remove_attribute( 'srcset' );
 			}
+
 			$processor->set_attribute( 'sizes', '100vw' );
+			if ( $resolved['width'] > 0 && $resolved['height'] > 0 ) {
+				$processor->set_attribute(
+					'sizes',
+					sprintf( 'max(100vw, %svh)', round( 100 * $resolved['width'] / $resolved['height'], 2 ) )
+				);
+			}
 		}
 
+		$processor->set_attribute( 'decoding', 'async' );
 		if ( $first ) {
 			$processor->remove_attribute( 'loading' );
 			$processor->set_attribute( 'fetchpriority', 'high' );
-			$processor->set_attribute( 'decoding', 'async' );
 		} else {
-			$processor->set_attribute( 'loading', 'lazy' );
-			$processor->set_attribute( 'decoding', 'async' );
+			$processor->set_attribute( 'loading', 'eager' );
+			$processor->set_attribute( 'fetchpriority', 'low' );
 		}
 	}
 	return $processor->get_updated_html();

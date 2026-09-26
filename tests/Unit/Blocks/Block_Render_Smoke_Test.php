@@ -230,9 +230,16 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 		);
 
 		$this->assertStringContainsString( 'src="' . esc_url( $full[0] ) . '"', $html );
-		$this->assertStringContainsString( 'sizes="100vw"', $html );
+		$this->assertStringContainsString(
+			sprintf( 'sizes="max(100vw, %svh)"', round( 100 * $full[1] / $full[2], 2 ) ),
+			$html
+		);
 		$this->assertStringContainsString( esc_url( $full[0] ) . ' ' . (int) $full[1] . 'w', $html );
 		$this->assertStringNotContainsString( 'src="' . esc_url( $wrong_src ) . '"', $html );
+
+		// Every generated size is offered so each device fetches only what it needs.
+		$this->assertIsArray( $medium );
+		$this->assertStringContainsString( esc_url( $medium[0] ) . ' ' . (int) $medium[1] . 'w', $html );
 	}
 
 	/**
