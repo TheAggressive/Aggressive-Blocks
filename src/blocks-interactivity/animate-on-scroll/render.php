@@ -9,6 +9,11 @@
  * (data-animate-id) and reveals them as they scroll in. Stagger delays are
  * written here so the first-paint entrance staggers too.
  *
+ * The animation is named in data attributes (data-animate-type and
+ * data-animate-direction on the wrapper, data-animate-sequence-* on each
+ * child in sequence mode), never in bare class names that a theme or
+ * framework could also style.
+ *
  * @var array<string, mixed> $attributes Block attributes.
  * @var string               $content    Block default content.
  * @var WP_Block             $block      Block instance.
@@ -70,12 +75,13 @@ $aos_easing = static function ( $value ): string {
 };
 
 /**
- * Class name for an animation ('blur' avoids Tailwind's .blur utility).
+ * Data attribute value for an animation. Blur is written as `blur-in`, the
+ * value style.css and the editor preview have always used.
  *
  * @param string $animation Validated animation.
  * @return string
  */
-$aos_animation_class = static function ( string $animation ): string {
+$aos_animation_value = static function ( string $animation ): string {
 	return 'blur' === $animation ? 'blur-in' : $animation;
 };
 
@@ -102,11 +108,6 @@ $use_sequence = array() !== $aos_sequence;
 $default_classes = array( 'wp-block-animate-on-scroll' );
 if ( $use_sequence ) {
 	$default_classes[] = 'has-animation-sequence';
-} else {
-	$default_classes[] = $aos_animation_class( $aos_animation );
-	if ( '' !== $aos_direction ) {
-		$default_classes[] = $aos_direction;
-	}
 }
 
 // Capability-gated: never expose debug tooling to visitors even when
@@ -167,8 +168,6 @@ $wrapper_attributes_array = array(
 			'detectionBoundary'    => $attributes['detectionBoundary'] ?? array(),
 			'id'                   => $aos_id,
 			'reverseOnScrollBack'  => $attributes['reverseOnScrollBack'] ?? false,
-			'useSequence'          => $use_sequence,
-			'animationSequence'    => $aos_sequence,
 			'staggerPattern'       => $attributes['staggerPattern'] ?? 'sequential',
 			'staggerDelay'         => (float) $aos_stagger_delay,
 			'staggerWaveFrequency' => $attributes['staggerWaveFrequency'] ?? 1,
@@ -185,14 +184,12 @@ $wrapper_attributes_array = array(
 	// imperatively added class is wiped on the next re-render.
 	'data-wp-class--has-animated' => 'context.hasAnimated',
 	'data-wp-class--is-exiting'   => 'context.isExiting',
-	'data-stagger-children'       => $aos_stagger ? 'true' : 'false',
+	'data-animate-type'           => $use_sequence ? false : $aos_animation_value( $aos_animation ),
+	'data-animate-direction'      => $use_sequence || '' === $aos_direction ? false : $aos_direction,
+	'data-stagger-children'       => $aos_stagger ? 'true' : false,
 	'data-aos-stagger-seed'       => $aos_stagger ? (string) $aos_stagger_config['seed'] : false,
 	'data-respect-reduced-motion' => false !== $aos_respect_reduced_motion ? 'true' : false,
 );
-
-if ( $use_sequence ) {
-	$wrapper_attributes_array['data-animation-sequence'] = wp_json_encode( $aos_sequence );
-}
 
 /*
  * The animation settings are merged into the style attribute core writes
@@ -252,6 +249,24 @@ $aos_sequence_vars = array(
 );
 
 /**
+ * Append declarations to the style attribute of the current tag.
+ *
+ * @param WP_HTML_Tag_Processor $processor    Processor positioned on a tag.
+ * @param string                $declarations `name: value;` declarations.
+ * @return void
+ */
+$aos_append_style = static function ( WP_HTML_Tag_Processor $processor, string $declarations ): void {
+	if ( '' === $declarations ) {
+		return;
+	}
+	$style = trim( (string) $processor->get_attribute( 'style' ) );
+	if ( '' !== $style && ! str_ends_with( $style, ';' ) ) {
+		$style .= ';';
+	}
+	$processor->set_attribute( 'style', $style . $declarations );
+};
+
+/**
  * Add the stagger delay to each top-level element of the inner content.
  *
  * Content the HTML API cannot parse is returned unchanged; the store writes
@@ -260,7 +275,7 @@ $aos_sequence_vars = array(
  * @param string $html Inner block content.
  * @return string
  */
-$aos_stagger_content = static function ( string $html ) use ( $aos_child_delay ): string {
+$aos_stagger_content = static function ( string $html ) use ( $aos_child_delay, $aos_append_style ): string {
 	$count_pass = \WP_HTML_Processor::create_fragment( $html );
 	if ( null === $count_pass ) {
 		return $html;
@@ -286,14 +301,57 @@ $aos_stagger_content = static function ( string $html ) use ( $aos_child_delay )
 		if ( $write->get_current_depth() !== $top ) {
 			continue;
 		}
-		$style = trim( (string) $write->get_attribute( 'style' ) );
-		if ( '' !== $style && ! str_ends_with( $style, ';' ) ) {
-			$style .= ';';
-		}
-		$write->set_attribute( 'style', $style . $aos_child_delay( $index, $total ) );
+		$aos_append_style( $write, $aos_child_delay( $index, $total ) );
 		++$index;
 	}
 	return null === $write->get_last_error() ? $write->get_updated_html() : $html;
+};
+
+/**
+ * Mark one rendered sequence child with its animation.
+ *
+ * The attributes go on the block's own root element, so it stays a direct
+ * child of the wrapper and keeps the layout's spacing and alignment rules.
+ * Output without exactly one root element (several elements, bare text,
+ * nothing, or markup the HTML API cannot parse) is wrapped in a <div>.
+ *
+ * @param string                $html  Rendered inner block.
+ * @param array<string, string> $attrs Attributes to add.
+ * @param string                $style Declarations to append to the style attribute.
+ * @return string
+ */
+$aos_mark_sequence_child = static function ( string $html, array $attrs, string $style ) use ( $aos_append_style ): string {
+	$roots = 0;
+	$scan  = \WP_HTML_Processor::create_fragment( $html );
+	if ( null !== $scan ) {
+		$top = null;
+		while ( $scan->next_token() ) {
+			$depth = count( $scan->get_breadcrumbs() ?? array() );
+			$top   = $top ?? $depth;
+			if ( $depth !== $top || $scan->is_tag_closer() ) {
+				continue;
+			}
+			if ( '#tag' === $scan->get_token_type() ) {
+				++$roots;
+			} elseif ( '#text' === $scan->get_token_type() && '' !== trim( $scan->get_modifiable_text() ) ) {
+				$roots = 0;
+				break;
+			}
+		}
+		if ( null !== $scan->get_last_error() ) {
+			$roots = 0;
+		}
+	}
+
+	$single = 1 === $roots;
+	$tag    = new WP_HTML_Tag_Processor( $single ? $html : '<div>' );
+	$tag->next_tag();
+	foreach ( $attrs as $name => $value ) {
+		$tag->set_attribute( $name, $value );
+	}
+	$aos_append_style( $tag, $style );
+
+	return $single ? $tag->get_updated_html() : $tag->get_updated_html() . $html . '</div>';
 };
 
 echo aggressive_blocks_trusted_html( $aos_opening->get_updated_html() );
@@ -308,13 +366,11 @@ if ( $use_sequence ) {
 		$sequence_item = $aos_sequence[ $child_index % $aos_sequence_count ];
 		$item_type     = $sequence_item['animation'];
 
-		$item = new WP_HTML_Tag_Processor( '<div>' );
-		$item->next_tag();
-		$item->set_attribute( 'data-animate-sequence-type', $aos_animation_class( $item_type ) );
+		$item_attrs = array( 'data-animate-sequence-type' => $aos_animation_value( $item_type ) );
 
 		if ( is_string( $sequence_item['direction'] ?? null )
 			&& in_array( $sequence_item['direction'], $aos_directions[ $item_type ], true ) ) {
-			$item->set_attribute( 'data-animate-sequence-direction', $sequence_item['direction'] );
+			$item_attrs['data-animate-sequence-direction'] = $sequence_item['direction'];
 		}
 
 		$item_vars = array();
@@ -324,13 +380,8 @@ if ( $use_sequence ) {
 			}
 		}
 		$item_style = $aos_declarations( $item_vars ) . $aos_child_delay( $child_index, $aos_inner_total );
-		if ( '' !== $item_style ) {
-			$item->set_attribute( 'style', $item_style );
-		}
 
-		echo aggressive_blocks_trusted_html( $item->get_updated_html() );
-		echo render_block( $inner_block ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Rendered block markup.
-		echo '</div>';
+		echo aggressive_blocks_trusted_html( $aos_mark_sequence_child( render_block( $inner_block ), $item_attrs, $item_style ) );
 
 		++$child_index;
 	}

@@ -330,4 +330,44 @@ test.describe('Animate On Scroll — front end', () => {
     await expect(child).toHaveCSS('opacity', '1');
     await expect(child).toHaveCSS('transform', 'none');
   });
+
+  test('sequence children keep the layout rules for aligned blocks', async ({
+    page,
+  }) => {
+    await openPageEditor(page);
+
+    await page.evaluate(async () => {
+      const { createBlock } = window.wp.blocks;
+      const aos = createBlock(
+        'aggressive-blocks/animate-on-scroll',
+        {
+          useSequence: true,
+          animationSequence: [{ animation: 'fade' }],
+          respectReducedMotion: false,
+        },
+        [
+          createBlock('core/image', {
+            url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
+            alt: 'Aligned',
+            align: 'left',
+            width: '120px',
+          }),
+          createBlock('core/paragraph', { content: 'Text beside the image' }),
+        ]
+      );
+      window.wp.data.dispatch('core/block-editor').insertBlock(aos, 0);
+      await new Promise(r => setTimeout(r, 400));
+    });
+
+    const { id, url } = await publishAndGetUrl(page);
+    pageId = id;
+    await page.goto(url);
+
+    const root = page.locator('.wp-block-animate-on-scroll').first();
+    const figure = root.locator('> figure.alignleft');
+    // The image is marked itself, not wrapped, so the flow layout's
+    // `> .alignleft` float still reaches it.
+    await expect(figure).toHaveAttribute('data-animate-sequence-type', 'fade');
+    await expect(figure).toHaveCSS('float', 'left');
+  });
 });

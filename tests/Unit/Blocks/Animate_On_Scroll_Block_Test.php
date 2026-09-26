@@ -31,23 +31,70 @@ class Animate_On_Scroll_Block_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Sequence mode wraps each inner block with animation data attributes.
+	 * Sequence mode marks each inner block's own root element, so children
+	 * stay direct children of the layout.
 	 *
 	 * @return void
 	 */
-	public function test_sequence_mode_wraps_children_with_sequence_attributes(): void {
-		$markup = '<!-- wp:aggressive-blocks/animate-on-scroll {"useSequence":true,"animationSequence":[{"animation":"fade"},{"animation":"slide","direction":"left"}]} -->'
+	public function test_sequence_mode_marks_each_child_root(): void {
+		$markup = '<!-- wp:aggressive-blocks/animate-on-scroll {"useSequence":true,"animationSequence":[{"animation":"fade"},{"animation":"slide","direction":"left","slideDistance":80}]} -->'
 			. '<!-- wp:paragraph --><p>One</p><!-- /wp:paragraph -->'
-			. '<!-- wp:paragraph --><p>Two</p><!-- /wp:paragraph -->'
+			. '<!-- wp:paragraph --><p style="color:red">Two</p><!-- /wp:paragraph -->'
 			. '<!-- /wp:aggressive-blocks/animate-on-scroll -->';
 
 		$html = do_blocks( $markup );
 
 		$this->assertStringContainsString( 'has-animation-sequence', $html );
-		$this->assertStringContainsString( 'data-animate-sequence-type="fade"', $html );
-		$this->assertStringContainsString( 'data-animate-sequence-type="slide"', $html );
-		$this->assertStringContainsString( 'data-animate-sequence-direction="left"', $html );
+		$this->assertMatchesRegularExpression( '/<p [^>]*data-animate-sequence-type="fade"[^>]*>One<\/p>/', $html );
+		$this->assertMatchesRegularExpression( '/<p [^>]*data-animate-sequence-type="slide"[^>]*>Two<\/p>/', $html );
+		$this->assertMatchesRegularExpression( '/<p [^>]*data-animate-sequence-direction="left"[^>]*>Two<\/p>/', $html );
+		$this->assertStringContainsString( 'style="color:red;--wp-block-animate-on-scroll-slide-distance: 80px;"', $html );
+		$this->assertStringNotContainsString( '<div data-animate-sequence-type', $html );
 		$this->assertSame( 2, substr_count( $html, 'data-animate-sequence-type=' ) );
+	}
+
+	/**
+	 * A sequence child without a single root element is wrapped in a div.
+	 *
+	 * @return void
+	 */
+	public function test_sequence_mode_wraps_children_without_a_single_root(): void {
+		$markup = '<!-- wp:aggressive-blocks/animate-on-scroll {"useSequence":true,"animationSequence":[{"animation":"zoom","direction":"in"}]} -->'
+			. '<!-- wp:html --><span>A</span><span>B</span><!-- /wp:html -->'
+			. '<!-- wp:html -->Bare text<!-- /wp:html -->'
+			. '<!-- wp:html -->' . "\n" . '<em>Only</em>' . "\n" . '<!-- /wp:html -->'
+			. '<!-- /wp:aggressive-blocks/animate-on-scroll -->';
+
+		$html = do_blocks( $markup );
+
+		$this->assertMatchesRegularExpression( '/<div [^>]*data-animate-sequence-type="zoom"[^>]*><span>A<\/span><span>B<\/span><\/div>/', $html );
+		$this->assertMatchesRegularExpression( '/<div [^>]*data-animate-sequence-type="zoom"[^>]*>Bare text<\/div>/', $html );
+		$this->assertMatchesRegularExpression( '/<em [^>]*data-animate-sequence-type="zoom"[^>]*>Only<\/em>/', $html );
+		$this->assertSame( 3, substr_count( $html, 'data-animate-sequence-type=' ) );
+	}
+
+	/**
+	 * The wrapper names its animation in data attributes, not bare classes,
+	 * and carries no unread copy of the sequence.
+	 *
+	 * @return void
+	 */
+	public function test_wrapper_names_animation_in_data_attributes(): void {
+		$slide = do_blocks( '<!-- wp:aggressive-blocks/animate-on-scroll {"animation":"slide","direction":"left"} --><!-- wp:paragraph --><p>A</p><!-- /wp:paragraph --><!-- /wp:aggressive-blocks/animate-on-scroll -->' );
+		$this->assertStringContainsString( 'data-animate-type="slide"', $slide );
+		$this->assertStringContainsString( 'data-animate-direction="left"', $slide );
+		$this->assertDoesNotMatchRegularExpression( '/class="[^"]*\b(slide|left)\b/', $slide );
+		$this->assertStringNotContainsString( 'data-stagger-children', $slide );
+
+		$blur = do_blocks( '<!-- wp:aggressive-blocks/animate-on-scroll {"animation":"blur","direction":"up"} --><!-- /wp:aggressive-blocks/animate-on-scroll -->' );
+		$this->assertStringContainsString( 'data-animate-type="blur-in"', $blur );
+		$this->assertStringNotContainsString( 'data-animate-direction', $blur );
+
+		$sequence = do_blocks( '<!-- wp:aggressive-blocks/animate-on-scroll {"useSequence":true,"animationSequence":[{"animation":"fade"}]} --><!-- wp:paragraph --><p>A</p><!-- /wp:paragraph --><!-- /wp:aggressive-blocks/animate-on-scroll -->' );
+		$this->assertStringNotContainsString( 'data-animate-type', $sequence );
+		$this->assertStringNotContainsString( 'data-animation-sequence', $sequence );
+		$this->assertStringNotContainsString( 'animationSequence', $sequence );
+		$this->assertStringNotContainsString( 'useSequence', $sequence );
 	}
 
 	/**
