@@ -86,6 +86,9 @@ test.describe('Card Flip — front end', () => {
     const { card, back, toggle } = cardParts(page);
 
     await toggle.click();
+    // The flip lifts `inert` from the back face a moment after the click, and
+    // focus() on an inert element is silently ignored. Wait before focusing.
+    await expect(back).not.toHaveAttribute('inert', /.*/);
     const link = back.getByRole('link', { name: 'BACK LINK' });
     await link.focus();
     await expect(link).toBeFocused();
