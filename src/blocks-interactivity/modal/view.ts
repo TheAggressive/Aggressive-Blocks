@@ -135,7 +135,12 @@ function bindDialogDismiss(id: string): void {
 
   // The browser can still close the dialog without our transition: a
   // non-cancelable cancel, or a form with method="dialog" in the content.
-  dialog.addEventListener('close', requestClose);
+  // close fires as a queued task, so after our own dialog.close() it can
+  // arrive once the modal has already been reopened. Only a dialog that is
+  // still closed needs its state brought in step.
+  dialog.addEventListener('close', () => {
+    if (!dialog.open) requestClose();
+  });
 }
 
 function getAnnouncer(id: string): HTMLElement | null {
