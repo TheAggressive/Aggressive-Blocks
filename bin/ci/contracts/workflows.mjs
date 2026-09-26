@@ -492,6 +492,27 @@ for (const job of summaryDependencies) {
   );
 }
 
+// Package no longer waits for PHP or E2E, so the release job must name every
+// lane itself. Reaching them only through package would let a release publish
+// before they pass.
+const releaseNeeds = releaseJobs.release?.needs ?? [];
+const releaseDependencies = [
+  'release-plan',
+  'lint-frontend',
+  'i18n',
+  'build',
+  'test',
+  'e2e',
+  'package',
+  'artifact-acceptance',
+];
+for (const job of releaseDependencies) {
+  check(
+    releaseNeeds.includes(job),
+    `The release job must list "${job}" in needs:.`
+  );
+}
+
 check(
   summaryCommands === 'node bin/ci/release-summary.mjs',
   'The summary job must delegate to bin/ci/release-summary.mjs.'

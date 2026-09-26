@@ -173,10 +173,18 @@ jobs:
       - name: Run canonical i18n lane
         run: pnpm ci:i18n
 
+  # Build runs alongside lint and i18n rather than after them: nothing it makes
+  # depends on theirs. Its condition is the one it used to inherit by skipping
+  # whenever either of them skipped. The release job and the summary still
+  # require every lane.
   build:
     name: 🔨 Build
     runs-on: ubuntu-24.04
-    needs: [lint-frontend, i18n]
+    needs: changes
+    if: >-
+      needs.changes.outputs.code == 'true' &&
+      needs.changes.outputs.docs_only != 'true' &&
+      needs.changes.outputs.version_sync != 'true'
     timeout-minutes: 8
 
     steps:
@@ -235,10 +243,14 @@ jobs:
         run: pnpm ci:php
 
   e2e:
-    name: 🎭 Browser E2E
+    name: 🎭 Browser E2E (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-24.04
     needs: [build]
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -273,27 +285,29 @@ jobs:
         run: pnpm test:e2e:install
 
       - name: Run end-to-end tests
+        env:
+          AA_E2E_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
         run: pnpm ci:e2e
 
       - name: Upload Playwright report
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
           retention-days: 7
 
+  # Packaging and artifact acceptance need only the build output, so they run
+  # alongside the PHP and E2E lanes instead of after them.
   package:
     name: 📦 Package Plugin
     runs-on: ubuntu-24.04
-    needs: [release-plan, build, test, e2e]
+    needs: [release-plan, build]
     if: >-
       !cancelled() &&
       needs.build.result == 'success' &&
-      needs.test.result == 'success' &&
-      needs.e2e.result == 'success' &&
       (needs.release-plan.result == 'success' || needs.release-plan.result == 'skipped')
     timeout-minutes: 15
 
@@ -333,7 +347,7 @@ jobs:
           retention-days: 30
 
   artifact-acceptance:
-    name: 🧳 Release Artifact Acceptance
+    name: 🧳 Release Artifact Acceptance (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-24.04
     needs: [release-plan, package]
     if: >-
@@ -341,6 +355,10 @@ jobs:
       needs.package.result == 'success' &&
       (needs.release-plan.result == 'success' || needs.release-plan.result == 'skipped')
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -377,22 +395,34 @@ jobs:
       - name: Run canonical artifact acceptance lane
         env:
           AA_RELEASE_VERSION: ${{ needs.release-plan.outputs.next_version }}
+          AA_E2E_SHARD: ${{ matrix.shard }}/${{ strategy.job-total }}
         run: pnpm ci:artifact
 
       - name: Upload artifact-smoke diagnostics
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: artifact-smoke-report
+          name: artifact-smoke-report-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
           retention-days: 7
 
+  # Every lane is listed here, not reached through package. Package no longer
+  # waits for PHP or E2E, so without them a release could publish before they
+  # finish. success() requires each one to have passed.
   release:
     name: 🚀 Release
     runs-on: ubuntu-24.04
-    needs: [release-plan, package, artifact-acceptance]
+    needs:
+      - release-plan
+      - lint-frontend
+      - i18n
+      - build
+      - test
+      - e2e
+      - package
+      - artifact-acceptance
     if: >-
       success() &&
       github.ref == 'refs/heads/main' &&
