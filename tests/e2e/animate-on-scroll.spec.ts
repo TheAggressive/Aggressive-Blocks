@@ -1,5 +1,38 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { openPageEditor, publishAndGetUrl, deletePage } from './helpers';
+
+/**
+ * Publish a page with one block far below the fold (a tall spacer first),
+ * holding a paragraph and a link, and open it once the store has armed it.
+ */
+async function publishBelowFold(
+  page: Page,
+  attributes: Record<string, unknown>
+): Promise<number> {
+  await openPageEditor(page);
+
+  await page.evaluate(async attrs => {
+    const { createBlock } = window.wp.blocks;
+    window.wp.data.dispatch('core/block-editor').insertBlocks([
+      createBlock('core/spacer', { height: '2400px' }),
+      createBlock('aggressive-blocks/animate-on-scroll', attrs, [
+        createBlock('core/paragraph', { content: 'Below the fold' }),
+        createBlock('core/paragraph', {
+          content: '<a href="https://example.com/">Below the fold link</a>',
+        }),
+      ]),
+    ]);
+    await new Promise(r => setTimeout(r, 400));
+  }, attributes);
+
+  const { id, url } = await publishAndGetUrl(page);
+  await page.goto(url);
+  await page
+    .locator('.wp-block-animate-on-scroll[data-animate-id]')
+    .first()
+    .waitFor();
+  return id;
+}
 
 test.describe('Animate On Scroll — front end', () => {
   let pageId = 0;
@@ -204,13 +237,17 @@ test.describe('Animate On Scroll — front end', () => {
         },
         true
       );
-      const sample = () => {
+      // Sample for 4s from the first frame, not from navigation start: a
+      // slow server can take most of that before the page first paints.
+      let until = 0;
+      const sample = (now: number) => {
+        until ||= now + 4000;
         const child = document.querySelector('.wp-block-animate-on-scroll > *');
         if (child) {
           const opacity = Number(getComputedStyle(child).opacity);
           if (state.trace.at(-1) !== opacity) state.trace.push(opacity);
         }
-        if (performance.now() < 4000) requestAnimationFrame(sample);
+        if (now < until) requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
     });
@@ -236,5 +273,61 @@ test.describe('Animate On Scroll — front end', () => {
     trace.slice(1).forEach((opacity, i) => {
       expect(opacity).toBeGreaterThanOrEqual(trace[i]);
     });
+  });
+
+  test('keyboard focus reveals an armed block', async ({ page }) => {
+    pageId = await publishBelowFold(page, { animation: 'slide' });
+    const root = page.locator('.wp-block-animate-on-scroll').first();
+
+    // No scroll, so only the focus can reveal it.
+    await page
+      .getByRole('link', { name: 'Below the fold link' })
+      .evaluate(link => (link as HTMLElement).focus({ preventScroll: true }));
+
+    await expect(root).toHaveClass(/is-visible/);
+  });
+
+  test('a block at the end of the page is revealed there', async ({ page }) => {
+    pageId = await publishBelowFold(page, { animation: 'fade' });
+    const root = page.locator('.wp-block-animate-on-scroll').first();
+
+    // Put the block flush against the bottom of the page, inside the
+    // boundary's -25% bottom inset, where its trigger can never be reached.
+    await page.addStyleTag({
+      content:
+        'footer, .wp-block-template-part:has(footer) { display: none !important; } body * { margin-bottom: 0 !important; padding-bottom: 0 !important; }',
+    });
+    await page.evaluate(() =>
+      window.scrollTo(0, document.documentElement.scrollHeight)
+    );
+
+    await expect(root).toHaveClass(/is-visible/);
+    const bottom = await root.evaluate(el => el.getBoundingClientRect().bottom);
+    const viewport = page.viewportSize()!.height;
+    expect(bottom).toBeGreaterThan(viewport * 0.75);
+  });
+
+  test('reduced motion without the respect option fades without moving', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    pageId = await publishBelowFold(page, {
+      animation: 'slide',
+      direction: 'up',
+      respectReducedMotion: false,
+    });
+    const root = page.locator('.wp-block-animate-on-scroll').first();
+    const child = root.locator('> p').first();
+
+    // Armed: hidden, not offset, and not clickable.
+    await expect(child).toHaveCSS('opacity', '0');
+    await expect(child).toHaveCSS('transform', 'none');
+    await expect(child).toHaveCSS('pointer-events', 'none');
+
+    await root.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, 200));
+    await expect(root).toHaveClass(/is-visible/);
+    await expect(child).toHaveCSS('opacity', '1');
+    await expect(child).toHaveCSS('transform', 'none');
   });
 });

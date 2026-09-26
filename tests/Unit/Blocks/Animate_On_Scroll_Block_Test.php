@@ -51,12 +51,13 @@ class Animate_On_Scroll_Block_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Screen-reader announcements default off in Interactivity context.
+	 * The context carries no screen-reader announcement, even for a block
+	 * saved with the retired option on.
 	 *
 	 * @return void
 	 */
-	public function test_announce_to_screen_reader_defaults_false(): void {
-		$markup = '<!-- wp:aggressive-blocks/animate-on-scroll -->'
+	public function test_context_has_no_screen_reader_announcement(): void {
+		$markup = '<!-- wp:aggressive-blocks/animate-on-scroll {"announceToScreenReader":true} -->'
 			. '<!-- wp:paragraph --><p>Hi</p><!-- /wp:paragraph -->'
 			. '<!-- /wp:aggressive-blocks/animate-on-scroll -->';
 
@@ -70,6 +71,8 @@ class Animate_On_Scroll_Block_Test extends WP_UnitTestCase {
 
 		$context = json_decode( html_entity_decode( $matches[1], ENT_QUOTES ), true );
 		$this->assertIsArray( $context );
-		$this->assertFalse( $context['announceToScreenReader'] );
+		$this->assertArrayNotHasKey( 'announceToScreenReader', $context );
+		$this->assertArrayNotHasKey( 'i18n', $context );
+		$this->assertStringNotContainsString( 'Content animated into view', $html );
 	}
 }

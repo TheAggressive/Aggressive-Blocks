@@ -699,20 +699,7 @@ export function AosInspector({
             setAttributes({ respectReducedMotion })
           }
           help={__(
-            'Disable animations for users who prefer reduced motion',
-            'aggressive-blocks'
-          )}
-          __nextHasNoMarginBottom
-        />
-
-        <ToggleControl
-          label={__('Screen Reader Announcements', 'aggressive-blocks')}
-          checked={attributes.announceToScreenReader}
-          onChange={announceToScreenReader =>
-            setAttributes({ announceToScreenReader })
-          }
-          help={__(
-            'Announce when content animates into view. Off by default — enable only when a single block is critical to understand.',
+            'Show content without animation to visitors who prefer reduced motion. When off, they see a fade without movement.',
             'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
