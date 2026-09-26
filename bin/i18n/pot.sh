@@ -8,11 +8,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 aa_i18n_ensure_languages_dir
 aa_i18n_info "Generating ${AA_POT_FILE}"
 
-aa_i18n_wp i18n make-pot \
-	. \
-	"${AA_POT_FILE}" \
-	--domain="${AA_TEXT_DOMAIN}" \
-	--exclude="${AA_I18N_EXCLUDE}"
+aa_i18n_make_pot "${AA_POT_FILE}"
 
 if [[ "${I18N_CI:-0}" == "1" ]]; then
 	tmp="$(mktemp)"

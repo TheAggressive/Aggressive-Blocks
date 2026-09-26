@@ -12,6 +12,9 @@ AA_LANGUAGES_DIR="${AA_THEME_ROOT}/languages"
 # shellcheck disable=SC2034
 AA_POT_FILE="${AA_LANGUAGES_DIR}/${AA_TEXT_DOMAIN}.pot"
 AA_I18N_EXCLUDE="${AA_I18N_EXCLUDE:-node_modules,vendor,build,coverage,tests,.git,bin,.wp-env,.wp-env-ci,.wp-env-backups,.wp-env-backup-staging,.cache,local-uploads}"
+# Script pass: build/ only. Exclude src/ so a WP-CLI that learns TypeScript
+# cannot add a second, unloadable reference for the same string.
+AA_I18N_SCRIPT_EXCLUDE="${AA_I18N_SCRIPT_EXCLUDE:-node_modules,vendor,src,coverage,tests,.git,bin,.wp-env,.wp-env-ci,.wp-env-backups,.wp-env-backup-staging,.cache,local-uploads}"
 
 # Container-relative theme path when using wp-env.
 AA_WP_ENV_THEME_CWD="${AA_WP_ENV_THEME_CWD:-wp-content/plugins/aggressive-blocks}"
@@ -79,6 +82,41 @@ aa_i18n_wp() {
 	fi
 
 	aa_i18n_die "Need WordPress Studio or WP-CLI with the i18n package; CI may use wp-env."
+}
+
+# Extract the plugin POT into $1.
+#
+# PHP and block.json strings come from the source tree. Script strings come
+# from build/: wp i18n make-json names each JSON catalog after the md5 of the
+# script path in the POT reference, and load_script_textdomain() hashes the
+# enqueued build/ path, so a src/ reference would never be loaded. WP-CLI
+# also does not parse src/ TypeScript. Callers must build first.
+aa_i18n_make_pot() {
+	local dest="$1"
+	local tmp_dir
+
+	[[ -d "${AA_THEME_ROOT}/build" ]] || aa_i18n_die "build/ is missing. Run: pnpm build"
+
+	tmp_dir="$(mktemp -d)"
+	# shellcheck disable=SC2064 # Expand now: tmp_dir is local to this call.
+	trap "rm -rf '${tmp_dir}'; trap - RETURN" RETURN
+
+	aa_i18n_wp i18n make-pot \
+		. \
+		"${tmp_dir}/source.pot" \
+		--domain="${AA_TEXT_DOMAIN}" \
+		--exclude="${AA_I18N_EXCLUDE}" \
+		--skip-js
+
+	aa_i18n_wp i18n make-pot \
+		. \
+		"${dest}" \
+		--domain="${AA_TEXT_DOMAIN}" \
+		--include=build \
+		--exclude="${AA_I18N_SCRIPT_EXCLUDE}" \
+		--skip-php \
+		--skip-block-json \
+		--merge="${tmp_dir}/source.pot"
 }
 
 # Strip volatile POT headers for stable CI diffs.

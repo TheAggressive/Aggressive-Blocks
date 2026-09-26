@@ -14,11 +14,7 @@ trap 'rm -rf "${tmp_dir}"' EXIT
 tmp_pot="${tmp_dir}/aggressive-blocks.pot"
 aa_i18n_info "Regenerating POT for drift check…"
 
-aa_i18n_wp i18n make-pot \
-	. \
-	"${tmp_pot}" \
-	--domain="${AA_TEXT_DOMAIN}" \
-	--exclude="${AA_I18N_EXCLUDE}"
+aa_i18n_make_pot "${tmp_pot}"
 
 norm_committed="${tmp_dir}/committed.pot"
 norm_generated="${tmp_dir}/generated.pot"

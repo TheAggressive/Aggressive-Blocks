@@ -32,7 +32,7 @@ On production-code changes the pipeline runs:
 
 1. Change classification (`bin/ci/classify-changes.mjs`)
 2. Frontend lane (`pnpm ci:frontend`)
-3. i18n lane (`pnpm ci:i18n`)
+3. i18n lane (`pnpm ci:i18n`): builds first, because script strings are extracted from `build/` so `make-json` catalogs match the enqueued files
 4. Canonical production build (`pnpm ci:build`)
 5. PHP lane (`pnpm ci:php`) against the same build artifact
 6. Playwright E2E against WordPress + this plugin + Twenty Twenty-Five
