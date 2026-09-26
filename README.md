@@ -6,7 +6,7 @@ The plugin is developed and tested against WordPress VIP Coding Standards. It is
 
 ## Requirements
 
-* WordPress 6.7 or later
+* WordPress 7.0 or later
 * PHP 8.2 or later
 * Node 24 and pnpm 11 for development
 

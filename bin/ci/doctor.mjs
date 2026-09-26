@@ -40,8 +40,8 @@ if (!/Requires PHP:\s*8\.2/u.test(plugin)) {
   process.exit(1);
 }
 
-if (!/Requires at least:\s*6\.7/u.test(plugin)) {
-  console.error('CI doctor: plugin header Requires at least must be 6.7.');
+if (!/Requires at least:\s*7\.0/u.test(plugin)) {
+  console.error('CI doctor: plugin header Requires at least must be 7.0.');
   process.exit(1);
 }
 
