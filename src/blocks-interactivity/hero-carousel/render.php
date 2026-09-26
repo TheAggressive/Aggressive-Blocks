@@ -33,6 +33,35 @@ $hero_enum = static function ( $value, array $allowed, string $fallback ): strin
 	return in_array( $value, $allowed, true ) ? (string) $value : $fallback;
 };
 
+/**
+ * A CSS color value, or '' when the value is anything else.
+ *
+ * Colors land in an inline style, where esc_attr() alone would still let a
+ * `;` start another declaration. Accepts hex (the color picker's output,
+ * 8-digit with alpha), preset color variables, and keywords. Not rgb()/hsl():
+ * core's wrapper style filter drops those from custom properties anyway.
+ *
+ * @param mixed $value Candidate color.
+ * @return string
+ */
+$hero_css_color = static function ( $value ): string {
+	if ( ! is_string( $value ) ) {
+		return '';
+	}
+	$value = trim( $value );
+	$forms = array(
+		'/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i',
+		'/^var\(--wp--preset--color--[a-z0-9-]+\)$/i',
+		'/^[a-z]+$/i',
+	);
+	foreach ( $forms as $form ) {
+		if ( preg_match( $form, $value ) ) {
+			return $value;
+		}
+	}
+	return '';
+};
+
 $hero_transition = $hero_enum( $attributes['transition'] ?? 'slide', array( 'slide', 'fade', 'crossfade' ), 'slide' );
 
 $hero_min_height = (string) ( $attributes['minHeight'] ?? '85svh' );
@@ -199,8 +228,9 @@ $hero_color_vars  = array(
 	'dotActiveColor' => '--aa-hero-dot-active-color',
 );
 foreach ( $hero_color_vars as $hero_attr_key => $hero_css_var ) {
-	if ( ! empty( $attributes[ $hero_attr_key ] ) ) {
-		$hero_style_parts[] = sprintf( '%s: %s;', $hero_css_var, esc_attr( (string) $attributes[ $hero_attr_key ] ) );
+	$hero_color = $hero_css_color( $attributes[ $hero_attr_key ] ?? '' );
+	if ( '' !== $hero_color ) {
+		$hero_style_parts[] = sprintf( '%s: %s;', $hero_css_var, esc_attr( $hero_color ) );
 	}
 }
 
@@ -336,7 +366,7 @@ $hero_tune_images = static function ( string $html, bool $first, array $cover_at
  * @param array $cover_attrs Cover block attributes.
  * @return string Escaped thumbnail markup.
  */
-$hero_slide_thumb = static function ( array $cover_attrs ): string {
+$hero_slide_thumb = static function ( array $cover_attrs ) use ( $hero_css_color ): string {
 	if ( ! empty( $cover_attrs['id'] ) ) {
 		$img = wp_get_attachment_image(
 			(int) $cover_attrs['id'],
@@ -358,10 +388,10 @@ $hero_slide_thumb = static function ( array $cover_attrs ): string {
 			esc_url( (string) $cover_attrs['url'] )
 		);
 	}
-	$swatch = $cover_attrs['customOverlayColor'] ?? '';
+	$swatch = $hero_css_color( $cover_attrs['customOverlayColor'] ?? '' );
 	return sprintf(
 		'<span class="aa-hero__thumb aa-hero__thumb--swatch"%s></span>',
-		$swatch ? ' style="background:' . esc_attr( (string) $swatch ) . '"' : ''
+		'' !== $swatch ? ' style="background:' . esc_attr( $swatch ) . '"' : ''
 	);
 };
 ?>

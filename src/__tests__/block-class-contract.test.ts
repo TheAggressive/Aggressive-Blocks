@@ -74,6 +74,43 @@ function findViolations(file: string, css: string): Violation[] {
   return violations;
 }
 
+/** Selectors in script string literals (querySelector, closest, ...). */
+function findScriptViolations(file: string, source: string): Violation[] {
+  const violations: Violation[] = [];
+  for (const [literal] of source.matchAll(/(['"`])(?:(?!\1).)*\1/g)) {
+    const slug = legacyWrapperIn(literal);
+    if (!slug) continue;
+    if (isEmittedLiterally(`wp-block-aggressive-apparel-${slug}`)) continue;
+    violations.push({ file, selector: literal });
+  }
+  return violations;
+}
+
+describe('block wrapper classes in scripts', () => {
+  it('never select the removed alias wrapper class', () => {
+    const violations = fg
+      .sync('src/**/*.{ts,tsx}', { cwd: root, ignore: ['**/__tests__/**'] })
+      .flatMap(file => findScriptViolations(file, read(file)));
+
+    expect(violations).toEqual([]);
+  });
+
+  it('flags a script selector on the removed alias wrapper class', () => {
+    expect(
+      findScriptViolations(
+        'fixture.ts',
+        "root.closest('.wp-block-aggressive-apparel-hero-carousel');"
+      )
+    ).toHaveLength(1);
+    expect(
+      findScriptViolations(
+        'fixture.ts',
+        "root.querySelector('.wp-block-aggressive-apparel-modal__trigger');"
+      )
+    ).toEqual([]);
+  });
+});
+
 describe('block wrapper classes in stylesheets', () => {
   it('discovers the plugin blocks', () => {
     expect(slugs).toContain('modal');

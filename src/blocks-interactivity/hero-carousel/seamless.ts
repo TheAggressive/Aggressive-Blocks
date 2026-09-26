@@ -27,6 +27,11 @@ export function prepareClone(
   clone.setAttribute('aria-hidden', 'true');
   clone.inert = true;
 
+  // The real slide keeps its ids (anchors, aria references); a copy would
+  // make them ambiguous.
+  clone.removeAttribute('id');
+  clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+
   clone.querySelectorAll('img').forEach(img => {
     img.loading = 'eager';
     img.setAttribute('fetchpriority', 'high');

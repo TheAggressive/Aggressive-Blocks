@@ -119,7 +119,7 @@ function makeContext(overrides: Partial<TestContext> = {}): TestContext {
 
 function buildCarousel(count = 3): HTMLElement {
   const root = document.createElement('section');
-  root.className = 'wp-block-aggressive-apparel-hero-carousel';
+  root.className = 'wp-block-aggressive-blocks-hero-carousel aa-hero';
   const track = document.createElement('div');
   track.className = 'aa-hero__track';
   for (let i = 0; i < count; i++) {
@@ -140,13 +140,15 @@ function buildCarousel(count = 3): HTMLElement {
 /** Init the store against a fresh DOM root; returns the destroy cleanup. */
 function initCarousel(
   ctx: TestContext,
-  id?: string
+  id?: string,
+  prepare?: (root: HTMLElement) => void
 ): {
   root: HTMLElement;
   destroy: () => void;
 } {
   const root = buildCarousel(ctx.count);
   if (id) root.id = id;
+  prepare?.(root);
   mockElement.ref = root;
   mockContext = ctx as unknown as Record<string, unknown>;
   const destroy = callbacks.init() as () => void;
@@ -298,6 +300,21 @@ describe('navigation actions', () => {
     destroy();
   });
 
+  it('swaps the arrow keys in right-to-left layouts', () => {
+    const ctx = makeContext();
+    const { destroy } = initCarousel(ctx, undefined, root => {
+      root.style.direction = 'rtl';
+    });
+    const key = (k: string) => ({ key: k, preventDefault: jest.fn() });
+
+    actions.handleKeydown(key('ArrowLeft'));
+    expect(ctx.activeIndex).toBe(1);
+
+    actions.handleKeydown(key('ArrowRight'));
+    expect(ctx.activeIndex).toBe(0);
+    destroy();
+  });
+
   it('keeps keyboard focus on the newly active slide after arrow navigation', () => {
     jest.useFakeTimers();
     const raf = jest
@@ -373,6 +390,47 @@ describe('deep linking', () => {
     const { destroy } = initCarousel(ctx, 'promo');
     expect(ctx.activeIndex).toBe(2);
     destroy();
+  });
+
+  it('keeps a deep-linked slide in looping slide mode', () => {
+    jest.useFakeTimers();
+    stubElementScrollTo({ dispatchScroll: true });
+    const width = jest
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockReturnValue(800);
+    window.history.replaceState(null, '', '#promo-slide-3');
+
+    const ctx = makeContext({ deepLink: true, transition: 'slide' });
+    const { destroy } = initCarousel(ctx, 'promo');
+    expect(ctx.activeIndex).toBe(2);
+
+    // Let the edge-clone re-align frame and the scroll settle run.
+    jest.advanceTimersByTime(500);
+    expect(ctx.activeIndex).toBe(2);
+    expect(window.location.hash).toBe('#promo-slide-3');
+
+    destroy();
+    width.mockRestore();
+    restoreElementScrollTo();
+  });
+
+  it('does not copy ids into the looping edge clones', () => {
+    stubElementScrollTo();
+    const ctx = makeContext({ transition: 'slide' });
+    const { root, destroy } = initCarousel(ctx, undefined, carousel => {
+      const slides = carousel.querySelectorAll('.aa-hero__slide');
+      const heading = document.createElement('h2');
+      heading.id = 'first-heading';
+      slides[0]?.appendChild(heading);
+      (slides[2] as HTMLElement).id = 'last-slide';
+    });
+
+    expect(root.querySelectorAll('[data-aa-hero-clone]')).toHaveLength(2);
+    expect(document.querySelectorAll('#first-heading')).toHaveLength(1);
+    expect(document.querySelectorAll('#last-slide')).toHaveLength(1);
+
+    destroy();
+    restoreElementScrollTo();
   });
 
   it('reflects the active slide in the URL hash', () => {
@@ -522,6 +580,64 @@ describe('autoplay', () => {
     destroy();
   });
 
+  it('stays held while hovered after an arrow click', () => {
+    jest.useFakeTimers();
+    const ctx = makeContext({ autoplay: true, isPlaying: true });
+    const { destroy } = initCarousel(ctx);
+
+    actions.pause();
+    actions.next();
+    expect(ctx.activeIndex).toBe(1);
+
+    // The post-click delay ends, but the pointer is still over the carousel.
+    jest.advanceTimersByTime(12000);
+    expect(ctx.isPaused).toBe(true);
+    expect(ctx.activeIndex).toBe(1);
+
+    actions.resume();
+    expect(ctx.isPaused).toBe(false);
+    jest.advanceTimersByTime(6000);
+    expect(ctx.activeIndex).toBe(2);
+    destroy();
+  });
+
+  it('stays held while keyboard focus is inside, whatever the pointer does', () => {
+    jest.useFakeTimers();
+    const ctx = makeContext({ autoplay: true, isPlaying: true });
+    const { root, destroy } = initCarousel(ctx);
+    const dot = document.createElement('button');
+    root.appendChild(dot);
+    jest.spyOn(dot, 'matches').mockReturnValue(true);
+
+    actions.pauseFocus({ target: dot });
+    actions.pause();
+    actions.resume();
+
+    jest.advanceTimersByTime(12000);
+    expect(ctx.isPaused).toBe(true);
+    expect(ctx.activeIndex).toBe(0);
+
+    actions.resumeFocus({ relatedTarget: document.body });
+    expect(ctx.isPaused).toBe(false);
+    destroy();
+  });
+
+  it('does not hold for focus that a mouse click moved', () => {
+    jest.useFakeTimers();
+    const ctx = makeContext({ autoplay: true, isPlaying: true });
+    const { root, destroy } = initCarousel(ctx);
+    const arrow = document.createElement('button');
+    root.appendChild(arrow);
+    jest.spyOn(arrow, 'matches').mockReturnValue(false);
+
+    actions.pauseFocus({ target: arrow });
+    expect(ctx.isPaused).toBe(false);
+
+    jest.advanceTimersByTime(6000);
+    expect(ctx.activeIndex).toBe(1);
+    destroy();
+  });
+
   it('stops at the last slide when not looping', () => {
     jest.useFakeTimers();
     const ctx = makeContext({
@@ -553,6 +669,12 @@ describe('autoplay', () => {
     expect(ctx.isPlaying).toBe(false);
     jest.advanceTimersByTime(20000);
     expect(ctx.activeIndex).toBe(0);
+
+    // Pressing Play is an explicit request and overrides the preference.
+    actions.togglePlay();
+    expect(ctx.isPlaying).toBe(true);
+    jest.advanceTimersByTime(6000);
+    expect(ctx.activeIndex).toBe(1);
     destroy();
 
     (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({

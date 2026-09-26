@@ -119,6 +119,69 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A single Cover slide for hero carousel render tests.
+	 *
+	 * @param array<string, mixed> $attrs Cover attributes.
+	 * @return array<string, mixed>
+	 */
+	private function hero_slide( array $attrs = array() ): array {
+		return array(
+			'blockName'    => 'core/cover',
+			'attrs'        => $attrs,
+			'innerBlocks'  => array(),
+			'innerContent' => array(),
+		);
+	}
+
+	/**
+	 * Hero carousel writes the HTML anchor as the root id (deep links need it).
+	 *
+	 * @return void
+	 */
+	public function test_hero_carousel_renders_anchor_id(): void {
+		$html = $this->render(
+			'hero-carousel',
+			array(
+				'anchor'   => 'spring-drop',
+				'deepLink' => true,
+			),
+			array( $this->hero_slide(), $this->hero_slide() )
+		);
+
+		$this->assertMatchesRegularExpression( '/<section[^>]*\sid="spring-drop"/', $html );
+	}
+
+	/**
+	 * Hero carousel keeps valid chrome colors and drops anything else.
+	 *
+	 * @return void
+	 */
+	public function test_hero_carousel_allowlists_chrome_colors(): void {
+		$html = $this->render(
+			'hero-carousel',
+			array(
+				'arrowColor'     => '#ff0055',
+				'arrowBg'        => '#00000080',
+				'dotColor'       => 'var(--wp--preset--color--contrast)',
+				'dotActiveColor' => 'red; background-image: url(https://example.com/x.png)',
+				'pagination'     => 'thumbnails',
+			),
+			array(
+				$this->hero_slide( array( 'customOverlayColor' => '#000; position: fixed' ) ),
+				$this->hero_slide( array( 'customOverlayColor' => '#123456' ) ),
+			)
+		);
+
+		$this->assertStringContainsString( '--aa-hero-arrow-color: #ff0055;', $html );
+		$this->assertStringContainsString( '--aa-hero-arrow-bg: #00000080;', $html );
+		$this->assertStringContainsString( '--aa-hero-dot-color: var(--wp--preset--color--contrast)', $html );
+		$this->assertStringNotContainsString( '--aa-hero-dot-active-color', $html );
+		$this->assertStringNotContainsString( 'example.com/x.png', $html );
+		$this->assertStringNotContainsString( 'position: fixed', $html );
+		$this->assertStringContainsString( 'style="background:#123456"', $html );
+	}
+
+	/**
 	 * Hero carousel locks Cover backgrounds to the editor sizeSlug.
 	 *
 	 * @return void

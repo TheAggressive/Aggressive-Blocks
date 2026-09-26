@@ -253,21 +253,21 @@ msgstr ""
 msgid "Flip card"
 msgstr ""
 
-#: src/blocks-interactivity/hero-carousel/render.php:211
+#: src/blocks-interactivity/hero-carousel/render.php:241
 msgid "Hero slideshow"
 msgstr ""
 
-#: src/blocks-interactivity/hero-carousel/render.php:229
+#: src/blocks-interactivity/hero-carousel/render.php:259
 msgid "Play slideshow"
 msgstr ""
 
-#: src/blocks-interactivity/hero-carousel/render.php:230
-#: src/blocks-interactivity/hero-carousel/render.php:487
+#: src/blocks-interactivity/hero-carousel/render.php:260
+#: src/blocks-interactivity/hero-carousel/render.php:517
 msgid "Pause slideshow"
 msgstr ""
 
 #. translators: 1: current slide number, 2: total slide count. Announced by screen readers.
-#: src/blocks-interactivity/hero-carousel/render.php:232
+#: src/blocks-interactivity/hero-carousel/render.php:262
 #: src/blocks-interactivity/horizontal-scroll/render.php:114
 #, php-format
 msgid "Slide %1$s of %2$s"
@@ -275,30 +275,30 @@ msgstr ""
 
 #. translators: 1: current slide number, 2: total slide count.
 #. translators: 1: current slide number, 2: total slide count. Per-slide aria-label.
-#: src/blocks-interactivity/hero-carousel/render.php:403
+#: src/blocks-interactivity/hero-carousel/render.php:433
 #: src/blocks-interactivity/horizontal-scroll/render.php:116
 #, php-format
 msgid "%1$s of %2$s"
 msgstr ""
 
-#: src/blocks-interactivity/hero-carousel/render.php:422
+#: src/blocks-interactivity/hero-carousel/render.php:452
 #: src/blocks-interactivity/horizontal-scroll/render.php:139
 #: build/blocks-interactivity/horizontal-scroll/index.js:1
 msgid "Previous slide"
 msgstr ""
 
-#: src/blocks-interactivity/hero-carousel/render.php:439
+#: src/blocks-interactivity/hero-carousel/render.php:469
 #: src/blocks-interactivity/horizontal-scroll/render.php:154
 #: build/blocks-interactivity/horizontal-scroll/index.js:1
 msgid "Next slide"
 msgstr ""
 
-#: src/blocks-interactivity/hero-carousel/render.php:461
+#: src/blocks-interactivity/hero-carousel/render.php:491
 msgid "Choose slide"
 msgstr ""
 
 #. translators: %s: slide number.
-#: src/blocks-interactivity/hero-carousel/render.php:467
+#: src/blocks-interactivity/hero-carousel/render.php:497
 #, php-format
 msgid "Go to slide %s"
 msgstr ""

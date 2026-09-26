@@ -4,7 +4,11 @@
  * @package Aggressive_Blocks
  */
 
-export const ROOT_SELECTOR = '.wp-block-aggressive-apparel-hero-carousel';
+/**
+ * Root class written out literally by render.php. Not the generated wrapper
+ * class, which changes with the block name.
+ */
+export const ROOT_SELECTOR = '.aa-hero';
 export const SLIDE_SELECTOR = '.aa-hero__slide';
 export const TRACK_SELECTOR = '.aa-hero__track';
 export const COVER_BG_SELECTOR = '.wp-block-cover__image-background';
