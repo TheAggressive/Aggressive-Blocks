@@ -33,12 +33,7 @@ $flip_on         = in_array( $flip_on, $allowed_flip_on, true ) ? $flip_on : 'ho
 $wrapper_extra = array(
 	'class'                     => 'aa-card-flip aa-card-flip--' . sanitize_html_class( $flip_on ),
 	'data-wp-interactive'       => 'aggressive-blocks/card-flip',
-	'data-wp-context'           => (string) wp_json_encode(
-		array(
-			'isFlipped' => false,
-			'flipOn'    => $flip_on,
-		)
-	),
+	'data-wp-context'           => (string) wp_json_encode( array( 'isFlipped' => false ) ),
 	'data-wp-class--is-flipped' => 'context.isFlipped',
 	'data-wp-watch--faces'      => 'callbacks.syncFaces',
 	'data-wp-on--keydown'       => 'actions.keydown',

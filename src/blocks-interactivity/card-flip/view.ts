@@ -15,7 +15,6 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 
 interface CardFlipContext {
   isFlipped: boolean;
-  flipOn: 'hover' | 'click';
 }
 
 /**
