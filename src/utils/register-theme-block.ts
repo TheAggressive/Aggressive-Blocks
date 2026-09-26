@@ -5,7 +5,6 @@
  */
 
 import {
-  getBlockType,
   registerBlockType,
   type BlockConfiguration,
   type BlockVariation,
@@ -60,26 +59,4 @@ export function registerThemeBlock<T extends Record<string, unknown>>(
     metadata as BlockConfiguration<T>,
     settings as Partial<BlockConfiguration<T>>
   );
-
-  const aliasName = metadata.name.replace(
-    /^aggressive-blocks\//,
-    'aggressive-apparel/'
-  );
-  if (aliasName === metadata.name || getBlockType(aliasName)) {
-    return;
-  }
-
-  const registered = getBlockType(metadata.name);
-  if (!registered) {
-    return;
-  }
-
-  registerBlockType(aliasName, {
-    ...registered,
-    name: aliasName,
-    supports: {
-      ...registered.supports,
-      inserter: false,
-    },
-  } as BlockConfiguration<T>);
 }

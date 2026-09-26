@@ -4,10 +4,7 @@
  * @package Aggressive_Blocks
  */
 
-/* The generated wrapper class follows the block name; the old name covers
-   content not yet migrated to aggressive-blocks/copyright. */
-.wp-block-aggressive-blocks-copyright,
-.wp-block-aggressive-apparel-copyright {
+.wp-block-aggressive-blocks-copyright {
   margin: 0;
 }
 

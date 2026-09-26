@@ -28,6 +28,17 @@ Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). Rel
 
 See [docs/ci.md](docs/ci.md) for workflows, required branch checks, the PHP/WordPress matrix, packaging, and VIP-oriented gates.
 
+## Migrating from Aggressive Apparel
+
+2.0.0 removed the `aggressive-apparel/*` block names that 1.x kept as hidden aliases. Content that still uses them does not render. Rewrite it to `aggressive-blocks/*` before updating:
+
+```bash
+wp aggressive-blocks migrate-blocks --dry-run
+wp aggressive-blocks migrate-blocks
+```
+
+The command walks posts and widgets with `parse_blocks()`, only renames the blocks this plugin owns, and is safe to rerun.
+
 ## Build
 
 ```bash

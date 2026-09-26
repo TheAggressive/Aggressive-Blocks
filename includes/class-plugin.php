@@ -28,7 +28,6 @@ class Plugin {
 		Blocks\Blocks::init();
 		Blocks\Icon_Block::init();
 		Blocks\Copyright::init();
-		Blocks\Aliases::init();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			Migration\Cli::register();

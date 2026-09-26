@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Aggressive_Blocks\Tests\Integration;
 
 use Aggressive_Blocks\Blocks\Blocks;
+use Aggressive_Blocks\Migration\Block_Renamer;
 use WP_UnitTestCase;
 
 /**
@@ -39,6 +40,23 @@ class Plugin_Bootstrap_Test extends WP_UnitTestCase {
 
 		foreach ( $names as $name ) {
 			$this->assertTrue( Blocks::is_block_registered( $name ), $name );
+		}
+	}
+
+	/**
+	 * The aggressive-apparel/* aliases were removed in 2.0.0.
+	 *
+	 * Old-name content must be migrated with `wp aggressive-blocks
+	 * migrate-blocks`; the plugin no longer renders it.
+	 *
+	 * @return void
+	 */
+	public function test_legacy_alias_names_are_not_registered(): void {
+		foreach ( Block_Renamer::SLUGS as $slug ) {
+			$this->assertFalse(
+				Blocks::is_block_registered( 'aggressive-apparel/' . $slug ),
+				'aggressive-apparel/' . $slug
+			);
 		}
 	}
 

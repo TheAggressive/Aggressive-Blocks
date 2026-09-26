@@ -24,7 +24,6 @@ AA_PACKAGE_REQUIRED=(
 	'includes/class-plugin.php'
 	'includes/helpers.php'
 	'includes/Blocks/class-blocks.php'
-	'includes/Blocks/class-aliases.php'
 	'includes/Blocks/class-copyright.php'
 	'includes/Blocks/class-icon-block.php'
 	'includes/Migration/class-block-renamer.php'
