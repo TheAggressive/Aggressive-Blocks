@@ -4,7 +4,15 @@ name: Release Recovery
 # release, e.g. after an asset was deleted or an upload failed. The rebuilt ZIP
 # passes the same package verification and artifact acceptance as a normal
 # release before the write-capable job touches the release.
+#
+# Weekly, it rehearses against the latest release without attaching anything.
+# Packaging is reproducible (SOURCE_DATE_EPOCH is the commit time), so the
+# rebuild must match the published asset byte for byte. A mismatch or a
+# broken lane means recovery would fail, or would replace released bytes,
+# when it is actually needed.
 on:
+  schedule:
+    - cron: '23 5 * * 2'
   workflow_dispatch:
     inputs:
       tag:
@@ -16,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-recovery-${{ inputs.tag }}
+  group: release-recovery-${{ inputs.tag || 'rehearsal' }}
   cancel-in-progress: false
 
 env:
@@ -28,24 +36,32 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     outputs:
+      tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
 
     steps:
-      - name: Resolve release version from tag
+      - name: Resolve release tag and version
         id: version
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          if [[ -z "${TAG}" ]]; then
+            TAG="$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq .tagName)"
+          fi
           if [[ ! "${TAG}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?)$ ]]; then
             echo "'${TAG}' is not a release tag like v1.2.3." >&2
             exit 1
           fi
-          echo "version=${BASH_REMATCH[1]}" >>"${GITHUB_OUTPUT}"
+          {
+            echo "tag=${TAG}"
+            echo "version=${BASH_REMATCH[1]}"
+          } >>"${GITHUB_OUTPUT}"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/${{ inputs.tag }}
+          ref: refs/tags/${{ steps.version.outputs.tag }}
           persist-credentials: false
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -81,6 +97,31 @@ jobs:
           AA_RELEASE_VERSION: ${{ steps.version.outputs.version }}
         run: pnpm ci:artifact
 
+      - name: Compare with the published asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          REHEARSAL: ${{ github.event_name == 'schedule' }}
+        run: |
+          set -euo pipefail
+          zip="aggressive-blocks-${VERSION}.zip"
+          rebuilt="sha256:$(sha256sum "${zip}" | awk '{print $1}')"
+          published="$(gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --json assets --jq ".assets[] | select(.name == \"${zip}\") | .digest")"
+          if [[ -z "${published}" ]]; then
+            if [[ "${REHEARSAL}" == "true" ]]; then
+              echo "${TAG} has no ${zip} asset to rehearse against." >&2
+              exit 1
+            fi
+            echo "${TAG} has no ${zip} asset; recovery will attach the rebuild."
+          elif [[ "${published}" != "${rebuilt}" ]]; then
+            echo "Rebuilt ${zip} (${rebuilt}) differs from the published asset (${published})." >&2
+            exit 1
+          else
+            echo "Rebuilt ${zip} matches the published asset: ${rebuilt}"
+          fi
+
       - name: Upload recovered package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -105,10 +146,13 @@ jobs:
     name: Re-attach to release
     runs-on: ubuntu-24.04
     needs: rebuild
+    if: github.event_name == 'workflow_dispatch'
     timeout-minutes: 5
     environment: production
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Download recovered package
@@ -117,10 +161,15 @@ jobs:
           name: recovered-plugin-package
           path: ./
 
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: aggressive-blocks-${{ needs.rebuild.outputs.version }}.zip
+
       - name: Replace release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ inputs.tag }}
+          TAG: ${{ needs.rebuild.outputs.tag }}
           VERSION: ${{ needs.rebuild.outputs.version }}
         run: |
           set -euo pipefail

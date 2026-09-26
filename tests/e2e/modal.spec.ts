@@ -34,7 +34,11 @@ async function insertModalPage(
       const blocks = [];
 
       if (beforeHtml) {
-        const beforeBlock = createBlock('core/html', { content: beforeHtml });
+        // Classic, not Custom HTML: Gutenberg 24 no longer serializes a
+        // core/html block's content, so createBlock('core/html') saves empty.
+        const beforeBlock = createBlock('core/freeform', {
+          content: beforeHtml,
+        });
         blocks.push(beforeBlock);
 
         // triggerBlockId stores a real editor clientId. Test callers only need
@@ -162,8 +166,10 @@ test.describe('Modal — front end', () => {
       }
     });
     page.on('requestfailed', request => {
+      // The top-level URL, like the handlers above: the editor canvas is an
+      // about:srcdoc iframe, so its frame URL never contains /wp-admin/.
       if (
-        !request.frame().url().includes('/wp-admin/') &&
+        !page.url().includes('/wp-admin/') &&
         /\/blocks-interactivity\/modal\//.test(request.url())
       ) {
         modalRuntimeErrors.push(
@@ -174,7 +180,7 @@ test.describe('Modal — front end', () => {
     page.on('response', response => {
       if (
         response.status() >= 400 &&
-        !response.frame().url().includes('/wp-admin/') &&
+        !page.url().includes('/wp-admin/') &&
         /\/blocks-interactivity\/modal\//.test(response.url())
       ) {
         modalRuntimeErrors.push(

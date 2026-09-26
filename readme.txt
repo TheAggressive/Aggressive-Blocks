@@ -17,5 +17,7 @@ Developed and tested against WordPress VIP Coding Standards. This is not a WordP
 
 == Changelog ==
 
+Release notes for every version are published on the [GitHub Releases page](https://github.com/TheAggressive/Aggressive-Blocks/releases).
+
 = 1.0.0 =
 * Initial standalone plugin release.

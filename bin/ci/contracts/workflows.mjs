@@ -342,7 +342,7 @@ if (
 
 for (const [jobName, jobBody] of Object.entries(releaseJobs)) {
   const jobText = JSON.stringify(jobBody);
-  if (jobName === 'release' || !jobText.includes('actions/checkout@')) {
+  if (!jobText.includes('actions/checkout@')) {
     continue;
   }
 

@@ -4,7 +4,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 
 const zips = readdirSync('.').filter(name =>
   /^aggressive-blocks-.+\.zip$/u.test(name)
@@ -16,6 +16,12 @@ if (zips.length === 0) {
 const version = process.env.AA_RELEASE_VERSION;
 if (!version) {
   throw new Error('AA_RELEASE_VERSION is required to publish.');
+}
+
+// Written by bin/release/plan.mjs from the same commits this release tags.
+const notesFile = 'release-notes.md';
+if (!existsSync(notesFile)) {
+  throw new Error(`${notesFile} is missing; the release plan did not run.`);
 }
 
 // Tag the commit this run built and tested. Without --target, gh tags the
@@ -37,7 +43,8 @@ execFileSync(
     target,
     '--title',
     `v${version}`,
-    '--generate-notes',
+    '--notes-file',
+    notesFile,
   ],
   { stdio: 'inherit' }
 );
