@@ -27,8 +27,14 @@ on: # zizmor: ignore[dangerous-triggers] pull_request_target runs trusted base c
 permissions:
   contents: read
 
+# One group per event per PR. A group holds one running and one pending run,
+# and a newly queued run cancels the pending one. With a shared group, a burst
+# of events (a push, then a title edit) let a pull_request_target run cancel
+# the pending pull_request run, so the required `PR Policy` check never
+# reported for that commit. Per event, a title-check run is only ever replaced
+# by a newer title-check run, and the write-capable runs stay serialized.
 concurrency:
-  group: pr-policy-${{ github.event.pull_request.number || github.event.workflow_run.head_branch }}
+  group: pr-policy-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 jobs:
