@@ -28,7 +28,7 @@ Required check names are a small stable set. The branch ruleset must require exa
 
 Do not add dozens of job names to branch protection. The summary job is the merge contract for the pipeline.
 
-On production-code changes the pipeline runs:
+On production-code changes the pipeline runs these lanes:
 
 1. Change classification (`bin/ci/classify-changes.mjs`)
 2. Frontend lane (`pnpm ci:frontend`)
@@ -38,6 +38,10 @@ On production-code changes the pipeline runs:
 6. Playwright E2E against WordPress + this plugin + Twenty Twenty-Five
 7. Allowlist ZIP (`pnpm ci:package`)
 8. Artifact acceptance: install that ZIP and re-run E2E (`pnpm ci:artifact`)
+
+Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance follows packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
+
+The two browser lanes are split into two parallel shards (`AA_E2E_SHARD=1/2`, `2/2`). Each shard starts its own WordPress and runs one worker, so tests never share site state. Playwright keeps each spec file in one shard. Run locally without `AA_E2E_SHARD`, a lane runs the whole suite.
 
 Documentation-only and translation-only diffs skip expensive lanes. The summary job still fails if a required lane is skipped when it should have run.
 
@@ -92,7 +96,7 @@ VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`t
 
 ## Release
 
-Merging to `main` does not publish. A release is an explicit `workflow_dispatch` with `publish: true` on `main`. The release job runs only after package verification and artifact acceptance succeed.
+Merging to `main` does not publish. A release is an explicit `workflow_dispatch` with `publish: true` on `main`. The release job runs only after every lane (frontend, i18n, build, PHP, E2E, package verification and artifact acceptance) succeeds.
 
 The release tags the commit the run tested, attests the ZIP, and publishes the conventional-commit notes that release planning generated (Features, Bug Fixes, and any breaking changes).
 

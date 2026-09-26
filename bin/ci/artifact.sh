@@ -54,6 +54,17 @@ artifact_wp_env() {
 	)
 }
 
+# CI splits the suite across parallel jobs. Each shard gets its own WordPress,
+# so one worker per shard keeps the isolation the suite relies on.
+playwright_args=()
+if [[ -n "${AA_E2E_SHARD:-}" ]]; then
+	if [[ ! "${AA_E2E_SHARD}" =~ ^[1-9][0-9]*/[1-9][0-9]*$ ]]; then
+		echo "AA_E2E_SHARD must look like 1/2, got: ${AA_E2E_SHARD}" >&2
+		exit 2
+	fi
+	playwright_args+=("--shard=${AA_E2E_SHARD}")
+fi
+
 cleanup() {
 	if ! artifact_wp_env stop; then
 		echo "Warning: artifact-acceptance containers could not be stopped." >&2
@@ -84,4 +95,4 @@ cd "${REPO_ROOT}"
 CI=1 \
 	WP_BASE_URL=http://localhost:9940 \
 	WP_ENV_CONFIG_DIR=bin/ci/artifact \
-	playwright test
+	playwright test ${playwright_args[@]+"${playwright_args[@]}"}

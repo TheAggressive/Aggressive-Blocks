@@ -52,9 +52,10 @@ export function evaluateReleaseSummary(environment) {
     allowEmpty: true,
   });
   const nextVersion = environment.NEXT_VERSION ?? '';
-  // A prose-only diff skips the i18n gate, which cascade-skips build, PHP and
-  // E2E. Those jobs are then legitimately absent, so the gate must stop
-  // requiring them — while still requiring them everywhere else.
+  // A prose-only diff skips the i18n gate and the build, and skipping the build
+  // skips PHP, E2E and packaging. Those jobs are then legitimately absent, so
+  // the gate must stop requiring them — while still requiring them everywhere
+  // else.
   const docsOnly = booleanOutput(environment, 'DOCS_ONLY', {
     allowEmpty: true,
   });
