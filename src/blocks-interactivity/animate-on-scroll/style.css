@@ -250,8 +250,10 @@
 	}
 
 	/* Armed and not in view (or exiting): rest at the "from" values. Leaving
-	   this state transitions back to the natural values. */
+	   this state transitions back to the natural values. Invisible content
+	   takes no clicks; keyboard focus reveals it (view.ts). */
 	&[data-animate-id]:not(.is-visible) > * {
+		pointer-events: none;
 		opacity: 0;
 		transform: var(--aos-from-transform);
 		filter: var(--aos-from-filter);
@@ -303,8 +305,10 @@
 	   6. REDUCED MOTION AND PRINT
 	   ========================================================================== */
 
-	/* Only blocks that respect the preference (render.php writes the
-	   attribute unless the block opts out). */
+	/* Blocks that respect the preference (render.php writes the attribute
+	   unless the block opts out) show their content at once. A block that
+	   opts out still never moves: it fades, with no transform, blur, wipe
+	   or bounce. */
 	@media (prefers-reduced-motion: reduce) {
 
 		&[data-respect-reduced-motion] > * {
@@ -314,6 +318,14 @@
 			clip-path: none !important;
 			animation: none !important;
 			transition: none !important;
+		}
+
+		&:not([data-respect-reduced-motion]) > * {
+			--aos-from-transform: none !important;
+			--aos-from-filter: none !important;
+			--aos-from-clip-path: none !important;
+
+			animation: none !important;
 		}
 	}
 

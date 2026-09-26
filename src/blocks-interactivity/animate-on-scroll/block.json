@@ -134,10 +134,6 @@
     "respectReducedMotion": {
       "type": "boolean",
       "default": true
-    },
-    "announceToScreenReader": {
-      "type": "boolean",
-      "default": false
     }
   },
   "textdomain": "aggressive-blocks",

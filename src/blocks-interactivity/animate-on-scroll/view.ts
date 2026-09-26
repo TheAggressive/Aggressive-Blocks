@@ -60,14 +60,12 @@ interface AnimateOnScrollContext {
   id: string;
   reverseOnScrollBack?: boolean;
   respectReducedMotion?: boolean;
-  announceToScreenReader?: boolean;
   staggerPattern?: string;
   staggerDelay?: number;
   staggerWaveFrequency?: number;
   staggerRandomMin?: number;
   staggerRandomMax?: number;
   staggerSeed?: number;
-  i18n?: { announce?: string };
 }
 
 /** True when any part of the element is inside the viewport. */
@@ -82,6 +80,17 @@ export const isInViewport = (element: HTMLElement): boolean => {
     rect.left < window.innerWidth
   );
 };
+
+/**
+ * True when the page cannot scroll any further down. A block that ends in
+ * the detection boundary's bottom inset (-25% by default) at this point can
+ * never reach its trigger, so it is revealed where it stands instead.
+ */
+export const isAtScrollEnd = (
+  scrollTop: number,
+  viewportHeight: number,
+  scrollHeight: number
+): boolean => scrollTop + viewportHeight >= scrollHeight - 1;
 
 /**
  * Whether an observer entry counts as entering. `isIntersecting` matters at
@@ -146,29 +155,6 @@ export const getExitHoldMs = (
   initialDelaySeconds: number,
   maxStaggerSeconds: number
 ): number => (durationSeconds + initialDelaySeconds + maxStaggerSeconds) * 1000;
-
-// ---------------------------------------------------------------------------
-// Accessibility
-// ---------------------------------------------------------------------------
-
-const announceToScreenReader = (
-  message: string,
-  duration: number = 1000
-): void => {
-  const announcement = document.createElement('div');
-  announcement.setAttribute('role', 'status');
-  announcement.setAttribute('aria-live', 'polite');
-  announcement.setAttribute('aria-atomic', 'true');
-  announcement.className = 'screen-reader-text';
-  announcement.style.cssText =
-    'position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;';
-  announcement.textContent = message;
-  document.body.appendChild(announcement);
-
-  setTimeout(() => {
-    announcement.remove();
-  }, duration);
-};
 
 // ---------------------------------------------------------------------------
 // Sequence mode helpers
@@ -290,6 +276,37 @@ store('aggressive-blocks/animate-on-scroll', {
         }
       };
 
+      const reveal = (): void => {
+        if (ctx.isVisible) {
+          return;
+        }
+        // A pending exit (rapid scroll-up-then-down) must not strip the
+        // entrance mid-flight.
+        clearExitState();
+        ctx.isVisible = true;
+        // Marks the JS path as owner so the CSS scroll-driven animation
+        // can't double-fire.
+        ctx.hasAnimated = true;
+      };
+
+      // On screen at the end of the page, where scrolling can no longer
+      // carry the block up to its trigger.
+      const isStuckAtPageEnd = (): boolean => {
+        const scroller = document.scrollingElement ?? document.documentElement;
+        return (
+          isAtScrollEnd(
+            scroller.scrollTop,
+            window.innerHeight,
+            scroller.scrollHeight
+          ) && isInViewport(ref)
+        );
+      };
+
+      // Hidden content must never hold keyboard focus: show it, and keep it
+      // shown while focus is inside.
+      const hasFocusWithin = (): boolean =>
+        ref.contains(ref.ownerDocument.activeElement);
+
       const handleExit = (): void => {
         // A block in view at load is armed only now, as it leaves.
         arm();
@@ -340,27 +357,15 @@ store('aggressive-blocks/animate-on-scroll', {
               reportedOnce = true;
 
               if (isEntering(entry, threshold)) {
-                if (!ctx.isVisible) {
-                  // A pending exit (rapid scroll-up-then-down) must not
-                  // strip the entrance mid-flight.
-                  clearExitState();
-                  ctx.isVisible = true;
-                  // Marks the JS path as owner so the CSS scroll-driven
-                  // animation can't double-fire.
-                  ctx.hasAnimated = true;
-
-                  if (ctx.announceToScreenReader) {
-                    announceToScreenReader(
-                      ctx.i18n?.announce ?? 'Content animated into view'
-                    );
-                  }
-                }
+                reveal();
               } else if (
                 !(firstReport && inViewAtLoad) &&
                 ctx.reverseOnScrollBack &&
                 ctx.isVisible &&
                 (entry.intersectionRatio <= exitThreshold ||
-                  !entry.isIntersecting)
+                  !entry.isIntersecting) &&
+                !hasFocusWithin() &&
+                !isStuckAtPageEnd()
               ) {
                 handleExit();
               }
@@ -400,7 +405,31 @@ store('aggressive-blocks/animate-on-scroll', {
 
       observer.observe(ref);
 
+      // Scroll and resize are checked once per frame, and only while the
+      // block is hidden.
+      let frame = 0;
+      const checkPageEnd = (): void => {
+        if (frame || ctx.isVisible) {
+          return;
+        }
+        frame = window.requestAnimationFrame(() => {
+          frame = 0;
+          if (!ctx.isVisible && isStuckAtPageEnd()) {
+            reveal();
+          }
+        });
+      };
+      ref.addEventListener('focusin', reveal);
+      window.addEventListener('scroll', checkPageEnd, { passive: true });
+      window.addEventListener('resize', checkPageEnd, { passive: true });
+
       return () => {
+        ref.removeEventListener('focusin', reveal);
+        window.removeEventListener('scroll', checkPageEnd);
+        window.removeEventListener('resize', checkPageEnd);
+        if (frame) {
+          window.cancelAnimationFrame(frame);
+        }
         observer.disconnect();
         if (exitTimeout !== null) {
           clearTimeout(exitTimeout);

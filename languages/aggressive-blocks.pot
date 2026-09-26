@@ -249,10 +249,6 @@ msgstr ""
 msgid "Entry threshold {pct}% is unreachable: the element ({elem}px) is taller than the detection area ({root}px). Max visibility ≈ {max}%."
 msgstr ""
 
-#: src/blocks-interactivity/animate-on-scroll/render.php:181
-msgid "Content animated into view"
-msgstr ""
-
 #: src/blocks-interactivity/card-flip/render.php:88
 msgid "Flip card"
 msgstr ""
@@ -1201,15 +1197,7 @@ msgid "Respect Reduced Motion"
 msgstr ""
 
 #: build/blocks-interactivity/animate-on-scroll/index.js:5
-msgid "Disable animations for users who prefer reduced motion"
-msgstr ""
-
-#: build/blocks-interactivity/animate-on-scroll/index.js:5
-msgid "Screen Reader Announcements"
-msgstr ""
-
-#: build/blocks-interactivity/animate-on-scroll/index.js:5
-msgid "Announce when content animates into view. Off by default — enable only when a single block is critical to understand."
+msgid "Show content without animation to visitors who prefer reduced motion. When off, they see a fade without movement."
 msgstr ""
 
 #: build/blocks-interactivity/card-flip/index.js:1

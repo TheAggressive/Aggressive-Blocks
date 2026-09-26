@@ -77,12 +77,25 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
+// jsdom has no layout. Give the page room to scroll, so no block counts as
+// stuck at the end of the page unless a test moves it there.
+const page = { scrollTop: 0, scrollHeight: 10_000 };
+Object.defineProperty(document.documentElement, 'scrollTop', {
+  configurable: true,
+  get: () => page.scrollTop,
+});
+Object.defineProperty(document.documentElement, 'scrollHeight', {
+  configurable: true,
+  get: () => page.scrollHeight,
+});
+
 import {
   calculateRandomDelay,
   calculateSequentialDelay,
   calculateWaveDelay,
   getExitHoldMs,
   getMaxChildStaggerDelaySeconds,
+  isAtScrollEnd,
   parseCssTimeSeconds,
 } from '../view';
 
@@ -201,7 +214,6 @@ describe('initObserver stagger children', () => {
       },
       id: 'stagger-test',
       reverseOnScrollBack: false,
-      announceToScreenReader: false,
       staggerPattern: 'sequential',
       staggerDelay: 0.2,
     };
@@ -237,7 +249,6 @@ describe('initObserver reverse-on-scroll-back', () => {
       },
       id: 'test',
       reverseOnScrollBack: true,
-      announceToScreenReader: false,
       ...ctxOverrides,
     };
     const cleanup = holder.config!.callbacks.initObserver();
@@ -333,7 +344,6 @@ describe('initObserver reverse-on-scroll-back', () => {
       },
       id: 'exit-stagger',
       reverseOnScrollBack: true,
-      announceToScreenReader: false,
       staggerPattern: 'sequential',
       staggerDelay: 0.2,
     };
@@ -389,7 +399,6 @@ describe('initObserver reduced motion', () => {
       id: 'reduced',
       reverseOnScrollBack: false,
       respectReducedMotion: true,
-      announceToScreenReader: false,
     };
 
     holder.config!.callbacks.initObserver();
@@ -437,7 +446,6 @@ describe('initObserver arming and entry', () => {
       },
       id: 'test',
       reverseOnScrollBack: false,
-      announceToScreenReader: false,
       ...ctxOverrides,
     };
     holder.config!.callbacks.initObserver();
@@ -502,13 +510,139 @@ describe('initObserver arming and entry', () => {
     window.IntersectionObserver = original;
     warn.mockRestore();
   });
+});
 
-  it('announces with the translated message', () => {
-    const { observer } = setup({
-      announceToScreenReader: true,
-      i18n: { announce: 'Contenu affiché' },
-    });
-    observer.callback([{ intersectionRatio: 0.5, isIntersecting: true }]);
-    expect(document.body.textContent).toContain('Contenu affiché');
+describe('isAtScrollEnd', () => {
+  it('is true once the viewport reaches the bottom of the page', () => {
+    expect(isAtScrollEnd(1200, 800, 2000)).toBe(true);
+    // Fractional scroll positions land a pixel short.
+    expect(isAtScrollEnd(1199.5, 800, 2000)).toBe(true);
+  });
+
+  it('is false while the page can still scroll', () => {
+    expect(isAtScrollEnd(1000, 800, 2000)).toBe(false);
+  });
+});
+
+describe('initObserver reveal without reaching the trigger', () => {
+  const OFF_SCREEN = { top: 2000, bottom: 2080 };
+  // In the viewport, but inside the -25% bottom inset of the boundary.
+  const PAGE_BOTTOM = { top: 688, bottom: 768 };
+
+  let rect = OFF_SCREEN;
+
+  const setRect = (next: { top: number; bottom: number }) => {
+    rect = next;
+  };
+
+  const setup = (ctxOverrides: Record<string, unknown> = {}) => {
+    observers.length = 0;
+    holder.ref = document.createElement('div');
+    holder.ref.className = 'wp-block-animate-on-scroll';
+    holder.ref.innerHTML = '<p><a href="#x">link</a></p>';
+    holder.ref.getBoundingClientRect = () =>
+      ({ ...rect, left: 0, right: 800, width: 800, height: 80 }) as DOMRect;
+    document.body.appendChild(holder.ref);
+    holder.ctx = {
+      isVisible: false,
+      hasAnimated: false,
+      isExiting: false,
+      debugMode: false,
+      visibilityTrigger: '0.3',
+      detectionBoundary: {
+        top: '100%',
+        right: '0%',
+        bottom: '-25%',
+        left: '0%',
+      },
+      id: 'reveal',
+      reverseOnScrollBack: false,
+      ...ctxOverrides,
+    };
+    const cleanup = holder.config!.callbacks.initObserver();
+    return { ref: holder.ref, observer: observers[0], cleanup };
+  };
+
+  beforeEach(() => {
+    setRect(OFF_SCREEN);
+    page.scrollTop = 0;
+    page.scrollHeight = 2000 + window.innerHeight;
+    jest
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 1;
+      });
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    page.scrollTop = 0;
+    page.scrollHeight = 10_000;
+    jest.restoreAllMocks();
+  });
+
+  it('reveals an armed block when focus moves into it', () => {
+    const { ref } = setup();
+    expect(ref.hasAttribute('data-animate-id')).toBe(true);
+
+    ref.querySelector('a')!.focus();
+
+    expect(holder.ctx.isVisible).toBe(true);
+    expect(holder.ctx.hasAnimated).toBe(true);
+  });
+
+  it('reveals a block left in the bottom inset at the end of the page', () => {
+    setup();
+
+    // Scrolled to the end: on screen, but the observer never reports entry.
+    page.scrollTop = 2000;
+    setRect(PAGE_BOTTOM);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(holder.ctx.isVisible).toBe(true);
+  });
+
+  it('leaves a block on screen but short of the page end to the observer', () => {
+    setup();
+
+    page.scrollTop = 1500;
+    setRect(PAGE_BOTTOM);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(holder.ctx.isVisible).toBe(false);
+  });
+
+  it('does not hide a block that holds keyboard focus', () => {
+    const { ref, observer } = setup({ reverseOnScrollBack: true });
+    ref.querySelector('a')!.focus();
+
+    observer.callback([{ intersectionRatio: 0, isIntersecting: false }]);
+
+    expect(holder.ctx.isVisible).toBe(true);
+    expect(holder.ctx.isExiting).toBe(false);
+  });
+
+  it('does not hide a block stuck at the end of the page', () => {
+    const { observer } = setup({ reverseOnScrollBack: true });
+    page.scrollTop = 2000;
+    setRect(PAGE_BOTTOM);
+    window.dispatchEvent(new Event('scroll'));
+    expect(holder.ctx.isVisible).toBe(true);
+
+    observer.callback([{ intersectionRatio: 0, isIntersecting: false }]);
+
+    expect(holder.ctx.isVisible).toBe(true);
+  });
+
+  it('stops listening once cleaned up', () => {
+    const { cleanup } = setup();
+    cleanup?.();
+
+    page.scrollTop = 2000;
+    setRect(PAGE_BOTTOM);
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(holder.ctx.isVisible).toBe(false);
   });
 });

@@ -57,7 +57,6 @@ export type AnimateOnScrollAttributes = {
   /** Stable seed for random stagger (0 = generate on first use). */
   staggerSeed: number;
   respectReducedMotion: boolean;
-  announceToScreenReader: boolean;
   slideDistance?: number;
   zoomInStart?: number;
   zoomOutStart?: number;
