@@ -60,8 +60,7 @@ export function ModalInspector({
     scrollDepthPercent = 50,
     openOnLoadOnce = false,
     dialogMaxWidth = '',
-    dialogPadding = '',
-    dialogBorderRadius = '',
+    dialogLabel = '',
     overlayOpacity = 50,
     overlayBlur = 4,
     overlayColor = '',
@@ -149,6 +148,19 @@ export function ModalInspector({
           __nextHasNoMarginBottom
         />
 
+        {/* Accessible name */}
+        <TextControl
+          label={__('Dialog Name', 'aggressive-blocks')}
+          value={dialogLabel}
+          onChange={value => setAttributes({ dialogLabel: value })}
+          help={__(
+            'What screen readers announce when the modal opens. Leave empty to use the first heading inside the modal.',
+            'aggressive-blocks'
+          )}
+          __next40pxDefaultSize
+          __nextHasNoMarginBottom
+        />
+
         {/* Open on load */}
         <ToggleControl
           label={__('Open on Page Load', 'aggressive-blocks')}
@@ -192,7 +204,7 @@ export function ModalInspector({
           checked={exitIntentTrigger}
           onChange={value => setAttributes({ exitIntentTrigger: value })}
           help={__(
-            'Open the modal when the visitor shows intent to leave the page (mouse leaving viewport on desktop, rapid scroll-up on mobile)',
+            'Open the modal when the pointer leaves the top of the window, as if heading for the tabs or address bar. Desktop only.',
             'aggressive-blocks'
           )}
           __nextHasNoMarginBottom
@@ -509,6 +521,15 @@ export function ModalInspector({
           __nextHasNoMarginBottom
         />
 
+        {closeButtonPlacement === 'none' && disableOverlay && (
+          <Notice status='warning' isDismissible={false}>
+            {__(
+              'With the overlay disabled there is no backdrop to click, so the close button stays visible.',
+              'aggressive-blocks'
+            )}
+          </Notice>
+        )}
+
         {closeButtonPlacement !== 'none' && (
           <>
             <SelectControl<string>
@@ -741,36 +762,10 @@ export function ModalInspector({
       >
         <p className='components-base-control__help' style={{ marginTop: 0 }}>
           {__(
-            'Use theme color presets for automatic light/dark mode adaptation.',
+            'Style the panel from the Styles tab: color, border, padding, and shadow apply to the dialog. Theme color presets adapt to light and dark mode.',
             'aggressive-blocks'
           )}
         </p>
-
-        <TextControl
-          label={__('Padding', 'aggressive-blocks')}
-          value={dialogPadding}
-          placeholder='1.5rem'
-          onChange={value => setAttributes({ dialogPadding: value })}
-          help={__(
-            'e.g. 1.5rem, 1.5rem 2rem. Leave empty for the system default (1.5rem). Use 0 for flush content.',
-            'aggressive-blocks'
-          )}
-          __next40pxDefaultSize
-          __nextHasNoMarginBottom
-        />
-
-        <TextControl
-          label={__('Border Radius', 'aggressive-blocks')}
-          value={dialogBorderRadius}
-          placeholder='var(--aa-radius-panel)'
-          onChange={value => setAttributes({ dialogBorderRadius: value })}
-          help={__(
-            'Overrides the panel radius / Border panel. Leave empty for the system panel radius.',
-            'aggressive-blocks'
-          )}
-          __next40pxDefaultSize
-          __nextHasNoMarginBottom
-        />
 
         <RangeControl
           label={__('Overlay Opacity (%)', 'aggressive-blocks')}

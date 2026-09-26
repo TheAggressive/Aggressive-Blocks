@@ -111,6 +111,12 @@ $close_bg_color       = $sanitize_css_value( $attributes['closeButtonBgColor'] ?
 $close_hover_color    = $sanitize_css_value( $attributes['closeButtonHoverColor'] ?? '' );
 $close_hover_bg_color = $sanitize_css_value( $attributes['closeButtonHoverBgColor'] ?? '' );
 
+// Without a backdrop to click, a hidden close button leaves pointer and touch
+// users with no way out of the dialog. Keep the default button in that case.
+if ( 'none' === $close_placement && $disable_overlay ) {
+	$close_placement = 'inside-top-right';
+}
+
 $show_close_btn = 'none' !== $close_placement;
 $is_outside     = str_starts_with( $close_placement, 'outside-' );
 
@@ -127,70 +133,113 @@ $trigger_hover_text    = $sanitize_css_value( $attributes['triggerHoverTextColor
 
 // ── Dialog design attributes ──────────────────────────────────────────────────
 
-$dialog_padding       = $sanitize_css_value( $attributes['dialogPadding'] ?? '' );
-$dialog_border_radius = $sanitize_css_value( $attributes['dialogBorderRadius'] ?? '' );
-$overlay_opacity      = min( 90, absint( $attributes['overlayOpacity'] ?? 50 ) );
-$overlay_blur         = min( 20, absint( $attributes['overlayBlur'] ?? 4 ) );
-$overlay_color        = $sanitize_css_value( $attributes['overlayColor'] ?? '' );
+$overlay_opacity = min( 90, absint( $attributes['overlayOpacity'] ?? 50 ) );
+$overlay_blur    = min( 20, absint( $attributes['overlayBlur'] ?? 4 ) );
+$overlay_color   = $sanitize_css_value( $attributes['overlayColor'] ?? '' );
 
-// ── Forward WP block supports (color.background, color.text, border) to dialog.
-// get_block_wrapper_attributes() applies these to the wrapper; we also need
-// them on the fixed-position dialog div so they actually render visually.
+// ── Block supports, applied to the dialog panel only ─────────────────────────
+// block.json skips serialization for color, border, padding, and shadow, so
+// neither the saved markup nor get_block_wrapper_attributes() carries them.
+// The style engine resolves presets, per-side and per-corner values, and runs
+// the result through safecss_filter_attr().
 
-$style_attr   = isset( $attributes['style'] ) && is_array( $attributes['style'] ) ? $attributes['style'] : array();
-$color_style  = isset( $style_attr['color'] ) && is_array( $style_attr['color'] ) ? $style_attr['color'] : array();
-$border_style = isset( $style_attr['border'] ) && is_array( $style_attr['border'] ) ? $style_attr['border'] : array();
+$style_attr    = isset( $attributes['style'] ) && is_array( $attributes['style'] ) ? $attributes['style'] : array();
+$support_style = array_intersect_key(
+	$style_attr,
+	array(
+		'color'  => true,
+		'border' => true,
+		'shadow' => true,
+	)
+);
+if ( isset( $style_attr['spacing']['padding'] ) ) {
+	$support_style['spacing'] = array( 'padding' => $style_attr['spacing']['padding'] );
+}
 
-/**
- * Normalize the scalar or per-corner shape emitted by WordPress border support
- * into a valid CSS border-radius value.
- *
- * @param mixed $radius Raw block-support radius value.
- * @return string Normalized CSS value, or an empty string when invalid.
- */
-$normalize_border_radius = static function ( $radius ) use ( $sanitize_css_value ): string {
-	if ( is_string( $radius ) || is_int( $radius ) || is_float( $radius ) ) {
-		return $sanitize_css_value( $radius );
+// Palette picks are stored as slugs. Resolve them to their custom properties so
+// the style engine emits declarations, not has-*-color classes.
+$preset_colors = array(
+	'backgroundColor' => array( 'color', 'background' ),
+	'textColor'       => array( 'color', 'text' ),
+	'borderColor'     => array( 'border', 'color' ),
+);
+foreach ( $preset_colors as $preset_attribute => $style_path ) {
+	$slug = $attributes[ $preset_attribute ] ?? '';
+	if ( is_string( $slug ) && '' !== $slug ) {
+		$support_style[ $style_path[0] ][ $style_path[1] ] = 'var(--wp--preset--color--' . _wp_to_kebab_case( $slug ) . ')';
 	}
+}
 
-	if ( ! is_array( $radius ) ) {
-		return '';
-	}
+// Posts saved before the v3 deprecation still carry the retired design
+// attributes. They styled the dialog before, so they still win.
+$legacy_padding = $sanitize_css_value( $attributes['dialogPadding'] ?? '' );
+if ( '' !== $legacy_padding ) {
+	$support_style['spacing']['padding'] = $legacy_padding;
+}
+$legacy_radius = $sanitize_css_value( $attributes['dialogBorderRadius'] ?? '' );
+if ( '' !== $legacy_radius ) {
+	$support_style['border']['radius'] = $legacy_radius;
+}
 
-	$corner_keys = array( 'topLeft', 'topRight', 'bottomRight', 'bottomLeft' );
-	$values      = array();
-	$has_value   = false;
+$support_css = wp_style_engine_get_styles( $support_style )['css'] ?? '';
 
-	foreach ( $corner_keys as $index => $corner_key ) {
-		if ( array_key_exists( $corner_key, $radius ) ) {
-			$value = $radius[ $corner_key ];
-		} elseif ( array_key_exists( $index, $radius ) ) {
-			$value = $radius[ $index ];
-		} else {
-			$value = '';
+// The sticky close button paints the dialog background behind itself.
+$dialog_background = $sanitize_css_value( $support_style['color']['background'] ?? '' );
+if ( str_starts_with( $dialog_background, 'var:preset|color|' ) ) {
+	$dialog_background = 'var(--wp--preset--color--' . _wp_to_kebab_case( substr( $dialog_background, strlen( 'var:preset|color|' ) ) ) . ')';
+}
+
+// Posts saved before the v3 deprecation wrap the inner blocks in a copy of the
+// block wrapper, block-support classes and styles included. Unwrap it so the
+// dialog body is not styled a second time. v1 also saved a close button.
+if ( preg_match( '#^\s*<div\s[^>]*class="wp-block-aggressive-blocks-modal[\s"][^>]*>(.*)</div>\s*$#s', $content, $legacy_wrapper ) ) {
+	$content = (string) preg_replace(
+		'#^\s*<button[^>]*class="wp-block-aggressive-apparel-modal__close"[^>]*>.*?</button>#s',
+		'',
+		$legacy_wrapper[1],
+		1
+	);
+}
+
+// ── Accessible name ───────────────────────────────────────────────────────────
+// An explicit dialog label wins. Otherwise the first heading in the content
+// names the dialog, skipping headings inside a nested modal. Without either,
+// the built-in trigger's label says what was opened.
+
+$dialog_label      = isset( $attributes['dialogLabel'] ) && is_string( $attributes['dialogLabel'] )
+	? trim( sanitize_text_field( $attributes['dialogLabel'] ) )
+	: '';
+$dialog_heading_id = '';
+
+if ( '' === $dialog_label ) {
+	$headings      = new WP_HTML_Tag_Processor( $content );
+	$nested_depth  = 0;
+	$heading_names = array( 'H1', 'H2', 'H3', 'H4', 'H5', 'H6' );
+
+	while ( $headings->next_tag( array( 'tag_closers' => 'visit' ) ) ) {
+		$heading_tag = $headings->get_tag();
+		if ( 'DIALOG' === $heading_tag ) {
+			$nested_depth += $headings->is_tag_closer() ? -1 : 1;
+			continue;
+		}
+		if ( $nested_depth > 0 || $headings->is_tag_closer() || ! in_array( $heading_tag, $heading_names, true ) ) {
+			continue;
 		}
 
-		if ( is_string( $value ) || is_int( $value ) || is_float( $value ) ) {
-			$value = $sanitize_css_value( $value );
-		} else {
-			$value = '';
+		$heading_id = $headings->get_attribute( 'id' );
+		if ( ! is_string( $heading_id ) || '' === trim( $heading_id ) ) {
+			$heading_id = $unique_id . '-title';
+			$headings->set_attribute( 'id', $heading_id );
+			$content = $headings->get_updated_html();
 		}
-
-		if ( '' !== $value ) {
-			$has_value = true;
-		}
-
-		$values[] = '' !== $value ? $value : '0';
+		$dialog_heading_id = $heading_id;
+		break;
 	}
 
-	if ( ! $has_value ) {
-		return '';
+	if ( '' === $dialog_heading_id ) {
+		$dialog_label = $show_builtin_trigger ? $trigger_label : __( 'Dialog', 'aggressive-blocks' );
 	}
-
-	return 1 === count( array_unique( $values ) )
-		? $values[0]
-		: implode( ' ', $values );
-};
+}
 
 // Build close button HTML when needed.
 $close_btn_html = '';
@@ -304,7 +353,7 @@ $trigger_classes = implode(
 );
 
 // ── Dialog inline style ───────────────────────────────────────────────────────
-// Combines: animation duration, max-width, and forwarded WP block-support values.
+// Combines: animation duration, max-width, overlay vars, and block supports.
 
 $dialog_css_vars = array(
 	'--aa-modal-duration: ' . esc_attr( (string) $animation_duration ) . 'ms',
@@ -313,58 +362,8 @@ $dialog_css_vars = array(
 if ( $dialog_max_width ) {
 	$dialog_css_vars[] = '--aa-dialog-max-width: ' . esc_attr( $dialog_max_width );
 }
-if ( $dialog_padding ) {
-	$dialog_css_vars[] = '--aa-dialog-padding: ' . esc_attr( $dialog_padding );
-}
-if ( $dialog_border_radius ) {
-	$dialog_css_vars[] = '--aa-dialog-radius: ' . esc_attr( $dialog_border_radius );
-}
-
-// Forward color.background from WP block supports.
-$dialog_background = $sanitize_css_value( $color_style['background'] ?? '' );
 if ( $dialog_background ) {
 	$dialog_css_vars[] = '--aa-dialog-bg: ' . esc_attr( $dialog_background );
-}
-
-// Forward color.text from WP block supports.
-$dialog_text = $sanitize_css_value( $color_style['text'] ?? '' );
-if ( $dialog_text ) {
-	$dialog_css_vars[] = '--aa-dialog-text: ' . esc_attr( $dialog_text );
-}
-
-// Forward __experimentalBorder from WP block supports.
-$dialog_border_color = $sanitize_css_value( $border_style['color'] ?? '' );
-if ( $dialog_border_color ) {
-	$dialog_css_vars[] = '--aa-dialog-border-color: ' . esc_attr( $dialog_border_color );
-}
-$dialog_border_style = $sanitize_choice(
-	$border_style['style'] ?? '',
-	array( 'none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove', 'ridge', 'inset', 'outset' ),
-	''
-);
-if ( $dialog_border_style ) {
-	$dialog_css_vars[] = '--aa-dialog-border-style: ' . esc_attr( $dialog_border_style );
-}
-$dialog_border_width = $sanitize_css_value( $border_style['width'] ?? '' );
-if ( $dialog_border_width ) {
-	$dialog_css_vars[] = '--aa-dialog-border-width: ' . esc_attr( $dialog_border_width );
-}
-$block_border_radius = $normalize_border_radius( $border_style['radius'] ?? '' );
-if ( ! $dialog_border_radius && '' !== $block_border_radius ) {
-	$dialog_css_vars[] = '--aa-dialog-border-radius: ' . esc_attr( $block_border_radius );
-}
-
-// Forward shadow support onto the fixed-position dialog panel.
-$shadow = $style_attr['shadow'] ?? '';
-if ( is_string( $shadow ) && '' !== $shadow ) {
-	if ( str_starts_with( $shadow, 'var:preset|shadow|' ) ) {
-		$shadow_slug = substr( $shadow, strlen( 'var:preset|shadow|' ) );
-		$shadow      = sprintf( 'var(--wp--preset--shadow--%s)', sanitize_title( $shadow_slug ) );
-	}
-	$shadow = $sanitize_css_value( $shadow );
-	if ( $shadow ) {
-		$dialog_css_vars[] = '--aa-dialog-shadow: ' . esc_attr( $shadow );
-	}
 }
 
 // ── Overlay vars, inherited by dialog::backdrop ───────────────────────────────
@@ -383,7 +382,7 @@ if ( $overlay_color ) {
 	$backdrop_css_vars[] = '--aa-color-scrim: ' . esc_attr( $overlay_color );
 }
 $dialog_css_vars     = array_merge( $dialog_css_vars, $backdrop_css_vars );
-$dialog_inline_style = implode( '; ', $dialog_css_vars );
+$dialog_inline_style = implode( '; ', $dialog_css_vars ) . '; ' . $support_css;
 $closed_by           = $disable_overlay ? 'closerequest' : 'any';
 
 // ── Miscellaneous ─────────────────────────────────────────────────────────────
@@ -445,39 +444,27 @@ wp_interactivity_state(
 		type="button"
 		data-wp-on--click="actions.openModal"
 		aria-controls="<?php echo esc_attr( $unique_id ); ?>"
-			aria-haspopup="dialog"
-			aria-expanded="false"
-			<?php echo aggressive_blocks_trusted_html( $trigger_style ); ?>
+		aria-haspopup="dialog"
+		<?php echo aggressive_blocks_trusted_html( $trigger_style ); ?>
 	>
 		<?php echo esc_html( $trigger_label ); ?>
 	</button>
 	<?php endif; ?>
 
-	<div
-		class="wp-block-aggressive-apparel-modal__announcer"
-		data-modal-id="<?php echo esc_attr( $unique_id ); ?>"
-		data-label="<?php echo esc_attr( $trigger_label ); ?>"
-		aria-live="polite"
-		aria-atomic="true"
-	></div>
-
 	<dialog
 		id="<?php echo esc_attr( $unique_id ); ?>"
 		class="<?php echo esc_attr( $dialog_classes ); ?>"
-		aria-labelledby="<?php echo esc_attr( $unique_id ); ?>-label"
+		<?php if ( '' !== $dialog_heading_id ) : ?>
+		aria-labelledby="<?php echo esc_attr( $dialog_heading_id ); ?>"
+		<?php else : ?>
+		aria-label="<?php echo esc_attr( $dialog_label ); ?>"
+		<?php endif; ?>
 		tabindex="-1"
 		data-modal-id="<?php echo esc_attr( $unique_id ); ?>"
 		data-exit-animation="<?php echo esc_attr( $is_drawer ? 'position' : $exit_animation ); ?>"
 		closedby="<?php echo esc_attr( $closed_by ); ?>"
 		style="<?php echo esc_attr( $dialog_inline_style ); ?>"
 	>
-		<span
-			id="<?php echo esc_attr( $unique_id ); ?>-label"
-			class="wp-block-aggressive-apparel-modal__dialog-label"
-		>
-			<?php echo esc_html( $trigger_label ); ?>
-		</span>
-
 		<?php if ( $show_close_btn && ! $is_outside ) : ?>
 			<?php echo aggressive_blocks_trusted_html( $close_btn_html ); ?>
 		<?php endif; ?>

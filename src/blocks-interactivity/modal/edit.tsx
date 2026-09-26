@@ -9,12 +9,22 @@
  */
 import {
   InnerBlocks,
+  // Stable since WP 6.1 but still exported only under these names.
+  // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+  __experimentalGetShadowClassesAndStyles as getShadowClassesAndStyles,
+  // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+  __experimentalGetSpacingClassesAndStyles as getSpacingClassesAndStyles,
+  // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+  __experimentalUseBorderProps as useBorderProps,
+  // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+  __experimentalUseColorProps as useColorProps,
   store as blockEditorStore,
   useBlockProps,
 } from '@wordpress/block-editor';
 import { BlockEditProps } from '@wordpress/blocks';
 import { select, subscribe } from '@wordpress/data';
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
+import type { CSSProperties } from 'react';
 import { __ } from '@wordpress/i18n';
 import './editor.css';
 import {
@@ -57,6 +67,7 @@ export default function Edit({
     triggerBlockId = '',
     triggerBlockKey = '',
     disableOverlay = false,
+    dialogMaxWidth = '',
   } = attributes;
 
   const updateBlockTriggerClass = useUpdateBlockTriggerClass();
@@ -253,6 +264,31 @@ export default function Edit({
   // Block props.
   const blockProps = useBlockProps();
 
+  // Color, border, padding, and shadow skip serialization, so the wrapper
+  // never carries them. Apply them to the panel preview, which stands in for
+  // the dialog that render.php styles on the front end.
+  const borderProps = useBorderProps(attributes);
+  const colorProps = useColorProps(attributes);
+  const spacingProps = getSpacingClassesAndStyles(attributes);
+  const shadowProps = getShadowClassesAndStyles(attributes);
+  const panelProps = {
+    className: [
+      'wp-block-aggressive-apparel-modal__container',
+      borderProps.className,
+      colorProps.className,
+      shadowProps.className,
+    ]
+      .filter(Boolean)
+      .join(' '),
+    style: {
+      ...borderProps.style,
+      ...colorProps.style,
+      ...spacingProps.style,
+      ...shadowProps.style,
+      ...(dialogMaxWidth ? { '--aa-dialog-max-width': dialogMaxWidth } : {}),
+    } as CSSProperties,
+  };
+
   return (
     <>
       <ModalInspector
@@ -268,7 +304,7 @@ export default function Edit({
       />
 
       <div {...blockProps}>
-        <div className='wp-block-aggressive-apparel-modal__container'>
+        <div {...panelProps}>
           <InnerBlocks
             template={[
               [

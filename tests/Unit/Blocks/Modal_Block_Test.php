@@ -32,21 +32,36 @@ class Modal_Block_Test extends WP_UnitTestCase {
 	 * Render the modal block with the supplied attributes.
 	 *
 	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param string               $content    Saved inner HTML.
 	 * @return string Rendered block HTML.
 	 */
-	private function render_modal( array $attributes ): string {
+	private function render_modal( array $attributes, string $content = '' ): string {
 		return render_block(
 			array(
 				'blockName'    => 'aggressive-blocks/modal',
 				'attrs'        => $attributes,
 				'innerBlocks'  => array(),
-				'innerContent' => array(),
+				'innerHTML'    => $content,
+				'innerContent' => '' === $content ? array() : array( $content ),
 			)
 		);
 	}
 
 	/**
-	 * Dialog exposes a resolvable accessible name and trigger ARIA.
+	 * Return the opening tag of an element matched by a regex fragment.
+	 *
+	 * @param string $html    Rendered HTML.
+	 * @param string $pattern Regex fragment matched inside the tag.
+	 * @return string The opening tag.
+	 */
+	private function opening_tag( string $html, string $pattern ): string {
+		$this->assertMatchesRegularExpression( '/<[a-z]+\\s[^>]*' . $pattern . '[^>]*>/', $html );
+		preg_match( '/<[a-z]+\\s[^>]*' . $pattern . '[^>]*>/', $html, $match );
+		return $match[0];
+	}
+
+	/**
+	 * Without a heading, the built-in trigger's label names the dialog.
 	 *
 	 * @return void
 	 */
@@ -58,14 +73,94 @@ class Modal_Block_Test extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertStringContainsString( 'aria-labelledby="a11y-modal-label"', $html );
-		$this->assertStringContainsString( 'id="a11y-modal-label"', $html );
-		$this->assertStringContainsString( 'View details', $html );
+		$dialog = $this->opening_tag( $html, 'id="a11y-modal"' );
+		$this->assertStringContainsString( 'aria-label="View details"', $dialog );
+		$this->assertStringNotContainsString( 'aria-labelledby', $dialog );
 		$this->assertStringContainsString( 'aria-haspopup="dialog"', $html );
 		$this->assertStringContainsString( 'aria-controls="a11y-modal"', $html );
-		$this->assertStringContainsString( 'aria-expanded="false"', $html );
-		$this->assertStringNotContainsString( 'data-wp-bind--aria-expanded', $html );
-		$this->assertStringNotContainsString( 'aria-label="View details"', $html );
+		$this->assertStringNotContainsString( 'aria-expanded', $html );
+		$this->assertStringNotContainsString( 'aria-live', $html );
+	}
+
+	/**
+	 * The first heading names the dialog; a heading that has an id keeps it.
+	 *
+	 * @return void
+	 */
+	public function test_first_heading_names_the_dialog(): void {
+		$html = $this->render_modal(
+			array( 'modalId' => 'titled' ),
+			'<p>Intro</p><h2 class="wp-block-heading">Size guide</h2><h3>Later</h3>'
+		);
+
+		$dialog = $this->opening_tag( $html, 'id="titled"' );
+		$this->assertStringContainsString( 'aria-labelledby="titled-title"', $dialog );
+		$this->assertStringNotContainsString( 'aria-label=', $dialog );
+		$this->assertStringContainsString( '<h2 id="titled-title" class="wp-block-heading">Size guide</h2>', $html );
+		$this->assertStringContainsString( '<h3>Later</h3>', $html );
+
+		$anchored = $this->render_modal(
+			array( 'modalId' => 'anchored' ),
+			'<h2 id="size-guide">Size guide</h2>'
+		);
+		$this->assertStringContainsString(
+			'aria-labelledby="size-guide"',
+			$this->opening_tag( $anchored, 'id="anchored"' )
+		);
+	}
+
+	/**
+	 * Headings inside a nested modal do not name the outer dialog.
+	 *
+	 * @return void
+	 */
+	public function test_nested_modal_heading_is_skipped(): void {
+		$html = $this->render_modal(
+			array( 'modalId' => 'outer' ),
+			'<dialog id="inner"><h2>Inner title</h2></dialog><h3>Outer title</h3>'
+		);
+
+		$this->assertStringContainsString( '<h2>Inner title</h2>', $html );
+		$this->assertStringContainsString( '<h3 id="outer-title">Outer title</h3>', $html );
+	}
+
+	/**
+	 * An explicit dialog name wins over the heading.
+	 *
+	 * @return void
+	 */
+	public function test_dialog_label_overrides_heading(): void {
+		$html = $this->render_modal(
+			array(
+				'modalId'     => 'named',
+				'dialogLabel' => 'Newsletter sign-up',
+			),
+			'<h2>Stay in the loop</h2>'
+		);
+
+		$dialog = $this->opening_tag( $html, 'id="named"' );
+		$this->assertStringContainsString( 'aria-label="Newsletter sign-up"', $dialog );
+		$this->assertStringNotContainsString( 'aria-labelledby', $dialog );
+		$this->assertStringContainsString( '<h2>Stay in the loop</h2>', $html );
+	}
+
+	/**
+	 * A triggerless modal without a heading does not borrow the unused trigger label.
+	 *
+	 * @return void
+	 */
+	public function test_triggerless_modal_falls_back_to_generic_name(): void {
+		$html = $this->render_modal(
+			array(
+				'modalId'    => 'auto',
+				'openOnLoad' => true,
+			)
+		);
+
+		$this->assertStringContainsString(
+			'aria-label="Dialog"',
+			$this->opening_tag( $html, 'id="auto"' )
+		);
 	}
 
 	/**
@@ -115,6 +210,24 @@ class Modal_Block_Test extends WP_UnitTestCase {
 		$without = $this->render_modal( array( 'disableOverlay' => true ) );
 		$this->assertStringContainsString( 'closedby="closerequest"', $without );
 		$this->assertStringContainsString( 'is-overlay-disabled', $without );
+	}
+
+	/**
+	 * A hidden close button needs the backdrop; without one the button stays.
+	 *
+	 * @return void
+	 */
+	public function test_hidden_close_button_requires_the_overlay(): void {
+		$hidden = $this->render_modal( array( 'closeButtonPlacement' => 'none' ) );
+		$this->assertStringNotContainsString( 'wp-block-aggressive-apparel-modal__close', $hidden );
+
+		$kept = $this->render_modal(
+			array(
+				'closeButtonPlacement' => 'none',
+				'disableOverlay'       => true,
+			)
+		);
+		$this->assertStringContainsString( 'close-placement-inside-top-right', $kept );
 	}
 
 	/**
@@ -220,64 +333,142 @@ class Modal_Block_Test extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Preset shadow support is forwarded onto the dialog panel.
+	 * Block supports style the dialog and never the wrapper.
 	 *
 	 * @return void
 	 */
-	public function test_preset_shadow_is_forwarded(): void {
+	public function test_block_supports_style_only_the_dialog(): void {
 		$html = $this->render_modal(
 			array(
-				'style' => array(
-					'shadow' => 'var:preset|shadow|x-large',
+				'modalId'         => 'styled',
+				'backgroundColor' => 'surface',
+				'textColor'       => 'foreground',
+				'borderColor'     => 'surfaceElevated',
+				'style'           => array(
+					'border'  => array( 'width' => '24px' ),
+					'spacing' => array(
+						'padding' => array( 'top' => 'var:preset|spacing|40' ),
+						'margin'  => array( 'top' => '8px' ),
+					),
+					'shadow'  => 'var:preset|shadow|x-large',
 				),
 			)
 		);
 
-		$this->assertStringContainsString(
-			'--aa-dialog-shadow: var(--wp--preset--shadow--x-large)',
-			$html
-		);
+		$wrapper = $this->opening_tag( $html, 'wp-block-aggressive-blocks-modal' );
+		$this->assertStringNotContainsString( 'has-background', $wrapper );
+		$this->assertStringNotContainsString( 'border', $wrapper );
+		$this->assertStringNotContainsString( 'style=', $wrapper );
+
+		$dialog = $this->opening_tag( $html, 'id="styled"' );
+		$this->assertStringContainsString( 'background-color:var(--wp--preset--color--surface)', $dialog );
+		$this->assertStringContainsString( '--aa-dialog-bg: var(--wp--preset--color--surface)', $dialog );
+		$this->assertStringContainsString( 'color:var(--wp--preset--color--foreground)', $dialog );
+		$this->assertStringContainsString( 'border-color:var(--wp--preset--color--surface-elevated)', $dialog );
+		$this->assertStringContainsString( 'border-width:24px', $dialog );
+		$this->assertStringContainsString( 'padding-top:var(--wp--preset--spacing--40)', $dialog );
+		$this->assertStringContainsString( 'box-shadow:var(--wp--preset--shadow--x-large)', $dialog );
+		$this->assertStringNotContainsString( 'margin', $dialog );
 	}
 
 	/**
-	 * Scalar radius values remain supported.
+	 * Scalar and per-corner radius values reach the dialog.
 	 *
 	 * @return void
 	 */
-	public function test_scalar_border_radius_is_forwarded(): void {
-		$html = $this->render_modal(
+	public function test_border_radius_is_forwarded(): void {
+		$scalar = $this->render_modal(
 			array(
-				'style' => array(
+				'modalId' => 'round',
+				'style'   => array(
 					'border' => array( 'radius' => '12px' ),
 				),
 			)
 		);
+		$this->assertStringContainsString( 'border-radius:12px', $this->opening_tag( $scalar, 'id="round"' ) );
 
-		$this->assertStringContainsString( '--aa-dialog-border-radius: 12px', $html );
-	}
-
-	/**
-	 * Per-corner radius values are serialized in CSS shorthand order.
-	 *
-	 * @return void
-	 */
-	public function test_per_corner_border_radius_is_normalized(): void {
-		$html = $this->render_modal(
+		$corners = $this->render_modal(
 			array(
-				'style' => array(
+				'modalId' => 'corners',
+				'style'   => array(
 					'border' => array(
 						'radius' => array(
 							'topLeft'     => '1px',
-							'topRight'    => '2px',
 							'bottomRight' => '3px',
-							'bottomLeft'  => '4px',
 						),
 					),
 				),
 			)
 		);
+		$dialog  = $this->opening_tag( $corners, 'id="corners"' );
+		$this->assertStringContainsString( 'border-top-left-radius:1px', $dialog );
+		$this->assertStringContainsString( 'border-bottom-right-radius:3px', $dialog );
+		$this->assertStringNotContainsString( 'Array', $dialog );
+	}
 
-		$this->assertStringContainsString( '--aa-dialog-border-radius: 1px 2px 3px 4px', $html );
-		$this->assertStringNotContainsString( '--aa-dialog-border-radius: Array', $html );
+	/**
+	 * Unsafe block-support values are filtered out of the dialog style.
+	 *
+	 * @return void
+	 */
+	public function test_unsafe_support_values_are_filtered(): void {
+		$html = $this->render_modal(
+			array(
+				'modalId' => 'unsafe',
+				'style'   => array(
+					'color' => array( 'text' => 'expression(alert(1))' ),
+				),
+			)
+		);
+
+		$this->assertStringNotContainsString( 'expression', $html );
+	}
+
+	/**
+	 * Unmigrated posts keep their legacy padding and radius on the dialog.
+	 *
+	 * @return void
+	 */
+	public function test_legacy_design_attributes_still_style_the_dialog(): void {
+		$html   = $this->render_modal(
+			array(
+				'modalId'            => 'legacy-design',
+				'dialogPadding'      => '2rem 1rem',
+				'dialogBorderRadius' => '6px',
+				'style'              => array(
+					'spacing' => array( 'padding' => array( 'top' => '9px' ) ),
+				),
+			)
+		);
+		$dialog = $this->opening_tag( $html, 'id="legacy-design"' );
+
+		$this->assertStringContainsString( 'padding:2rem 1rem', $dialog );
+		$this->assertStringNotContainsString( 'padding-top:9px', $dialog );
+		$this->assertStringContainsString( 'border-radius:6px', $dialog );
+	}
+
+	/**
+	 * Content saved inside the old wrapper copy is unwrapped, v1 close button included.
+	 *
+	 * @return void
+	 */
+	public function test_legacy_saved_wrapper_is_unwrapped(): void {
+		$v2 = $this->render_modal(
+			array( 'modalId' => 'legacy-v2' ),
+			'<div class="wp-block-aggressive-blocks-modal has-background" style="border-width:24px"><h3 class="wp-block-heading">Modal Title</h3><p>Body</p></div>'
+		);
+		$this->assertSame( 1, substr_count( $v2, 'wp-block-aggressive-blocks-modal' ) );
+		$this->assertStringNotContainsString( 'border-width:24px', $v2 );
+		$this->assertMatchesRegularExpression(
+			'#<div class="wp-block-aggressive-apparel-modal__dialog-body">\s*<h3 id="legacy-v2-title" class="wp-block-heading">Modal Title</h3><p>Body</p>\s*</div>#',
+			$v2
+		);
+
+		$v1 = $this->render_modal(
+			array( 'modalId' => 'legacy-v1' ),
+			'<div class="wp-block-aggressive-blocks-modal"><button class="wp-block-aggressive-apparel-modal__close" type="button" data-wp-on--click="actions.closeModal" aria-label="Close modal">✕</button><p>Body</p></div>'
+		);
+		$this->assertSame( 1, substr_count( $v1, 'wp-block-aggressive-apparel-modal__close' ) );
+		$this->assertStringNotContainsString( '✕', $v1 );
 	}
 }
