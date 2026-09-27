@@ -84,10 +84,11 @@
 
 /*
  * Parallax layer base — individual blocks with parallax enabled.
- * All motion is written by the frame engine through the individual
- * transform properties (translate / scale / rotate), so this rule only
- * provides positioning context and interactivity. No transitions: the
- * engine's lerp already smooths every frame.
+ * All motion goes through the individual transform properties
+ * (translate / scale / rotate) — driven by native scroll-driven
+ * animations where supported, else written by the JS frame engine — so
+ * this rule only provides positioning context and interactivity. No
+ * transitions: both renderers are already continuous.
  */
 [data-parallax-enabled="true"] {
 	position: relative;
@@ -103,9 +104,11 @@
  * a compositor-only move instead of a main-raster repaint (large image
  * layers repainting each frame were an FPS drain). Scoped to
  * --intersecting so idle blocks hold no GPU layers, and reduced-motion
- * (below) force-resets it.
+ * (below) force-resets it. Blocks on the native renderer
+ * (--scroll-timeline) are skipped: the browser promotes a layer for as
+ * long as its scroll-driven animation runs, so the hint adds nothing.
  */
-.aggressive-apparel-parallax--intersecting:not(.aggressive-apparel-parallax--mouse-interaction) [data-parallax-enabled="true"] {
+.aggressive-apparel-parallax--intersecting:not(.aggressive-apparel-parallax--mouse-interaction, .aggressive-apparel-parallax--scroll-timeline) [data-parallax-enabled="true"] {
 	will-change: transform;
 }
 

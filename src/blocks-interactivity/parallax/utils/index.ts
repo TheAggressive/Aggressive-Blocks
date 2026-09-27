@@ -19,6 +19,7 @@ export { ParallaxLogger, validateConfiguration } from './error-handling';
 export {
   calculateProgressWithinBoundary,
   measureProgressGeometry,
+  parseBoundaryPart,
   progressFromGeometry,
   type ProgressGeometry,
   getObserverRootMargin,

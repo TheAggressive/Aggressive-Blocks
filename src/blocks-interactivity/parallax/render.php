@@ -22,64 +22,63 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// Extract attributes with defaults (matching animate-on-scroll).
-$intensity          = $attributes['intensity'] ?? 50;
-$visibility_trigger = $attributes['visibilityTrigger'] ?? 0.3;
-$detection_boundary = $attributes['detectionBoundary'] ?? array(
-	'top'    => '0%',
-	'right'  => '0%',
-	'bottom' => '0%',
-	'left'   => '0%',
-);
-$activation_buffer  = $attributes['activationBuffer'] ?? 20;
+// Saved attributes are untrusted input: coerce numbers, whitelist enums,
+// and accept only px/% boundary sides (anything else would desync the
+// JS engine and the view-timeline inset, which parse the same format).
+$parallax_number = static function ( $value, float $fallback ): float {
+	return is_numeric( $value ) ? (float) $value : $fallback;
+};
 
-$enable_mouse_interaction = $attributes['enableMouseInteraction'] ?? false;
+$parallax_boundary_side = static function ( $value ): string {
+	return is_string( $value ) && preg_match( '/^-?\d+(\.\d+)?(px|%)$/', trim( $value ) )
+		? trim( $value )
+		: '0%';
+};
+
+$raw_boundary       = is_array( $attributes['detectionBoundary'] ?? null ) ? $attributes['detectionBoundary'] : array();
+$detection_boundary = array();
+foreach ( array( 'top', 'right', 'bottom', 'left' ) as $parallax_side ) {
+	$detection_boundary[ $parallax_side ] = $parallax_boundary_side( $raw_boundary[ $parallax_side ] ?? '0%' );
+}
+
+$parallax_directions = array( 'up', 'down', 'left', 'right', 'both', 'none' );
+$parallax_direction  = in_array( $attributes['parallaxDirection'] ?? 'down', $parallax_directions, true )
+	? $attributes['parallaxDirection'] ?? 'down'
+	: 'down';
+
+$enable_mouse_interaction = ! empty( $attributes['enableMouseInteraction'] );
 $disable_on_mobile        = ! empty( $attributes['disableOnMobile'] );
+$perspective_distance     = max( 1.0, $parallax_number( $attributes['perspectiveDistance'] ?? null, 1000 ) );
 
 // Debug Mode is a saved attribute: gate it per-request so visitors
 // without editing capabilities never see overlays or download the
 // debug script chunk, even on a page saved with it enabled.
-$debug_mode = ( $attributes['debugMode'] ?? false )
+$debug_mode = ! empty( $attributes['debugMode'] )
 	&& aggressive_blocks_can_view_block_debug();
 
-$parallax_direction         = $attributes['parallaxDirection'] ?? 'down';
-$mouse_influence_multiplier = $attributes['mouseInfluenceMultiplier'] ?? 0.5;
-$max_mouse_translation      = $attributes['maxMouseTranslation'] ?? 20;
-$depth_intensity_multiplier = $attributes['depthIntensityMultiplier'] ?? 50;
-$transition_duration        = $attributes['transitionDuration'] ?? 0.1;
-$perspective_distance       = $attributes['perspectiveDistance'] ?? 1000;
-$max_mouse_rotation         = $attributes['maxMouseRotation'] ?? 5;
-$depth_of_field             = $attributes['depthOfField'] ?? false;
+$parallax_instance_id = wp_unique_id( 'parallax_' );
 
 $context = array(
-	'intensity'                => $intensity,
-	'visibilityTrigger'        => $visibility_trigger,
+	'id'                       => $parallax_instance_id,
+	'intensity'                => $parallax_number( $attributes['intensity'] ?? null, 50 ),
+	'visibilityTrigger'        => min( 1.0, max( 0.0, $parallax_number( $attributes['visibilityTrigger'] ?? null, 0.3 ) ) ),
 	'detectionBoundary'        => $detection_boundary,
-	'activationBuffer'         => $activation_buffer,
+	'activationBuffer'         => max( 0.0, $parallax_number( $attributes['activationBuffer'] ?? null, 20 ) ),
 	'enableMouseInteraction'   => $enable_mouse_interaction,
 	'disableOnMobile'          => $disable_on_mobile,
 	'debugMode'                => $debug_mode,
 	'parallaxDirection'        => $parallax_direction,
-	'mouseInfluenceMultiplier' => $mouse_influence_multiplier,
-	'maxMouseTranslation'      => $max_mouse_translation,
-	'depthIntensityMultiplier' => $depth_intensity_multiplier,
-	'transitionDuration'       => $transition_duration,
+	'mouseInfluenceMultiplier' => $parallax_number( $attributes['mouseInfluenceMultiplier'] ?? null, 0.5 ),
+	'maxMouseTranslation'      => $parallax_number( $attributes['maxMouseTranslation'] ?? null, 20 ),
+	'depthIntensityMultiplier' => $parallax_number( $attributes['depthIntensityMultiplier'] ?? null, 50 ),
+	'transitionDuration'       => max( 0.0, $parallax_number( $attributes['transitionDuration'] ?? null, 0.1 ) ),
 	'perspectiveDistance'      => $perspective_distance,
-	'maxMouseRotation'         => $max_mouse_rotation,
-	'depthOfField'             => $depth_of_field,
+	'maxMouseRotation'         => $parallax_number( $attributes['maxMouseRotation'] ?? null, 5 ),
+	'depthOfField'             => ! empty( $attributes['depthOfField'] ),
 	'isIntersecting'           => false,
 	'intersectionRatio'        => 0,
 	'hasInitialized'           => false,
 	'previousProgress'         => 0,
-);
-
-// Generate a unique ID for this parallax block instance.
-$parallax_instance_id  = 'parallax_' . uniqid();
-$context['instanceId'] = $parallax_instance_id;
-
-$style_string = sprintf(
-	'--parallax-perspective: %spx;',
-	esc_attr( (string) $perspective_distance )
 );
 
 $classes = array(
@@ -110,30 +109,20 @@ $wrapper_attributes = aggressive_blocks_get_block_wrapper_attributes(
 	array(
 		'class'               => implode( ' ', $classes ),
 		'data-wp-interactive' => 'aggressive-blocks/parallax',
-		'data-wp-context'     => wp_json_encode( $context ),
+		'data-wp-context'     => (string) wp_json_encode( $context ),
 		'data-wp-init'        => 'callbacks.initParallax',
-		'style'               => $style_string,
+		'data-instance-id'    => $parallax_instance_id,
+		'style'               => '--parallax-perspective: ' . $perspective_distance . 'px;',
 	)
 );
 
-// Markup matches the editor canvas (container → content).
-printf(
-	'<div %s data-instance-id="%s">
-		<div class="aggressive-apparel-parallax__container">
-			<div class="aggressive-apparel-parallax__content">%s</div>
-		</div>
-	</div>',
-	wp_kses(
-		$wrapper_attributes,
-		array(
-			'class'               => array(),
-			'id'                  => array(),
-			'style'               => array(),
-			'data-wp-interactive' => array(),
-			'data-wp-context'     => array(),
-			'data-wp-init'        => array(),
-		)
-	),
-	esc_attr( $parallax_instance_id ),
-	wp_kses_post( $content )
-);
+// Markup matches the editor canvas (container → content). $content is
+// the inner blocks as core already rendered them — running it through
+// kses here stripped forms, inputs, SVG icons and embeds from anything
+// nested in the block.
+?>
+<div <?php echo aggressive_blocks_trusted_html( $wrapper_attributes ); ?>>
+	<div class="aggressive-apparel-parallax__container">
+		<div class="aggressive-apparel-parallax__content"><?php echo aggressive_blocks_trusted_html( $content ); ?></div>
+	</div>
+</div>

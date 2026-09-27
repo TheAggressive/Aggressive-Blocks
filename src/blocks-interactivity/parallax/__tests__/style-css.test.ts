@@ -26,9 +26,9 @@ describe('parallax style.css hygiene', () => {
     expect(css).not.toMatch(/__fallback/);
   });
 
-  it('scopes will-change to intersecting scroll-only scenes', () => {
+  it('scopes will-change to intersecting JS-rendered scroll-only scenes', () => {
     expect(css).toMatch(
-      /\.aggressive-apparel-parallax--intersecting:not\(\.aggressive-apparel-parallax--mouse-interaction\)\s+\[data-parallax-enabled="true"\]/
+      /\.aggressive-apparel-parallax--intersecting:not\(\.aggressive-apparel-parallax--mouse-interaction, \.aggressive-apparel-parallax--scroll-timeline\)\s+\[data-parallax-enabled="true"\]/
     );
     expect(css).toMatch(/will-change:\s*transform/);
   });

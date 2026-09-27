@@ -8,6 +8,11 @@
  * It self-suspends as soon as scrolling stops and the smoothed pointer
  * settles, so an idle page costs zero main-thread time.
  *
+ * Instances on the native scroll-timeline renderer (timeline.ts) only
+ * pass through here once, to be primed; after that the browser animates
+ * them and the scroll listener is not even attached for their sake
+ * (debug mode excepted, which needs live progress readouts).
+ *
  * @package Aggressive Apparel
  */
 
@@ -28,8 +33,18 @@ export interface ParallaxInstance {
   container: HTMLElement | null;
   ctx: ParallaxContext;
   layers: CachedLayer[];
+  /**
+   * `frame`: this engine writes layer styles every frame.
+   * `timeline`: native scroll-driven animations own the layers; the
+   * engine only primes the baseline (and feeds debug progress).
+   */
+  renderer: 'frame' | 'timeline';
   /** Toggled by the IntersectionObserver; inactive instances are skipped. */
   active: boolean;
+  /** Baseline calibrated (happens on the first engine frame). */
+  primed: boolean;
+  /** Called in the write phase right after priming. */
+  onPrimed?: () => void;
   /** Optional per-frame hook used by the (lazily loaded) debug tooling. */
   onFrame?: (progress: number) => void;
 
@@ -72,16 +87,25 @@ let lastFrameTime = 0;
 let listenersAttached = false;
 let pointerListenersAttached = false;
 
+/**
+ * Device tilt → pointer mapping. Tilt is measured from a slowly
+ * re-centering rest posture rather than from flat: phones are held at
+ * ~30–60° of forward tilt, so mapping raw beta pinned the scene at its
+ * maximum vertical offset. ±ORIENTATION_RANGE_DEG from rest spans the
+ * full pointer range; changes under the deadband are sensor noise that
+ * would otherwise keep the frame loop awake forever.
+ */
+const ORIENTATION_RANGE_DEG = 25;
+const ORIENTATION_RECENTER = 0.02;
+const ORIENTATION_DEADBAND = 0.004;
+let orientationRest: { x: number; y: number } | null = null;
+let orientationTarget = { x: 0, y: 0 };
+
+const needsScrollFrames = (instance: ParallaxInstance): boolean =>
+  instance.renderer === 'frame' || Boolean(instance.ctx.debugMode);
+
 const hasFinePointer = (): boolean =>
   window.matchMedia('(pointer: fine)').matches;
-
-/** iOS requires a user-gesture permission prompt for orientation events. */
-const orientationNeedsPermission = (): boolean =>
-  typeof (
-    DeviceOrientationEvent as unknown as {
-      requestPermission?: () => Promise<string>;
-    }
-  ).requestPermission === 'function';
 
 const requestTick = (): void => {
   if (rafId === null) {
@@ -104,8 +128,13 @@ const handleResize = (): void => {
 };
 
 const handlePointerMove = (event: PointerEvent): void => {
-  const targetX = clamp(event.clientX / window.innerWidth - 0.5, -0.5, 0.5);
-  const targetY = clamp(event.clientY / window.innerHeight - 0.5, -0.5, 0.5);
+  setPointerTargets(
+    clamp(event.clientX / window.innerWidth - 0.5, -0.5, 0.5),
+    clamp(event.clientY / window.innerHeight - 0.5, -0.5, 0.5)
+  );
+};
+
+const setPointerTargets = (targetX: number, targetY: number): void => {
   let needsFrame = false;
   instances.forEach(instance => {
     if (instance.ctx.enableMouseInteraction) {
@@ -119,22 +148,64 @@ const handlePointerMove = (event: PointerEvent): void => {
   }
 };
 
-const handleOrientation = (event: DeviceOrientationEvent): void => {
-  // Gamma: left/right tilt, Beta: front/back tilt. Map ±45° onto the same
-  // -0.5..0.5 range the pointer uses.
-  const targetX = clamp((event.gamma ?? 0) / 90, -0.5, 0.5);
-  const targetY = clamp((event.beta ?? 0) / 90, -0.5, 0.5);
-  let needsFrame = false;
-  instances.forEach(instance => {
-    if (instance.ctx.enableMouseInteraction) {
-      instance.pointerTargetX = targetX;
-      instance.pointerTargetY = targetY;
-      needsFrame = true;
-    }
-  });
-  if (needsFrame) {
-    requestTick();
+/**
+ * Device axes → screen axes for the current screen rotation, in degrees
+ * (x: tilt toward the right edge, y: tilt toward the bottom edge).
+ */
+export const screenTilt = (
+  beta: number,
+  gamma: number,
+  angle: number
+): { x: number; y: number } => {
+  switch (((angle % 360) + 360) % 360) {
+    case 90:
+      return { x: beta, y: -gamma };
+    case 180:
+      return { x: -gamma, y: -beta };
+    case 270:
+      return { x: -beta, y: gamma };
+    default:
+      return { x: gamma, y: beta };
   }
+};
+
+/** Current screen rotation; `window.orientation` covers iOS < 16.4. */
+const screenAngle = (): number =>
+  window.screen?.orientation?.angle ??
+  (window as { orientation?: number }).orientation ??
+  0;
+
+const handleOrientation = (event: DeviceOrientationEvent): void => {
+  if (event.beta === null || event.gamma === null) {
+    return;
+  }
+  const tilt = screenTilt(event.beta, event.gamma, screenAngle());
+
+  // Calibrate on the first reading, then drift toward the current
+  // posture so leaning back on the couch doesn't pin the scene.
+  if (!orientationRest) {
+    orientationRest = { ...tilt };
+  }
+  orientationRest.x += (tilt.x - orientationRest.x) * ORIENTATION_RECENTER;
+  orientationRest.y += (tilt.y - orientationRest.y) * ORIENTATION_RECENTER;
+
+  const range = ORIENTATION_RANGE_DEG * 2;
+  const targetX = clamp((tilt.x - orientationRest.x) / range, -0.5, 0.5);
+  const targetY = clamp((tilt.y - orientationRest.y) / range, -0.5, 0.5);
+
+  if (
+    Math.abs(targetX - orientationTarget.x) < ORIENTATION_DEADBAND &&
+    Math.abs(targetY - orientationTarget.y) < ORIENTATION_DEADBAND
+  ) {
+    return;
+  }
+  orientationTarget = { x: targetX, y: targetY };
+  setPointerTargets(targetX, targetY);
+};
+
+const handleScreenRotation = (): void => {
+  // Axes swap on rotation; re-calibrate from the next reading.
+  orientationRest = null;
 };
 
 const attachPointerListeners = (): void => {
@@ -143,19 +214,29 @@ const attachPointerListeners = (): void => {
   }
   pointerListenersAttached = true;
 
+  // Exactly one pointer source, so a laptop with a motion sensor doesn't
+  // have the mouse and the tilt fighting over the same target.
   if (hasFinePointer()) {
     window.addEventListener('pointermove', handlePointerMove, {
       passive: true,
     });
+    return;
   }
 
-  // Device tilt as the pointer source on mobile. iOS gates this behind a
-  // user-gesture permission prompt, so it is only attached where events
-  // flow without one (Android, desktop browsers that expose the API).
-  if (window.DeviceOrientationEvent && !orientationNeedsPermission()) {
+  // Touch-first devices use device tilt. requestPermission() is never
+  // called: it would pop a system dialog on a shopper's first tap (iOS),
+  // and Chromium now exposes it too, so gating on its existence (as this
+  // once did) silently disabled tilt everywhere. The listener is simply
+  // attached — browsers that allow motion sensors (Android Chrome) deliver
+  // events, browsers that gate them deliver none, at no cost.
+  if (typeof window.DeviceOrientationEvent !== 'undefined') {
     window.addEventListener('deviceorientation', handleOrientation, {
       passive: true,
     });
+    window.screen?.orientation?.addEventListener?.(
+      'change',
+      handleScreenRotation
+    );
   }
 };
 
@@ -168,20 +249,49 @@ const attachListeners = (): void => {
   window.addEventListener('resize', handleResize, { passive: true });
 };
 
-const detachAllListeners = (): void => {
+const detachScrollListeners = (): void => {
   if (listenersAttached) {
     window.removeEventListener('scroll', handleScroll);
     window.removeEventListener('resize', handleResize);
     listenersAttached = false;
   }
+};
+
+const detachPointerListeners = (): void => {
   if (pointerListenersAttached) {
     window.removeEventListener('pointermove', handlePointerMove);
     window.removeEventListener('deviceorientation', handleOrientation);
+    window.screen?.orientation?.removeEventListener?.(
+      'change',
+      handleScreenRotation
+    );
     pointerListenersAttached = false;
+    orientationRest = null;
   }
-  if (rafId !== null) {
-    cancelAnimationFrame(rafId);
-    rafId = null;
+};
+
+/**
+ * Attach exactly the listeners the registered instances need, and drop
+ * the rest — a page of timeline-rendered blocks carries no scroll
+ * listener at all.
+ */
+const syncListeners = (): void => {
+  let scroll = false;
+  let pointer = false;
+  instances.forEach(instance => {
+    scroll ||= needsScrollFrames(instance);
+    pointer ||= Boolean(instance.ctx.enableMouseInteraction);
+  });
+
+  if (scroll) {
+    attachListeners();
+  } else {
+    detachScrollListeners();
+  }
+  if (pointer) {
+    attachPointerListeners();
+  } else {
+    detachPointerListeners();
   }
 };
 
@@ -269,7 +379,7 @@ const readInstance = (instance: ParallaxInstance): void => {
   );
   instance.progress = progress;
 
-  if (instance.ctx.enableMouseInteraction) {
+  if (instance.renderer === 'frame' && instance.ctx.enableMouseInteraction) {
     instance.layers.forEach(layer => {
       if (layer.needsRect) {
         layer.rect = layer.element.getBoundingClientRect();
@@ -280,6 +390,11 @@ const readInstance = (instance: ParallaxInstance): void => {
 
 /** Write-phase style application for one instance. */
 const renderInstance = (instance: ParallaxInstance): void => {
+  if (instance.renderer === 'timeline') {
+    // The browser animates the layers; only debug wants the progress.
+    instance.onFrame?.(instance.progress);
+    return;
+  }
   const is3D = Boolean(instance.ctx.enableMouseInteraction);
   if (is3D) {
     writeContainerTilt(instance);
@@ -296,25 +411,47 @@ const renderInstance = (instance: ParallaxInstance): void => {
   instance.onFrame?.(instance.progress);
 };
 
+/**
+ * Calibrate the baseline (read phase): blocks visible at load anchor to
+ * their load-time progress so the page opens looking exactly like the
+ * editor; offscreen blocks anchor to mid-viewport.
+ */
+const calibrateBaseline = (instance: ParallaxInstance): void => {
+  readInstance(instance);
+  const rect = instance.root.getBoundingClientRect();
+  const inInitialViewport = rect.top < window.innerHeight && rect.bottom > 0;
+  instance.baselineProgress = inInitialViewport ? instance.progress : 0.5;
+};
+
 const tick = (now: number): void => {
   rafId = null;
   const deltaMs = Math.min(now - lastFrameTime, MAX_FRAME_DELTA_MS);
   lastFrameTime = now;
 
   let pointerInMotion = false;
+  const priming: ParallaxInstance[] = [];
+  const rendering: ParallaxInstance[] = [];
 
-  // READ phase: layout queries for every active instance, no style writes.
+  // READ phase: layout queries for every instance that needs them —
+  // including all instances registered since the last frame, so N blocks
+  // hydrating together cost one layout, not N forced ones.
   instances.forEach(instance => {
-    if (instance.active) {
+    if (!instance.primed) {
+      calibrateBaseline(instance);
+      priming.push(instance);
+    } else if (instance.active && needsScrollFrames(instance)) {
       readInstance(instance);
+      rendering.push(instance);
     }
   });
 
-  // WRITE phase: pointer smoothing + style application.
-  instances.forEach(instance => {
-    if (!instance.active) {
-      return;
-    }
+  // WRITE phase: priming renders, then pointer smoothing + styles.
+  priming.forEach(instance => {
+    instance.primed = true;
+    renderInstance(instance);
+    instance.onPrimed?.();
+  });
+  rendering.forEach(instance => {
     if (
       instance.ctx.enableMouseInteraction &&
       smoothPointer(instance, deltaMs)
@@ -332,40 +469,40 @@ const tick = (now: number): void => {
 };
 
 /**
- * Register an instance with the shared engine. Returns an unregister
- * callback; listeners are detached when the last instance leaves.
+ * Register an instance with the shared engine. It is primed on the next
+ * engine frame (batched with any other new instances). Returns an
+ * unregister callback; listeners are detached when no instance needs
+ * them anymore.
  */
 export const registerInstance = (instance: ParallaxInstance): (() => void) => {
   instances.add(instance);
-  attachListeners();
-  if (instance.ctx.enableMouseInteraction) {
-    attachPointerListeners();
-  }
+  syncListeners();
   requestTick();
 
   return () => {
     instances.delete(instance);
-    if (instances.size === 0) {
-      detachAllListeners();
+    syncListeners();
+    if (instances.size === 0 && rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
     }
   };
 };
 
 /**
- * Calibrate the baseline and render one frame immediately, regardless of
- * active state. Called once at init: blocks visible at load anchor to
- * their load-time progress so the page opens looking exactly like the
- * editor; offscreen blocks anchor to mid-viewport. Effects (scroll
- * opacity, blur, depth scale) also start from their correct values.
+ * Move an instance onto the JS renderer — used when the native scroll
+ * timeline could not start, so the block still animates.
  */
-export const primeInstance = (instance: ParallaxInstance): void => {
-  readInstance(instance);
-
-  const rect = instance.root.getBoundingClientRect();
-  const inInitialViewport = rect.top < window.innerHeight && rect.bottom > 0;
-  instance.baselineProgress = inInitialViewport ? instance.progress : 0.5;
-
-  renderInstance(instance);
+export const switchToFrameRenderer = (instance: ParallaxInstance): void => {
+  instance.renderer = 'frame';
+  syncListeners();
+  // Render the primed frame now (progress was just measured), exactly as
+  // a block that started on the JS renderer does — offscreen blocks get
+  // their start state (e.g. faded out) before they scroll into view.
+  if (instance.primed) {
+    renderInstance(instance);
+  }
+  requestTick();
 };
 
 /**
@@ -400,7 +537,7 @@ export const setInstanceActive = (
   );
   if (active) {
     requestTick();
-  } else {
+  } else if (instance.primed && needsScrollFrames(instance)) {
     // Render one last settled frame so layers freeze at their clamped
     // end position (0 or 1) instead of wherever a fast scroll left them.
     instance.pointerX = instance.pointerTargetX;
@@ -415,13 +552,16 @@ export const createInstance = (
   root: HTMLElement,
   container: HTMLElement | null,
   ctx: ParallaxContext,
-  layers: CachedLayer[]
+  layers: CachedLayer[],
+  renderer: ParallaxInstance['renderer'] = 'frame'
 ): ParallaxInstance => ({
   root,
   container,
   ctx,
   layers,
+  renderer,
   active: false,
+  primed: false,
   pointerTargetX: 0,
   pointerTargetY: 0,
   pointerX: 0,

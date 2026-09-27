@@ -21,24 +21,38 @@ export interface ProgressGeometry {
   boundaryBottomPx: number;
 }
 
+/**
+ * Parse one Detection Boundary side into a number + unit. The single
+ * parser both renderers share (the JS frame engine resolves it to px,
+ * the scroll-timeline renderer turns it into a view-timeline inset), so
+ * the two can never disagree about where the zone is. Unparseable
+ * values mean "no offset".
+ */
+export const parseBoundaryPart = (
+  value: string | undefined
+): { value: number; unit: 'px' | '%' } | null => {
+  const match = (value ?? '').match(/(-?\d+\.?\d*)(px|%)/);
+  if (!match) return null;
+  const num = parseFloat(match[1]);
+  if (!Number.isFinite(num)) return null;
+  return { value: num, unit: match[2] as 'px' | '%' };
+};
+
 const parseBoundaryValue = (
   value: string,
   viewportHeight: number,
   viewportWidth: number,
   dimension: 'height' | 'width' = 'height'
 ): number => {
-  if (!value || value === '0%' || value === '0px') return 0;
-
-  const match = value.match(/(-?\d+\.?\d*)(px|%)/);
-  if (!match) return 0;
-
-  const num = parseFloat(match[1]);
-  if (match[2] === 'px') {
-    return num;
+  const part = parseBoundaryPart(value);
+  if (!part) return 0;
+  if (part.unit === 'px') {
+    return part.value;
   }
   // Percentages are relative to the viewport dimension.
   return (
-    (num / 100) * (dimension === 'height' ? viewportHeight : viewportWidth)
+    (part.value / 100) *
+    (dimension === 'height' ? viewportHeight : viewportWidth)
   );
 };
 

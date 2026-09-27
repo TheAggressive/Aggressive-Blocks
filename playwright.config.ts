@@ -23,5 +23,15 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Parallax renders with native scroll-driven animations where the
+    // engine supports them; WebKit (Safari) is the other shipping
+    // implementation, so that spec also runs there.
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: ['**/parallax.spec.ts'],
+    },
+  ],
 });

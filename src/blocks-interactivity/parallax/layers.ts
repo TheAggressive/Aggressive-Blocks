@@ -24,12 +24,21 @@ export interface CachedLayer {
   effects: ParallaxEffects;
   /** Gentle static scale depth cue: nearer layers slightly larger. */
   depthScale: number;
+  /** Static depth-of-field blur (px), folded into every frame's filter. */
+  dofBlur: number;
   /** True when any per-frame JS effect (opacity/blur/color/shadow/rotation/magnetic) is on. */
   hasFrameEffects: boolean;
   /** True when the magnetic-mouse effect needs a rect read each frame. */
   needsRect: boolean;
   /** Rect cache refreshed during the engine's read phase (magnetic only). */
   rect: DOMRect | null;
+  /** Magnetic offset written last frame — subtracted from `rect` so the
+   *  force is measured from the un-pulled position (no feedback loop). */
+  magnetX: number;
+  magnetY: number;
+  /** Author's own inline values for every property the engine manages,
+   *  restored verbatim when the engine stops. */
+  originalStyles: Record<ManagedStyleProp, string>;
   /** Last written translate value, used to skip redundant style writes. */
   lastTranslate: string;
   /** Last written scale value, used to skip redundant style writes. */
@@ -40,6 +49,47 @@ export interface CachedLayer {
   baselineEasedFor: number;
   baselineEased: number;
 }
+
+/**
+ * Every inline style property either renderer may write on a layer.
+ * Snapshotted at collect time and restored on teardown, so stopping the
+ * engine (reduced motion toggled on, crossing the mobile breakpoint)
+ * leaves the author's own inline styles exactly as they were.
+ */
+export const MANAGED_STYLE_PROPS = [
+  'translate',
+  'scale',
+  'rotate',
+  'opacity',
+  'filter',
+  'backgroundColor',
+  'color',
+  'borderColor',
+  'boxShadow',
+  'textShadow',
+  'zIndex',
+] as const;
+
+export type ManagedStyleProp = (typeof MANAGED_STYLE_PROPS)[number];
+
+const snapshotStyles = (
+  element: HTMLElement
+): Record<ManagedStyleProp, string> => {
+  const style = element.style as unknown as Record<string, string>;
+  const snapshot = {} as Record<ManagedStyleProp, string>;
+  MANAGED_STYLE_PROPS.forEach(prop => {
+    snapshot[prop] = style[prop] ?? '';
+  });
+  return snapshot;
+};
+
+/** Put every managed property back to the author's original value. */
+export const restoreLayerStyles = (layer: CachedLayer): void => {
+  const style = layer.element.style as unknown as Record<string, string>;
+  MANAGED_STYLE_PROPS.forEach(prop => {
+    style[prop] = layer.originalStyles[prop];
+  });
+};
 
 const parseEffects = (raw: string | undefined): ParallaxEffects => {
   if (!raw) {
@@ -91,10 +141,24 @@ const hasFrameEffects = (effects: ParallaxEffects): boolean =>
   );
 
 /**
- * Apply the styles that never change between frames: stacking order,
- * 3D depth offset with its compensating scale, and depth-of-field blur.
+ * Depth-of-field: a static blur that grows with distance from the focal
+ * plane. Skipped when the layer runs its own scroll-driven blur effect.
+ * Returned as a number (not written here) so each frame's `filter`
+ * composes it with drop-shadow instead of one overwriting the other.
  */
-const applyStaticStyles = (layer: CachedLayer, ctx: ParallaxContext): void => {
+const resolveDofBlur = (
+  ctx: ParallaxContext,
+  effects: ParallaxEffects,
+  depth: number
+): number =>
+  ctx.depthOfField && !effects.blur?.enabled && Math.abs(depth) > 0.05
+    ? Math.abs(depth) * 6
+    : 0;
+
+/**
+ * Apply the one style that never changes between frames: stacking order.
+ */
+const applyStaticStyles = (layer: CachedLayer): void => {
   const { element, effects, depth } = layer;
 
   // Manual z-index override wins; otherwise nearer layers stack on top.
@@ -103,13 +167,6 @@ const applyStaticStyles = (layer: CachedLayer, ctx: ParallaxContext): void => {
     manualZIndex && manualZIndex !== 0
       ? String(manualZIndex)
       : String(100 + Math.round(depth * 100));
-
-  // Depth-of-field: a static blur that grows with distance from the focal
-  // plane. Skipped when the layer runs its own scroll-driven blur effect.
-  if (ctx.depthOfField && !effects.blur?.enabled && Math.abs(depth) > 0.05) {
-    const dofBlur = Math.abs(depth) * 6;
-    element.style.filter = `blur(${dofBlur.toFixed(2)}px)`;
-  }
 };
 
 /**
@@ -128,6 +185,13 @@ export const collectLayers = (
   const layers: CachedLayer[] = [];
 
   elements.forEach(element => {
+    // A parallax block nested inside this one owns its own layers; driving
+    // them from here too would fight its engine every frame.
+    const owner = element.closest('.aggressive-apparel-parallax');
+    if (owner && owner !== root) {
+      return;
+    }
+
     const data = element.dataset;
     const effects = parseEffects(data.parallaxEffects);
 
@@ -151,19 +215,30 @@ export const collectLayers = (
       ? clamp(1 + (depth * zRange) / perspective, 0.5, 2)
       : 1;
 
-    const easing = (data.parallaxEasing ?? 'linear') as EasingType;
+    const easing = data.parallaxEasing ?? 'linear';
+    const speed = parseFloat(data.parallaxSpeed ?? '1');
+    const dofBlur = resolveDofBlur(ctx, effects, depth);
 
     const layer: CachedLayer = {
       element,
       depth,
-      speed: parseFloat(data.parallaxSpeed ?? '1') || 1,
+      // An explicit 0 (hold still) is valid; only junk falls back to 1.
+      speed: Number.isFinite(speed) ? speed : 1,
       direction: data.parallaxDirection ?? 'down',
-      ease: EASING_FUNCTIONS[easing] ?? EASING_FUNCTIONS.linear,
+      // Own-key lookup: saved markup is untrusted input, and a name like
+      // "toString" must not resolve to an inherited Object method.
+      ease: Object.prototype.hasOwnProperty.call(EASING_FUNCTIONS, easing)
+        ? EASING_FUNCTIONS[easing as EasingType]
+        : EASING_FUNCTIONS.linear,
       effects,
       depthScale,
-      hasFrameEffects: hasFrameEffects(effects),
+      dofBlur,
+      hasFrameEffects: dofBlur > 0 || hasFrameEffects(effects),
       needsRect: Boolean(effects.magneticMouse?.enabled),
       rect: null,
+      magnetX: 0,
+      magnetY: 0,
+      originalStyles: snapshotStyles(element),
       lastTranslate: '',
       lastScale: '',
       lastEffectStyles: {},
@@ -171,7 +246,7 @@ export const collectLayers = (
       baselineEased: 0,
     };
 
-    applyStaticStyles(layer, ctx);
+    applyStaticStyles(layer);
     layers.push(layer);
   });
 
