@@ -237,6 +237,27 @@ $play_label  = __( 'Play animation', 'aggressive-blocks' );
 	<span class="ticker__pattern"<?php echo $pattern_style ? ' style="' . esc_attr( $pattern_style ) . '"' : ''; ?> aria-hidden="true" inert></span>
 	<?php endif; ?>
 
+	<?php // First in the DOM so keyboard users reach it before any links in the moving copy; positioned visually at the inline-end. ?>
+	<button
+		type="button"
+		class="ticker__pause aa-icon-button aa-icon-button--only"
+		data-wp-on--click="actions.togglePause"
+		data-wp-bind--aria-pressed="state.isPausedPressed"
+		data-wp-bind--aria-label="context.controlLabel"
+		data-wp-bind--disabled="context.motionLocked"
+		aria-pressed="false"
+		aria-label="<?php echo esc_attr( $pause_label ); ?>"
+	>
+		<?php // Two clip-path halves that morph between the pause bars and the play triangle. ?>
+		<span class="ticker__glyph" aria-hidden="true">
+			<span class="ticker__glyph-half ticker__glyph-half--start"></span>
+			<span class="ticker__glyph-half ticker__glyph-half--end"></span>
+		</span>
+		<span class="screen-reader-text" data-wp-text="context.controlLabel">
+			<?php echo esc_html( $pause_label ); ?>
+		</span>
+	</button>
+
 	<?php if ( $show_label ) : ?>
 	<div class="ticker__label"<?php echo $label_style ? ' style="' . esc_attr( $label_style ) . '"' : ''; ?>>
 		<?php if ( $show_indicator && 'none' !== $indicator_shape ) : ?>
@@ -264,25 +285,5 @@ $play_label  = __( 'Play animation', 'aggressive-blocks' );
 			</div>
 		</div>
 	</div>
-
-	<button
-		type="button"
-		class="ticker__pause aa-icon-button aa-icon-button--only"
-		data-wp-on--click="actions.togglePause"
-		data-wp-bind--aria-pressed="state.isPausedPressed"
-		data-wp-bind--aria-label="context.controlLabel"
-		data-wp-bind--disabled="context.motionLocked"
-		aria-pressed="false"
-		aria-label="<?php echo esc_attr( $pause_label ); ?>"
-	>
-		<?php // Two clip-path halves that morph between the pause bars and the play triangle. ?>
-		<span class="ticker__glyph" aria-hidden="true">
-			<span class="ticker__glyph-half ticker__glyph-half--start"></span>
-			<span class="ticker__glyph-half ticker__glyph-half--end"></span>
-		</span>
-		<span class="screen-reader-text" data-wp-text="context.controlLabel">
-			<?php echo esc_html( $pause_label ); ?>
-		</span>
-	</button>
 
 </div>
