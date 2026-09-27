@@ -27,6 +27,7 @@ import {
   resolveKeyboardIntent,
   resolveSpeed,
   resolveStepDurationMs,
+  setAttributeIfChanged,
   shouldIgnoreKeyboardEvent,
   shouldShowSwipeHint,
   toLogicalSlideOffsets,
@@ -42,15 +43,15 @@ describe('clamp', () => {
 });
 
 describe('resolveSpeed', () => {
-  it('prefers valid context and falls back to CSS or 1', () => {
-    expect(resolveSpeed(2, Number.NaN)).toBe(2);
-    expect(resolveSpeed(0, 1.5)).toBe(1.5);
-    expect(resolveSpeed(Number.NaN, Number.NaN)).toBe(1);
+  it('uses a valid context speed and falls back to the block default', () => {
+    expect(resolveSpeed(2)).toBe(2);
+    expect(resolveSpeed(0)).toBe(1.5);
+    expect(resolveSpeed(Number.NaN)).toBe(1.5);
   });
 
   it('clamps to the supported range', () => {
-    expect(resolveSpeed(10, 1)).toBe(3);
-    expect(resolveSpeed(0.1, 1)).toBe(0.5);
+    expect(resolveSpeed(10)).toBe(3);
+    expect(resolveSpeed(0.1)).toBe(0.5);
   });
 });
 
@@ -61,9 +62,8 @@ describe('resolveStepDurationMs', () => {
     expect(resolveStepDurationMs(5)).toBe(2000);
   });
 
-  it('accepts already-ms values above 10 and falls back on invalid input', () => {
-    expect(resolveStepDurationMs(800)).toBe(800);
-    expect(resolveStepDurationMs(0)).toBe(0);
+  it('falls back to the default on missing or invalid input', () => {
+    expect(resolveStepDurationMs(0)).toBe(620);
     expect(resolveStepDurationMs(-1)).toBe(620);
     expect(resolveStepDurationMs(Number.NaN)).toBe(620);
     expect(resolveStepDurationMs(undefined)).toBe(620);
@@ -533,6 +533,19 @@ describe('presentation helpers', () => {
 });
 
 describe('DOM helpers', () => {
+  it('writes an attribute only when its value changes', () => {
+    const element = document.createElement('div');
+    const setAttribute = jest.spyOn(element, 'setAttribute');
+
+    setAttributeIfChanged(element, 'aria-label', '1 of 3');
+    setAttributeIfChanged(element, 'aria-label', '1 of 3');
+    expect(setAttribute).toHaveBeenCalledTimes(1);
+
+    setAttributeIfChanged(element, 'aria-label', '2 of 3');
+    expect(setAttribute).toHaveBeenCalledTimes(2);
+    expect(element.getAttribute('aria-label')).toBe('2 of 3');
+  });
+
   it('returns only element children as slides', () => {
     const track = document.createElement('div');
     track.appendChild(document.createElement('div'));

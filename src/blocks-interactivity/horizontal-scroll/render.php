@@ -53,9 +53,8 @@ if ( ! in_array( $desktop_behavior, array( 'pinned', 'inline' ), true ) ) {
 
 // Scroll behavior: 'paged' = one deliberate gesture advances one slide
 // (down/next, up/previous); anything else = continuous scrub.
-// Legacy 'proximity' → scrub.
 $snap_behavior = $attributes['snapBehavior'] ?? 'off';
-if ( 'proximity' === $snap_behavior || ! in_array( $snap_behavior, array( 'off', 'paged' ), true ) ) {
+if ( ! in_array( $snap_behavior, array( 'off', 'paged' ), true ) ) {
 	$snap_behavior = 'off';
 }
 
@@ -79,7 +78,6 @@ if ( 'inline' === $desktop_behavior ) {
 // gap must land on `.aa-hscroll__track`, not the section wrapper.
 $style_parts = array(
 	sprintf( '--aa-hscroll-item-width: %s;', esc_attr( $item_width ) ),
-	sprintf( '--aa-hscroll-speed: %s;', esc_attr( (string) $speed ) ),
 );
 $block_gap   = $attributes['style']['spacing']['blockGap'] ?? null;
 if ( is_string( $block_gap ) && '' !== $block_gap ) {

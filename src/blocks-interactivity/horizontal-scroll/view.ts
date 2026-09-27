@@ -10,7 +10,8 @@
 
 /// <reference types="@wordpress/interactivity" />
 import { store, getContext, getElement } from '@wordpress/interactivity';
-import { setupHorizontalScroll, type HScrollContext } from './runtime';
+import { setupHorizontalScroll } from './runtime';
+import type { HScrollContext } from './types';
 
 interface HScrollStore {
   callbacks: {

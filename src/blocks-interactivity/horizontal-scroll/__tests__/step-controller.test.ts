@@ -93,19 +93,15 @@ interface TrackedPresentation extends Presentation {
 }
 
 function createPresentation(): TrackedPresentation {
-  let index = 0;
   const announcements: number[] = [];
   return {
     announcements,
-    getIndex: () => index,
     setActive: (next, options) => {
-      index = next;
       if (options?.announce) announcements.push(next);
-      return index;
+      return next;
     },
     setProgress: () => {},
     dismissSwipeHint: () => {},
-    syncControls: () => {},
   };
 }
 

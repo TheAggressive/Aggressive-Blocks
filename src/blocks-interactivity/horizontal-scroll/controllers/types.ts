@@ -39,10 +39,7 @@ export interface ControllerElements {
 }
 
 export interface Presentation {
-  getIndex: () => number;
   setActive: (index: number, options?: { announce?: boolean }) => number;
   setProgress: (progress: number) => void;
   dismissSwipeHint: () => void;
-  /** Enable/disable prev/next controls for the current slide. */
-  syncControls: (index: number, slideCount: number) => void;
 }

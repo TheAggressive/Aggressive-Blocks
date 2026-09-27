@@ -7,46 +7,49 @@
 
 export type HScrollMode = 'pinned' | 'paged' | 'native' | 'static';
 
-/** Author-facing scroll behavior. Legacy `proximity` is normalized to `off`. */
+/** Author-facing scroll behavior on desktop: continuous scrub or paged. */
 export type SnapBehavior = 'off' | 'paged';
 
 export type SwipeHintStyle = 'off' | 'cue' | 'label' | 'badge';
 
-/** Default stepped glide length (matches the previous hard-coded 620ms). */
+/** Default stepped glide length in ms (block.json `stepDuration` 0.62s). */
 export const DEFAULT_STEP_DURATION_MS = 620;
+
+/** Default scroll-length multiplier (block.json `speed`). */
+export const DEFAULT_SPEED = 1.5;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-export function resolveSpeed(contextSpeed: number, cssSpeed: number): number {
+/**
+ * Scroll-length multiplier (vertical scroll per px of horizontal travel),
+ * clamped to the range render.php allows.
+ */
+export function resolveSpeed(contextSpeed: number): number {
   const base =
     Number.isFinite(contextSpeed) && contextSpeed > 0
       ? contextSpeed
-      : cssSpeed || 1;
+      : DEFAULT_SPEED;
 
   return clamp(base, 0.5, 3);
 }
 
 /**
- * Normalize author step duration (seconds) to milliseconds for the step tween.
- * Values above 10 are treated as already-ms for defensive compatibility.
- * Returns 0 only when explicitly requested (reduced-motion instant snap).
+ * Author step duration (seconds, 0.2–2 per render.php) to milliseconds for the
+ * step tween. Invalid input falls back to the default. Reduced motion snaps
+ * instantly in the step controller itself, not through this value.
  */
 export function resolveStepDurationMs(value: unknown): number {
-  const raw = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(raw) || raw < 0) {
+  const seconds = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) {
     return DEFAULT_STEP_DURATION_MS;
   }
-  if (raw === 0) {
-    return 0;
-  }
 
-  const ms = raw > 10 ? raw : raw * 1000;
-  return clamp(Math.round(ms), 200, 2000);
+  return clamp(Math.round(seconds * 1000), 200, 2000);
 }
 
-/** Map persisted snap values (including removed `proximity`) onto the live enum. */
+/** Narrow a context value to the snap enum (anything unknown scrubs). */
 export function normalizeSnapBehavior(value: unknown): SnapBehavior {
   return value === 'paged' ? 'paged' : 'off';
 }
@@ -393,19 +396,6 @@ export function shouldIgnoreKeyboardEvent(
 }
 
 /**
- * Adjacent slide index in reading order, or null at a boundary.
- */
-export function adjacentSlideIndex(
-  currentIndex: number,
-  direction: 1 | -1,
-  slideCount: number
-): number | null {
-  const next = currentIndex + direction;
-  if (next < 0 || next > slideCount - 1) return null;
-  return next;
-}
-
-/**
  * Cubic ease-in-out (0 → 1). Used to drive the step controller's own scroll
  * tween so the slide glide is smooth and fully under our control, instead of
  * the browser's untunable `scrollTo({ behavior: 'smooth' })`.
@@ -479,6 +469,17 @@ export function getSlides(track: HTMLElement): HTMLElement[] {
   return Array.from(track.children).filter(
     (child): child is HTMLElement => child instanceof HTMLElement
   );
+}
+
+/** Set an attribute only when it differs — avoids needless mutations. */
+export function setAttributeIfChanged(
+  element: Element,
+  name: string,
+  value: string
+): void {
+  if (element.getAttribute(name) !== value) {
+    element.setAttribute(name, value);
+  }
 }
 
 export function isEditableTarget(target: EventTarget | null): boolean {
