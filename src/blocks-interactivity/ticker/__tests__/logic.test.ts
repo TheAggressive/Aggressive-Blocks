@@ -5,29 +5,31 @@
  */
 
 import {
+  canRunTicker,
   easeTickerMotion,
-  getTickerPxPerMs,
+  getTickerKeyframes,
+  getTickerLoopDuration,
+  getTickerLoopPhase,
   isEffectivelyPaused,
   isTickerPauseControl,
   isTickerReverseDirection,
   parseTickerDataSpeed,
   pickAllowed,
   resolveTickerControlColor,
-  shouldAnimateTicker,
   stepTickerMotion,
 } from '../logic';
 import { PATTERN_SLUGS, TICKER_DIRECTIONS } from '../constants';
 
 describe('parseTickerDataSpeed', () => {
-  it('parses loop duration from data-ticker-speed', () => {
-    expect(parseTickerDataSpeed('20')).toBe(20);
+  it('parses px/s from data-ticker-speed', () => {
+    expect(parseTickerDataSpeed('80')).toBe(80);
   });
 
   it('falls back when the value is missing or invalid', () => {
-    expect(parseTickerDataSpeed(undefined)).toBe(30);
+    expect(parseTickerDataSpeed(undefined)).toBe(60);
     expect(parseTickerDataSpeed('invalid', 45)).toBe(45);
-    expect(parseTickerDataSpeed('0')).toBe(30);
-    expect(parseTickerDataSpeed('-5')).toBe(30);
+    expect(parseTickerDataSpeed('0')).toBe(60);
+    expect(parseTickerDataSpeed('-5')).toBe(60);
   });
 });
 
@@ -39,15 +41,50 @@ describe('isTickerReverseDirection', () => {
   });
 });
 
-describe('getTickerPxPerMs', () => {
-  it('scrolls one content width over the configured duration', () => {
-    expect(getTickerPxPerMs(900, 20)).toBeCloseTo(0.045);
+describe('getTickerLoopDuration', () => {
+  it('travels one copy width at the configured px/s', () => {
+    expect(getTickerLoopDuration(900, 60)).toBe(15_000);
+  });
+
+  it('keeps the speed constant as content grows', () => {
+    const short = getTickerLoopDuration(300, 60);
+    const long = getTickerLoopDuration(1200, 60);
+    expect(300 / short).toBeCloseTo(1200 / long);
   });
 
   it('returns zero for invalid measurements', () => {
-    expect(getTickerPxPerMs(0, 20)).toBe(0);
-    expect(getTickerPxPerMs(900, 0)).toBe(0);
-    expect(getTickerPxPerMs(-10, 20)).toBe(0);
+    expect(getTickerLoopDuration(0, 60)).toBe(0);
+    expect(getTickerLoopDuration(900, 0)).toBe(0);
+    expect(getTickerLoopDuration(-10, 60)).toBe(0);
+  });
+});
+
+describe('getTickerKeyframes', () => {
+  it('shifts the track left by one copy', () => {
+    expect(getTickerKeyframes(250, false)).toEqual([
+      { transform: 'translate3d(0, 0, 0)' },
+      { transform: 'translate3d(-250px, 0, 0)' },
+    ]);
+  });
+
+  it('runs the same shift backwards for rightward scrolling', () => {
+    expect(getTickerKeyframes(250, true)).toEqual([
+      { transform: 'translate3d(-250px, 0, 0)' },
+      { transform: 'translate3d(0, 0, 0)' },
+    ]);
+  });
+});
+
+describe('getTickerLoopPhase', () => {
+  it('wraps the current time into the loop', () => {
+    expect(getTickerLoopPhase(2_500, 10_000)).toBeCloseTo(0.25);
+    expect(getTickerLoopPhase(32_500, 10_000)).toBeCloseTo(0.25);
+    expect(getTickerLoopPhase(-2_500, 10_000)).toBeCloseTo(0.75);
+  });
+
+  it('returns zero without a valid loop', () => {
+    expect(getTickerLoopPhase(2_500, 0)).toBe(0);
+    expect(getTickerLoopPhase(Number.NaN, 10_000)).toBe(0);
   });
 });
 
@@ -81,19 +118,17 @@ describe('isEffectivelyPaused', () => {
   });
 });
 
-describe('shouldAnimateTicker', () => {
+describe('canRunTicker', () => {
   const active = {
     isDestroyed: false,
     isIntersecting: true,
     isDocumentVisible: true,
     reducedMotion: false,
-    isPaused: false,
-    motion: 1,
-    pxPerMs: 1,
+    loopDuration: 10_000,
   };
 
-  it('runs only when the ticker is visible and active', () => {
-    expect(shouldAnimateTicker(active)).toBe(true);
+  it('runs when the ticker is visible and measured', () => {
+    expect(canRunTicker(active)).toBe(true);
   });
 
   it.each([
@@ -101,20 +136,9 @@ describe('shouldAnimateTicker', () => {
     ['offscreen', { isIntersecting: false }],
     ['in a hidden document', { isDocumentVisible: false }],
     ['reduced motion', { reducedMotion: true }],
-    ['paused and settled', { isPaused: true, motion: 0 }],
-    ['not measured', { pxPerMs: 0 }],
+    ['not measured', { loopDuration: 0 }],
   ])('stops when %s', (_label, change) => {
-    expect(shouldAnimateTicker({ ...active, ...change })).toBe(false);
-  });
-
-  it('keeps running while a paused ticker glides to a stop', () => {
-    expect(
-      shouldAnimateTicker({ ...active, isPaused: true, motion: 0.4 })
-    ).toBe(true);
-  });
-
-  it('runs to ramp a resumed ticker up from a stop', () => {
-    expect(shouldAnimateTicker({ ...active, motion: 0 })).toBe(true);
+    expect(canRunTicker({ ...active, ...change })).toBe(false);
   });
 });
 

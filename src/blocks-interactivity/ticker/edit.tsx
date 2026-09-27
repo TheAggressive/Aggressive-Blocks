@@ -46,7 +46,7 @@ type EditorStyle = CSSProperties & { [key: `--${string}`]: string };
 export default function Edit({ attributes, setAttributes }: EditProps) {
   const {
     gap,
-    speed,
+    pxPerSecond,
     direction,
     pauseOnHover,
     fadeEdges,
@@ -151,14 +151,16 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
           initialOpen={true}
         >
           <RangeControl
-            label={__('Speed (seconds)', 'aggressive-blocks')}
-            value={speed}
-            onChange={setNumber('speed', speed)}
-            min={5}
-            max={120}
-            step={1}
+            label={__('Speed (px/s)', 'aggressive-blocks')}
+            value={pxPerSecond}
+            onChange={setNumber('pxPerSecond', 60)}
+            min={10}
+            max={300}
+            step={5}
+            allowReset
+            resetFallbackValue={60}
             help={__(
-              'Duration in seconds for one full scroll loop. Lower = faster.',
+              'How fast the content scrolls, in pixels per second. Stays the same however much content you add.',
               'aggressive-blocks'
             )}
           />

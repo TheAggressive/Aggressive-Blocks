@@ -1,8 +1,9 @@
 /**
  * Ticker block — DOM animation runtime.
  *
- * Clones enough `.ticker__content` copies to cover the scroll area and
- * animates by recycling the offscreen copy to the far end of the track.
+ * Clones enough `.ticker__content` copies to cover the scroll area, then
+ * loops the track by one copy's width with a Web Animation (compositor-run).
+ * Pause, hover hold, and resume glide the playback rate over a few frames.
  *
  * @package Aggressive_Blocks
  */
@@ -15,12 +16,14 @@ import {
   TICKER_MOTION_EASE_MS,
 } from './constants';
 import {
+  canRunTicker,
   easeTickerMotion,
-  getTickerPxPerMs,
+  getTickerKeyframes,
+  getTickerLoopDuration,
+  getTickerLoopPhase,
   isTickerReverseDirection,
   parseTickerDataSpeed,
   resolveTickerControlColor,
-  shouldAnimateTicker,
   stepTickerMotion,
 } from './logic';
 
@@ -74,22 +77,23 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
     return noop;
   }
 
-  let frameId = 0;
-  let offset = 0;
-  let previousTime = 0;
-  let pxPerMs = 0;
-  let reverse = false;
   let isDestroyed = false;
   let resizeFrameId = 0;
+  let glideFrameId = 0;
+  let glidePreviousTime = 0;
+  let cloneSyncFrameId = 0;
   let contents: HTMLElement[] = [];
-  let contentWidths = new Map<HTMLElement, number>();
+  let loopWidth = 0;
+  let loopDuration = 0;
+  let reverse = false;
+  let animation: Animation | null = null;
+  let appliedRate = 0;
   let isIntersecting = !('IntersectionObserver' in window);
   let isDocumentVisible = !document.hidden;
   let isPaused = ticker.classList.contains('is-paused');
   // Eased speed progress (0 = stopped, 1 = full speed). Pausing, holding,
-  // and resuming glide this toward the target instead of jumping.
+  // and resuming glide the animation's playback rate instead of jumping.
   let motion = isPaused ? 0 : 1;
-  let cloneSyncFrameId = 0;
   const watchedImages = new WeakSet<HTMLImageElement>();
   const reducedMotionMql = window.matchMedia(
     '(prefers-reduced-motion: reduce)'
@@ -105,126 +109,140 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
   const getContentWidth = (content: HTMLElement): number =>
     content.getBoundingClientRect().width;
 
-  const syncAnimationRate = (): void => {
-    const firstContent = contents[0];
-    const loopWidth = firstContent ? (contentWidths.get(firstContent) ?? 0) : 0;
-
-    pxPerMs = getTickerPxPerMs(
-      loopWidth,
-      parseTickerDataSpeed(ticker.dataset.tickerSpeed)
-    );
-    reverse = isTickerReverseDirection(ticker.dataset.tickerDirection);
-  };
-
-  const setTransform = (): void => {
-    track.style.transform = `translate3d(${-offset}px, 0, 0)`;
-  };
-
-  const recycleForward = (): void => {
-    let firstContent = contents[0];
-    let firstWidth = firstContent ? (contentWidths.get(firstContent) ?? 0) : 0;
-
-    while (firstContent && firstWidth > 0 && offset >= firstWidth) {
-      track.appendChild(firstContent);
-      offset -= firstWidth;
-
-      const movedContent = contents.shift();
-      if (movedContent) {
-        contents.push(movedContent);
-      }
-
-      firstContent = contents[0];
-      firstWidth = firstContent ? (contentWidths.get(firstContent) ?? 0) : 0;
-    }
-  };
-
-  const recycleBackward = (): void => {
-    let lastContent = contents[contents.length - 1];
-    let lastWidth = lastContent ? (contentWidths.get(lastContent) ?? 0) : 0;
-
-    while (lastContent && lastWidth > 0 && offset <= 0) {
-      track.insertBefore(lastContent, track.firstElementChild);
-      offset += lastWidth;
-
-      const movedContent = contents.pop();
-      if (movedContent) {
-        contents.unshift(movedContent);
-      }
-
-      lastContent = contents[contents.length - 1];
-      lastWidth = lastContent ? (contentWidths.get(lastContent) ?? 0) : 0;
-    }
-  };
-
-  const canAnimate = (): boolean =>
-    shouldAnimateTicker({
+  const canRun = (): boolean =>
+    canRunTicker({
       isDestroyed,
       isIntersecting,
       isDocumentVisible,
       reducedMotion: reducedMotionMql.matches,
-      isPaused,
-      motion,
-      pxPerMs,
+      loopDuration,
     });
 
-  const stopAnimation = (): void => {
-    if (frameId) {
-      window.cancelAnimationFrame(frameId);
-      frameId = 0;
-    }
-
-    // Nobody sees a glide while stopped (offscreen, hidden tab, reduced
-    // motion), so settle at the target and resume from a clean state.
-    motion = isPaused ? 0 : 1;
-    previousTime = 0;
-    track.style.removeProperty('will-change');
-  };
-
-  const tick = (time: number): void => {
-    frameId = 0;
-
-    syncAnimationRate();
-
-    if (!canAnimate()) {
-      stopAnimation();
-      return;
-    }
-
-    if (!previousTime) {
-      previousTime = time;
-    }
-
-    const delta = time - previousTime;
-    previousTime = time;
-    motion = stepTickerMotion(
-      motion,
-      isPaused ? 0 : 1,
-      delta,
-      TICKER_MOTION_EASE_MS
+  /**
+   * Build or retime the loop. The track travels one copy's width and wraps,
+   * which is seamless because every copy is identical. It runs as a Web
+   * Animation, so steady scrolling stays on the compositor with no
+   * per-frame JavaScript; only a pause/resume glide touches it per frame.
+   */
+  const syncLoop = (): void => {
+    const nextReverse = isTickerReverseDirection(
+      ticker.dataset.tickerDirection
     );
-    offset += (reverse ? -1 : 1) * delta * pxPerMs * easeTickerMotion(motion);
+    const nextDuration = getTickerLoopDuration(
+      loopWidth,
+      parseTickerDataSpeed(ticker.dataset.tickerSpeed)
+    );
 
-    if (reverse) {
-      recycleBackward();
-    } else {
-      recycleForward();
-    }
-
-    setTransform();
-    frameId = window.requestAnimationFrame(tick);
-  };
-
-  const syncAnimation = (): void => {
-    if (!canAnimate()) {
-      stopAnimation();
+    if (nextDuration <= 0 || typeof track.animate !== 'function') {
+      animation?.cancel();
+      animation = null;
+      loopDuration = 0;
       return;
     }
 
-    if (frameId) return;
+    const keyframes = getTickerKeyframes(loopWidth, nextReverse);
 
-    previousTime = 0;
-    track.style.willChange = 'transform';
-    frameId = window.requestAnimationFrame(tick);
+    if (!animation) {
+      animation = track.animate(keyframes, {
+        duration: nextDuration,
+        iterations: Infinity,
+        easing: 'linear',
+      });
+      // Held until syncPlayback() decides it should run.
+      animation.pause();
+      appliedRate = 0;
+    } else if (nextDuration !== loopDuration || nextReverse !== reverse) {
+      // Keep the loop's phase so a re-measure doesn't jump the copy.
+      const phase = getTickerLoopPhase(
+        Number(animation.currentTime ?? 0),
+        loopDuration
+      );
+      const effect = animation.effect as KeyframeEffect | null;
+      effect?.setKeyframes(keyframes);
+      effect?.updateTiming({ duration: nextDuration });
+      animation.currentTime = phase * nextDuration;
+    }
+
+    loopDuration = nextDuration;
+    reverse = nextReverse;
+  };
+
+  /** Drive the animation at the eased speed for the current motion. */
+  const applyRate = (): void => {
+    if (!animation) return;
+
+    const rate = easeTickerMotion(motion);
+    if (rate <= 0) {
+      animation.pause();
+      appliedRate = 0;
+      return;
+    }
+
+    if (animation.playState !== 'running') {
+      animation.playbackRate = rate;
+      animation.play();
+    } else if (rate !== appliedRate) {
+      // Syncs with the compositor instead of snapping its current time.
+      animation.updatePlaybackRate(rate);
+    }
+    appliedRate = rate;
+  };
+
+  const stopGlide = (): void => {
+    if (glideFrameId) {
+      window.cancelAnimationFrame(glideFrameId);
+      glideFrameId = 0;
+    }
+    glidePreviousTime = 0;
+  };
+
+  const glide = (time: number): void => {
+    glideFrameId = 0;
+
+    if (!canRun()) {
+      syncPlayback();
+      return;
+    }
+
+    const target = isPaused ? 0 : 1;
+    const delta = glidePreviousTime ? time - glidePreviousTime : 0;
+    glidePreviousTime = time;
+    motion = stepTickerMotion(motion, target, delta, TICKER_MOTION_EASE_MS);
+    applyRate();
+
+    if (motion === target) {
+      glidePreviousTime = 0;
+      return;
+    }
+
+    glideFrameId = window.requestAnimationFrame(glide);
+  };
+
+  /** Reconcile playback with the pause state and the run gates. */
+  const syncPlayback = (): void => {
+    if (!animation) return;
+
+    const target = isPaused ? 0 : 1;
+
+    if (!canRun()) {
+      // Nobody sees a glide while stopped (offscreen, hidden tab, reduced
+      // motion), so settle at the target and resume from a clean state.
+      stopGlide();
+      motion = target;
+      animation.pause();
+      appliedRate = 0;
+      return;
+    }
+
+    if (motion === target) {
+      stopGlide();
+      applyRate();
+      return;
+    }
+
+    if (!glideFrameId) {
+      glideFrameId = window.requestAnimationFrame(glide);
+    }
   };
 
   const watchImages = (): void => {
@@ -246,17 +264,16 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
     const firstContent = nextContents[0];
     const template = nextContents[1] || nextContents[0];
     const containerWidth = scroll.getBoundingClientRect().width;
-    if (!firstContent || !template || containerWidth <= 0) {
-      pxPerMs = 0;
-      syncAnimation();
+    const firstWidth = firstContent ? getContentWidth(firstContent) : 0;
+    if (!firstContent || !template || containerWidth <= 0 || firstWidth <= 0) {
+      loopWidth = 0;
+      syncLoop();
       return;
     }
 
-    const nextContentWidths = new Map<HTMLElement, number>();
     const metrics = nextContents.reduce<TickerMetrics>(
       (result, content) => {
         const width = getContentWidth(content);
-        nextContentWidths.set(content, width);
 
         return {
           maxContentWidth: Math.max(result.maxContentWidth, width),
@@ -266,17 +283,10 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
       { maxContentWidth: 0, trackWidth: 0 }
     );
 
-    const firstWidth = nextContentWidths.get(firstContent) ?? 0;
-    if (firstWidth <= 0) {
-      pxPerMs = 0;
-      syncAnimation();
-      return;
-    }
-
-    syncAnimationRate();
-
     const trackWidth = metrics.trackWidth;
     const maxContentWidth = metrics.maxContentWidth || firstWidth;
+    // The loop shifts by one copy, so the track must cover the scroll area
+    // plus that shift (with a copy of headroom) at every point in the loop.
     const minTrackWidth = containerWidth + maxContentWidth * 2;
     // Total (not per-pass) clone count: measure() re-runs on resize and
     // image load, so a per-pass budget could still grow the DOM unbounded.
@@ -286,7 +296,7 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
     // Clones are copies of one template in a flex track, so they share its
     // width — compute the deficit up front and append one batched fragment
     // instead of paying a measuring reflow per appended clone.
-    const templateWidth = nextContentWidths.get(template) || maxContentWidth;
+    const templateWidth = getContentWidth(template) || maxContentWidth;
     const neededClones = Math.min(
       Math.max(Math.ceil((minTrackWidth - trackWidth) / templateWidth), 0),
       MAX_TICKER_CLONES - existingClones
@@ -301,28 +311,17 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
         sanitizeTickerClone(clone);
         fragment.appendChild(clone);
         nextContents.push(clone);
-        nextContentWidths.set(clone, templateWidth);
       }
       track.appendChild(fragment);
     }
 
     contents = nextContents;
-    contentWidths = nextContentWidths;
-
-    if (reverse && offset === 0) {
-      offset = firstWidth;
-    }
-
-    if (reverse) {
-      recycleBackward();
-    } else {
-      recycleForward();
-    }
+    loopWidth = firstWidth;
 
     watchImages();
     syncControlColor();
-    setTransform();
-    syncAnimation();
+    syncLoop();
+    syncPlayback();
   };
 
   /**
@@ -410,15 +409,15 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
     'IntersectionObserver' in window
       ? new IntersectionObserver(entries => {
           isIntersecting = entries.some(entry => entry.isIntersecting);
-          syncAnimation();
+          syncPlayback();
         })
       : null;
   intersectionObserver?.observe(ticker);
 
   const attributeObserver = new MutationObserver(() => {
     isPaused = ticker.classList.contains('is-paused');
-    syncAnimationRate();
-    syncAnimation();
+    syncLoop();
+    syncPlayback();
   });
   attributeObserver.observe(ticker, {
     attributes: true,
@@ -427,12 +426,12 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
 
   const handleVisibilityChange = (): void => {
     isDocumentVisible = !document.hidden;
-    syncAnimation();
+    syncPlayback();
   };
   document.addEventListener('visibilitychange', handleVisibilityChange);
 
   const handleReducedMotionChange = (): void => {
-    syncAnimation();
+    syncPlayback();
   };
   reducedMotionMql.addEventListener('change', handleReducedMotionChange);
 
@@ -455,7 +454,7 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
       if (isDestroyed) return;
 
       isDestroyed = true;
-      window.cancelAnimationFrame(frameId);
+      stopGlide();
       window.cancelAnimationFrame(resizeFrameId);
       window.cancelAnimationFrame(cloneSyncFrameId);
       resizeObserver.disconnect();
@@ -466,7 +465,8 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       reducedMotionMql.removeEventListener('change', handleReducedMotionChange);
       colorSchemeMql.removeEventListener('change', handleThemeColorChange);
-      stopAnimation();
+      animation?.cancel();
+      animation = null;
       track.querySelectorAll('img').forEach(image => {
         image.removeEventListener('load', scheduleMeasure);
         image.removeEventListener('error', scheduleMeasure);
@@ -477,7 +477,6 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
           content.remove();
         }
       });
-      track.style.removeProperty('transform');
       ticker.style.removeProperty(CONTROL_COLOR_VAR);
       tickerRuntimes.delete(ticker);
     },
@@ -485,7 +484,6 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
 
   tickerRuntimes.set(ticker, runtime);
   measure();
-  syncAnimation();
 
   return runtime;
 }

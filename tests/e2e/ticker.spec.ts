@@ -87,7 +87,6 @@ test.describe('Ticker — front end', () => {
 
   test('renders marquee and pauses on control click', async ({ page }) => {
     pageId = await createTickerPage(page, {
-      speed: 30,
       showLabel: true,
       labelText: 'LIVE',
     });
@@ -132,7 +131,7 @@ test.describe('Ticker — front end', () => {
   });
 
   test('remembers a pause across page loads', async ({ page }) => {
-    pageId = await createTickerPage(page, { speed: 5 });
+    pageId = await createTickerPage(page, { pxPerSecond: 150 });
 
     const ticker = tickerRoot(page);
     await ticker.locator('.ticker__pause').click();
@@ -161,7 +160,7 @@ test.describe('Ticker — front end', () => {
 
   test('reduced motion locks the marquee', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    pageId = await createTickerPage(page, { speed: 5 });
+    pageId = await createTickerPage(page, { pxPerSecond: 150 });
 
     const ticker = tickerRoot(page);
     const pause = ticker.locator('.ticker__pause');
@@ -172,7 +171,10 @@ test.describe('Ticker — front end', () => {
   });
 
   test('scrolls in the configured direction', async ({ page }) => {
-    pageId = await createTickerPage(page, { speed: 5, direction: 'right' });
+    pageId = await createTickerPage(page, {
+      pxPerSecond: 150,
+      direction: 'right',
+    });
 
     // Right-moving copy translates the track toward positive x.
     await expect.poll(() => medianStep(tickerRoot(page))).toBeGreaterThan(0);
@@ -181,7 +183,7 @@ test.describe('Ticker — front end', () => {
   test('fills the scroll area with identical, hidden copies', async ({
     page,
   }) => {
-    pageId = await createTickerPage(page, { speed: 5 });
+    pageId = await createTickerPage(page, { pxPerSecond: 150 });
 
     const ticker = tickerRoot(page);
     await expect(ticker.locator('.ticker__content').nth(2)).toBeAttached();

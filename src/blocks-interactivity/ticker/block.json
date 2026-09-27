@@ -25,9 +25,9 @@
     }
   },
   "attributes": {
-    "speed": {
+    "pxPerSecond": {
       "type": "number",
-      "default": 30
+      "default": 60
     },
     "direction": {
       "type": "string",
