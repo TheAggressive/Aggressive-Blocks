@@ -62,7 +62,7 @@ $allowed_blend_modes      = array(
 $allowed_font_weights     = array( '', '400', '500', '600', '700', '800', '900' );
 $allowed_text_transforms  = array( '', 'uppercase', 'lowercase', 'capitalize' );
 
-$speed            = max( 1, absint( $attributes['speed'] ?? 30 ) );
+$px_per_second    = max( 1, absint( $attributes['pxPerSecond'] ?? 60 ) );
 $ticker_direction = $aa_ticker_pick(
 	(string) ( $attributes['direction'] ?? 'left' ),
 	$allowed_directions,
@@ -204,7 +204,7 @@ $play_label  = __( 'Play animation', 'aggressive-blocks' );
 		array(
 			'class'                    => implode( ' ', $classes ),
 			'style'                    => $inline_style,
-			'data-ticker-speed'        => (string) $speed,
+			'data-ticker-speed'        => (string) $px_per_second,
 			'data-ticker-direction'    => $ticker_direction,
 			'data-wp-interactive'      => 'aggressive-blocks/ticker',
 			'data-wp-context'          => wp_json_encode(

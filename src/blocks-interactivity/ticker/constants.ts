@@ -23,8 +23,8 @@ export const PAUSE_STORAGE_KEY = 'aggressive-blocks:ticker-paused';
 /** Document event that keeps every ticker on the page on the same pause. */
 export const PAUSE_EVENT = 'aggressive-blocks:ticker-pause';
 
-/** Default loop duration in seconds when `data-ticker-speed` is missing. */
-export const DEFAULT_TICKER_SPEED = 30;
+/** Default scroll speed in px/s when `data-ticker-speed` is missing. */
+export const DEFAULT_TICKER_SPEED = 60;
 
 /**
  * How long the marquee takes to glide from full speed to a stop, or back up,

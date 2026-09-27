@@ -6,16 +6,14 @@
 
 import { DEFAULT_TICKER_SPEED } from './constants';
 
-export interface TickerAnimationState {
+/** Conditions under which the marquee may move at all (pause aside). */
+export interface TickerRunState {
   isDestroyed: boolean;
   isIntersecting: boolean;
   isDocumentVisible: boolean;
   reducedMotion: boolean;
-  /** Paused or held — the marquee is gliding to a stop, or stopped. */
-  isPaused: boolean;
-  /** Eased-motion progress: 0 = stopped, 1 = full speed. */
-  motion: number;
-  pxPerMs: number;
+  /** Loop duration in ms; 0 until content is measured. */
+  loopDuration: number;
 }
 
 export interface TickerPauseState {
@@ -28,23 +26,50 @@ export interface TickerPauseState {
 }
 
 /**
- * Pixels per millisecond for one full content-loop at the given speed.
- *
- * Speed is measured in seconds to scroll one `.ticker__content` width, so loop
- * duration stays consistent regardless of viewport width.
+ * Milliseconds for the track to travel one copy's width at `pxPerSecond`.
+ * Speed is in px/s, so adding content lengthens the loop instead of
+ * speeding the marquee up.
  */
-export function getTickerPxPerMs(
+export function getTickerLoopDuration(
   loopWidth: number,
-  speedSeconds: number
+  pxPerSecond: number
 ): number {
-  if (loopWidth <= 0 || speedSeconds <= 0) {
+  if (loopWidth <= 0 || pxPerSecond <= 0) {
     return 0;
   }
 
-  return loopWidth / (speedSeconds * 1000);
+  return (loopWidth / pxPerSecond) * 1000;
 }
 
-/** Parse loop duration from `data-ticker-speed`. */
+/**
+ * Keyframes for one loop: the track shifts by one copy's width. Reverse
+ * (rightward) runs the same shift backwards.
+ */
+export function getTickerKeyframes(
+  loopWidth: number,
+  reverse: boolean
+): Keyframe[] {
+  const start = { transform: 'translate3d(0, 0, 0)' };
+  const end = { transform: `translate3d(${-loopWidth}px, 0, 0)` };
+  return reverse ? [end, start] : [start, end];
+}
+
+/** Position within the loop (0–1) for an animation's current time. */
+export function getTickerLoopPhase(
+  currentTime: number,
+  loopDuration: number
+): number {
+  if (!Number.isFinite(currentTime) || loopDuration <= 0) {
+    return 0;
+  }
+
+  return (
+    (((currentTime % loopDuration) + loopDuration) % loopDuration) /
+    loopDuration
+  );
+}
+
+/** Parse the scroll speed (px/s) from `data-ticker-speed`. */
 export function parseTickerDataSpeed(
   value: string | undefined,
   fallback = DEFAULT_TICKER_SPEED
@@ -68,17 +93,16 @@ export function isEffectivelyPaused(state: TickerPauseState): boolean {
 }
 
 /**
- * Whether a ticker should consume animation frames right now. A paused
- * ticker keeps running until it has glided to a stop.
+ * Whether the marquee may move right now. Pause is separate: a paused
+ * ticker glides its playback rate to zero rather than stopping here.
  */
-export function shouldAnimateTicker(state: TickerAnimationState): boolean {
+export function canRunTicker(state: TickerRunState): boolean {
   return (
     !state.isDestroyed &&
     state.isIntersecting &&
     state.isDocumentVisible &&
     !state.reducedMotion &&
-    (!state.isPaused || state.motion > 0) &&
-    state.pxPerMs > 0
+    state.loopDuration > 0
   );
 }
 

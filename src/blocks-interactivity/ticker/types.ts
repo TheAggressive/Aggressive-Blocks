@@ -5,7 +5,8 @@
  */
 
 export type TickerAttributes = {
-  speed: number;
+  /** Scroll speed in pixels per second, independent of content length. */
+  pxPerSecond: number;
   direction: string;
   pauseOnHover: boolean;
   gap: number;
