@@ -8,6 +8,16 @@
  * Container
  * ----------------------------------------------- */
 
+/*
+ * 0 → 1 while the pause control is visible. Registered so the control
+ * clearance can transition alongside the control's opacity.
+ */
+@property --ticker-control-reserve {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0;
+}
+
 .wp-block-aggressive-apparel-ticker {
 	--ticker-gap: 48px;
 	--ticker-fade-width: 64px;
@@ -19,11 +29,14 @@
 	 */
 	--ticker-control-clearance: 3rem;
 	--ticker-control-fade: 1.5rem;
+	--ticker-control-reserve: 0;
 
 	position: relative;
 	display: flex;
 	align-items: stretch;
 	overflow: hidden;
+	transition: --ticker-control-reserve var(--aa-duration-fast, 150ms)
+		var(--aa-ease-default, ease);
 }
 
 /* -----------------------------------------------
@@ -77,8 +90,9 @@
  * ----------------------------------------------- */
 
 /*
- * Always fade the inline-end of the scroll under the pause control so copy
- * doesn't run through the glyph. Composes with optional edge fades.
+ * Fade the inline-end of the scroll under the pause control so copy doesn't
+ * run through the glyph. Scaled by --ticker-control-reserve, so the copy runs
+ * to the edge while the control is hidden. Composes with optional edge fades.
  *
  * Masks only read alpha, so the opaque stops are a literal `#000` rather than
  * a theme token — an undefined token would invalidate the whole gradient.
@@ -87,8 +101,13 @@
 	mask-image: linear-gradient(
 		to right,
 		#000 0,
-		#000 calc(100% - var(--ticker-control-clearance) - var(--ticker-control-fade)),
-		transparent calc(100% - var(--ticker-control-clearance))
+		#000
+			calc(
+				100% - (var(--ticker-control-clearance) + var(--ticker-control-fade)) *
+					var(--ticker-control-reserve)
+			),
+		transparent
+			calc(100% - var(--ticker-control-clearance) * var(--ticker-control-reserve))
 	);
 	mask-size: 100% 100%;
 	mask-repeat: no-repeat;
@@ -116,10 +135,14 @@
 		#000 var(--ticker-fade-width),
 		#000
 			calc(
-				100% - var(--ticker-control-clearance) -
-					max(var(--ticker-fade-width), var(--ticker-control-fade))
+				100% - var(--ticker-control-clearance) * var(--ticker-control-reserve) -
+					max(
+						var(--ticker-fade-width),
+						var(--ticker-control-fade) * var(--ticker-control-reserve)
+					)
 			),
-		transparent calc(100% - var(--ticker-control-clearance))
+		transparent
+			calc(100% - var(--ticker-control-clearance) * var(--ticker-control-reserve))
 	);
 }
 
@@ -587,6 +610,20 @@
 	}
 }
 
+/* Clear copy from under the control whenever it is revealed (rules above). */
+.wp-block-aggressive-apparel-ticker:hover,
+.wp-block-aggressive-apparel-ticker:focus-within,
+.wp-block-aggressive-apparel-ticker.is-paused {
+	--ticker-control-reserve: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+
+	.wp-block-aggressive-apparel-ticker {
+		--ticker-control-reserve: 1;
+	}
+}
+
 .wp-block-aggressive-apparel-ticker > button.ticker__pause svg,
 .wp-block-aggressive-apparel-ticker > button.ticker__pause .ticker__pause-bar,
 .wp-block-aggressive-apparel-ticker > button.ticker__pause .ticker__play-tri {
@@ -614,6 +651,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 
+	.wp-block-aggressive-apparel-ticker,
 	.wp-block-aggressive-apparel-ticker > button.ticker__pause {
 		transition: none;
 	}
