@@ -111,7 +111,12 @@ test.describe('Ticker — front end', () => {
     const ticker = tickerRoot(page);
     const pause = ticker.locator('.ticker__pause');
 
-    await ticker.locator('.ticker__content').first().hover();
+    // Hover the (stationary) root, clear of the control: the moving copy
+    // never passes Playwright's "stable" actionability check.
+    const box = await ticker.boundingBox();
+    await ticker.hover({
+      position: { x: (box?.width ?? 200) / 4, y: (box?.height ?? 40) / 2 },
+    });
     await expect(ticker).toHaveClass(/is-paused/);
     // Held, not paused: the available action is still "pause".
     await expect(pause).toHaveAttribute('aria-pressed', 'false');
