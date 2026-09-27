@@ -8,17 +8,12 @@
  * @package Aggressive Apparel
  */
 
-import { getEffectiveThreshold } from '../debug-shared/utils';
 import {
   refreshInstanceGeometry,
   setInstanceActive,
   type ParallaxInstance,
 } from './engine';
-import {
-  getObserverRootMargin,
-  getValidIntersectionRatio,
-  getVisibilityThreshold,
-} from './utils';
+import { getObserverRootMargin, getValidIntersectionRatio } from './utils';
 
 /** Debug hook receiving raw observer data; loaded lazily in debug mode. */
 export type IntersectionDebugHook = (
@@ -40,15 +35,13 @@ export const observeInstance = (
     ctx.activationBuffer ?? 20,
     window.innerHeight
   );
-  // Elements taller than the root box can never reach the configured
-  // ratio — observe at the reachable effective threshold instead
-  // (computed once at init from the element's initial height).
-  const threshold = getEffectiveThreshold(
-    getVisibilityThreshold(ctx.visibilityTrigger),
-    instance.root.offsetHeight,
-    window.innerHeight,
-    rootMargin
-  );
+  // Active whenever ANY part of the block is inside the buffered zone.
+  // Gating on visibilityTrigger here (as this once did) switched tall
+  // sections off while they still filled much of the screen: progress
+  // runs until the block has fully left the zone, and the trigger is
+  // already applied by the progress math itself (motion holds still
+  // until the trigger point). A zero threshold keeps the two in step.
+  const threshold = 0;
   // Stashed so the (async-loaded) debug adapter shows the exact value
   // the production observer runs with — no re-derivation drift.
   ctx.effectiveThreshold = threshold;
@@ -60,7 +53,7 @@ export const observeInstance = (
         refreshInstanceGeometry(instance, entry.boundingClientRect);
 
         const ratio = getValidIntersectionRatio(entry.intersectionRatio, 0);
-        const isIntersecting = entry.isIntersecting && ratio >= threshold;
+        const isIntersecting = entry.isIntersecting;
 
         ctx.intersectionRatio = ratio;
         ctx.isIntersecting = isIntersecting;

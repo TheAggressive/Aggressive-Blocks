@@ -2,11 +2,15 @@
 /**
  * Advanced Parallax Container — front-end entry.
  *
- * Init wires each container into the shared frame engine (one set of
- * listeners + one rAF loop for the whole page, see engine.ts). Layer
- * settings are parsed once (layers.ts); per-frame work is pure math plus
- * batched style writes. Debug tooling is code-split and only fetched
- * when a block has Debug Mode enabled.
+ * Each container picks a renderer once at init:
+ *   - native scroll-driven animations (timeline.ts) wherever the browser
+ *     supports them — zero per-frame JavaScript;
+ *   - the shared JS frame engine (engine.ts: one set of listeners + one
+ *     rAF loop for the whole page) as the fallback and for 3D pointer
+ *     mode.
+ * Both render from the same pure frame function, so they look identical.
+ * Layer settings are parsed once (layers.ts). Debug tooling is
+ * code-split and only fetched when a block has Debug Mode enabled.
  *
  * @package Aggressive Apparel
  */
@@ -14,29 +18,21 @@ import { getContext, getElement, store } from '@wordpress/interactivity';
 import { applyParallaxDefaults, MOBILE_MAX_WIDTH_PX } from './config';
 import {
   createInstance,
-  primeInstance,
   registerInstance,
   setInstanceActive,
+  switchToFrameRenderer,
 } from './engine';
-import { collectLayers, type CachedLayer } from './layers';
+import { collectLayers, restoreLayerStyles } from './layers';
 import { observeInstance } from './observer';
+import { canUseScrollTimeline, startTimelineAnimations } from './timeline';
 import type { ParallaxContext } from './types';
 import { ParallaxLogger, validateConfiguration } from './utils';
 
 import type { DebugController } from './debug/controller';
 
 const INITIALIZED_CLASS = 'aggressive-apparel-parallax--initialized';
-
-const clearLayerStyles = (layers: CachedLayer[]): void => {
-  layers.forEach(({ element }) => {
-    element.style.translate = '';
-    element.style.scale = '';
-    element.style.rotate = '';
-    element.style.transform = '';
-    element.style.opacity = '';
-    element.style.filter = '';
-  });
-};
+/** Marks blocks rendered by native scroll-driven animations. */
+const TIMELINE_CLASS = 'aggressive-apparel-parallax--scroll-timeline';
 
 const startParallax = (
   ref: HTMLElement,
@@ -46,8 +42,31 @@ const startParallax = (
     '.aggressive-apparel-parallax__container'
   );
 
+  // Decided before collectLayers() writes any style, so the ancestor
+  // overflow check reads clean computed styles.
+  const renderer = canUseScrollTimeline(ref, ctx) ? 'timeline' : 'frame';
   const layers = collectLayers(ref, ctx);
-  const instance = createInstance(ref, container, ctx, layers);
+  const instance = createInstance(ref, container, ctx, layers, renderer);
+
+  let animations: Animation[] = [];
+  if (instance.renderer === 'timeline') {
+    // Keyframes bake in the baseline, so they are built right after the
+    // engine calibrates it (batched with every other block's priming).
+    instance.onPrimed = () => {
+      const started = startTimelineAnimations(
+        ref,
+        layers,
+        ctx,
+        instance.baselineProgress
+      );
+      if (started) {
+        animations = started;
+        ref.classList.add(TIMELINE_CLASS);
+      } else {
+        switchToFrameRenderer(instance);
+      }
+    };
+  }
 
   let debugController: DebugController | null = null;
   if (ctx.debugMode) {
@@ -68,7 +87,6 @@ const startParallax = (
     debugController?.onIntersection(ratio, isIntersecting)
   );
   const unregister = registerInstance(instance);
-  primeInstance(instance);
 
   ref.classList.add(INITIALIZED_CLASS);
   ctx.hasInitialized = true;
@@ -78,8 +96,9 @@ const startParallax = (
     observer.disconnect();
     unregister();
     debugController?.destroy();
-    clearLayerStyles(layers);
-    ref.classList.remove(INITIALIZED_CLASS);
+    animations.forEach(animation => animation.cancel());
+    layers.forEach(restoreLayerStyles);
+    ref.classList.remove(INITIALIZED_CLASS, TIMELINE_CLASS);
     ctx.hasInitialized = false;
   };
 };

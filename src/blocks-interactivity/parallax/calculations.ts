@@ -133,32 +133,48 @@ export function calculateScrollOpacity(
 }
 
 /**
- * Calculate magnetic force towards/away from mouse
+ * Peak magnetic displacement (px) per unit of the editor's Strength
+ * control (0.1–2): the default 0.5 pulls up to 12px, the maximum 2 up
+ * to 48px. Strength used to be applied as raw pixels, which capped the
+ * whole effect at an invisible 2px.
+ */
+export const MAGNETIC_PX_PER_STRENGTH = 24;
+
+/**
+ * Calculate magnetic force towards/away from the pointer.
+ *
+ * `centerX`/`centerY` must be the element's center WITHOUT its own
+ * magnetic offset applied — measuring from the already-pulled position
+ * feeds the output back into the input and makes the layer oscillate.
  */
 export function calculateMagneticForce(
-  elementRect: DOMRect,
+  centerX: number,
+  centerY: number,
   mouseX: number,
   mouseY: number,
   strength: number,
   range: number,
   mode: 'attract' | 'repel'
 ): { x: number; y: number } {
-  const centerX = elementRect.left + elementRect.width / 2;
-  const centerY = elementRect.top + elementRect.height / 2;
   const deltaX = mouseX - centerX;
   const deltaY = mouseY - centerY;
   const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
-  if (distance > range || distance === 0) {
+  if (!(range > 0) || distance > range || distance === 0) {
     return { x: 0, y: 0 };
   }
 
-  const forceFactor = (1 - distance / range) * strength;
+  let force =
+    (1 - distance / range) * Math.max(0, strength) * MAGNETIC_PX_PER_STRENGTH;
+  if (mode !== 'repel') {
+    // Attraction never drags the center past the pointer itself.
+    force = Math.min(force, distance);
+  }
   const multiplier = mode === 'repel' ? -1 : 1;
 
   return {
-    x: (deltaX / distance) * forceFactor * multiplier,
-    y: (deltaY / distance) * forceFactor * multiplier,
+    x: (deltaX / distance) * force * multiplier,
+    y: (deltaY / distance) * force * multiplier,
   };
 }
 
@@ -224,30 +240,58 @@ export function calculateColorTransition(
     mode
   );
 
-  // Parse colors to RGB values
+  // Parse colors to RGB(A) values
   const startRGB = parseColor(startColor);
   const endRGB = parseColor(endColor);
 
   if (!startRGB || !endRGB) {
     // If either color parsing fails, return the successfully parsed color
     // If both fail, return a safe fallback color
-    if (startRGB) return `rgb(${startRGB.r}, ${startRGB.g}, ${startRGB.b})`;
-    if (endRGB) return `rgb(${endRGB.r}, ${endRGB.g}, ${endRGB.b})`;
+    if (startRGB) return formatColor(startRGB);
+    if (endRGB) return formatColor(endRGB);
     return '#000000'; // Ultimate fallback for completely invalid colors
   }
 
-  // Interpolate each RGB component
-  const r = Math.round(startRGB.r + (endRGB.r - startRGB.r) * mappedProgress);
-  const g = Math.round(startRGB.g + (endRGB.g - startRGB.g) * mappedProgress);
-  const b = Math.round(startRGB.b + (endRGB.b - startRGB.b) * mappedProgress);
-
-  return `rgb(${r}, ${g}, ${b})`;
+  return formatColor({
+    r: Math.round(startRGB.r + (endRGB.r - startRGB.r) * mappedProgress),
+    g: Math.round(startRGB.g + (endRGB.g - startRGB.g) * mappedProgress),
+    b: Math.round(startRGB.b + (endRGB.b - startRGB.b) * mappedProgress),
+    a: startRGB.a + (endRGB.a - startRGB.a) * mappedProgress,
+  });
 }
 
+interface RGBA {
+  r: number;
+  g: number;
+  b: number;
+  /** Alpha, 0..1. */
+  a: number;
+}
+
+/** `rgb()` when opaque, `rgba()` otherwise (alpha to 3 decimals). */
+function formatColor({ r, g, b, a }: RGBA): string {
+  return a >= 1
+    ? `rgb(${r}, ${g}, ${b})`
+    : `rgba(${r}, ${g}, ${b}, ${+Math.max(0, a).toFixed(3)})`;
+}
+
+const clampChannel = (value: number): number =>
+  Math.round(Math.min(255, Math.max(0, value)));
+
+/** Alpha component: `0.5` or `50%`, clamped to 0..1 (absent = opaque). */
+const parseAlpha = (value: string | undefined): number => {
+  if (value === undefined) return 1;
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return 1;
+  return Math.min(1, Math.max(0, value.endsWith('%') ? num / 100 : num));
+};
+
 /**
- * Parse color string to RGB values
+ * Parse a CSS color string to RGBA. Handles named colors, #rgb/#rgba/
+ * #rrggbb/#rrggbbaa, and rgb()/rgba()/hsl()/hsla() in both the legacy
+ * comma syntax and the modern space syntax (`rgb(0 0 0 / 50%)`).
  */
-function parseColor(color: string): { r: number; g: number; b: number } | null {
+export function parseColor(color: string): RGBA | null {
   const trimmedColor = color.trim().toLowerCase();
 
   // Handle named colors
@@ -402,48 +446,71 @@ function parseColor(color: string): { r: number; g: number; b: number } | null {
     yellowgreen: '#9acd32',
   };
 
-  if (namedColors[trimmedColor]) {
+  if (Object.prototype.hasOwnProperty.call(namedColors, trimmedColor)) {
     return parseColor(namedColors[trimmedColor]);
   }
+  if (trimmedColor === 'transparent') {
+    return { r: 0, g: 0, b: 0, a: 0 };
+  }
 
-  // Handle hex colors
-  if (color.startsWith('#')) {
-    const hex = color.slice(1);
-    if (hex.length === 3) {
-      return {
-        r: parseInt(hex[0] + hex[0], 16),
-        g: parseInt(hex[1] + hex[1], 16),
-        b: parseInt(hex[2] + hex[2], 16),
-      };
-    } else if (hex.length === 6) {
+  // Hex: #rgb, #rgba, #rrggbb, #rrggbbaa
+  const hexMatch = trimmedColor.match(/^#([0-9a-f]{3,8})$/);
+  if (hexMatch) {
+    let hex = hexMatch[1];
+    if (hex.length === 3 || hex.length === 4) {
+      hex = hex
+        .split('')
+        .map(ch => ch + ch)
+        .join('');
+    }
+    if (hex.length === 6 || hex.length === 8) {
       return {
         r: parseInt(hex.slice(0, 2), 16),
         g: parseInt(hex.slice(2, 4), 16),
         b: parseInt(hex.slice(4, 6), 16),
+        a: hex.length === 8 ? parseInt(hex.slice(6, 8), 16) / 255 : 1,
       };
     }
+    return null;
   }
 
-  // Handle rgb/rgba colors
-  const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-  if (rgbMatch) {
+  // rgb()/rgba()/hsl()/hsla(), comma or space separated, optional alpha.
+  const fnMatch = trimmedColor.match(/^(rgba?|hsla?)\((.*)\)$/);
+  if (!fnMatch) {
+    return null; // Unsupported color format
+  }
+  const parts = fnMatch[2]
+    .replace('/', ' ')
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  if (parts.length < 3 || parts.length > 4) {
+    return null;
+  }
+  const alpha = parseAlpha(parts[3]);
+
+  if (fnMatch[1].startsWith('rgb')) {
+    const channel = (part: string): number =>
+      part.endsWith('%') ? (parseFloat(part) / 100) * 255 : parseFloat(part);
+    const [r, g, b] = parts.slice(0, 3).map(channel);
+    if (![r, g, b].every(Number.isFinite)) return null;
     return {
-      r: parseInt(rgbMatch[1], 10),
-      g: parseInt(rgbMatch[2], 10),
-      b: parseInt(rgbMatch[3], 10),
+      r: clampChannel(r),
+      g: clampChannel(g),
+      b: clampChannel(b),
+      a: alpha,
     };
   }
 
-  // Handle hsl/hsla colors
-  const hslMatch = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
-  if (hslMatch) {
-    const h = parseInt(hslMatch[1]) / 360; // Normalize to 0-1
-    const s = parseInt(hslMatch[2]) / 100; // Normalize to 0-1
-    const l = parseInt(hslMatch[3]) / 100; // Normalize to 0-1
-    return hslToRgb(h, s, l);
-  }
-
-  return null; // Unsupported color format
+  const h = parseFloat(parts[0]);
+  const sat = parseFloat(parts[1]);
+  const light = parseFloat(parts[2]);
+  if (![h, sat, light].every(Number.isFinite)) return null;
+  const rgb = hslToRgb(
+    (((h % 360) + 360) % 360) / 360,
+    Math.min(100, Math.max(0, sat)) / 100,
+    Math.min(100, Math.max(0, light)) / 100
+  );
+  return { ...rgb, a: alpha };
 }
 
 /**
@@ -514,18 +581,41 @@ export function calculateShadow(
     mode
   );
 
-  // For better user experience, use smooth transitions instead of abrupt switching
-  // Since full shadow interpolation is complex, we'll use easing to create smoother transitions
+  return interpolateShadow(startShadow, endShadow, mappedProgress);
+}
 
-  // Apply easing to create smoother transitions between shadow states
-  const easedProgress =
-    mappedProgress < 0.5
-      ? 2 * mappedProgress * mappedProgress
-      : -1 + (4 - 2 * mappedProgress) * mappedProgress;
+const SHADOW_NUMBER = /-?\d*\.?\d+/g;
 
-  // Use eased progress to smoothly transition between start and end shadows
-  // This provides much smoother visual transitions than abrupt switching
-  return easedProgress < 0.5 ? startShadow : endShadow;
+/**
+ * Interpolate two shadow strings number-by-number when they share the
+ * same shape (e.g. `0px 0px 0px rgba(0,0,0,0)` → `10px 10px 20px
+ * rgba(0,0,0,0.3)`), so offsets, blur, spread and rgba channels all blend
+ * smoothly. Shapes that differ (other units, keywords, layer counts)
+ * cannot be blended; those switch at the midpoint instead.
+ */
+export function interpolateShadow(
+  startShadow: string,
+  endShadow: string,
+  progress: number
+): string {
+  const startNumbers = startShadow.match(SHADOW_NUMBER) ?? [];
+  const endNumbers = endShadow.match(SHADOW_NUMBER) ?? [];
+  const sameShape =
+    startNumbers.length === endNumbers.length &&
+    startShadow.replace(SHADOW_NUMBER, '#') ===
+      endShadow.replace(SHADOW_NUMBER, '#');
+
+  if (!sameShape) {
+    return progress < 0.5 ? startShadow : endShadow;
+  }
+
+  let index = 0;
+  return startShadow.replace(SHADOW_NUMBER, () => {
+    const from = parseFloat(startNumbers[index]);
+    const to = parseFloat(endNumbers[index]);
+    index++;
+    return String(+(from + (to - from) * progress).toFixed(3));
+  });
 }
 
 /**
