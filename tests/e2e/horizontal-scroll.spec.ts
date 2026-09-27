@@ -517,10 +517,13 @@ test.describe('Horizontal Scroll — front end', () => {
 
     const focused = await tabIntoGallery(page, section);
     expect(focused).not.toBeNull();
-    // Focusing a gallery stop never scrolls the page into the range.
-    expect(
-      Math.abs((await page.evaluate(() => window.scrollY)) - top)
-    ).toBeLessThan(3);
+    // Focusing a gallery stop never scrolls the page past the start of the
+    // range. (It may not scroll at all when the gallery is already on
+    // screen.) The old tab stop was the whole-range section, which browsers
+    // centred — landing about halfway through the gallery.
+    expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(
+      top + 2
+    );
     await expect(section.locator('.aa-hscroll__progress')).toHaveAttribute(
       'aria-valuenow',
       '0'
