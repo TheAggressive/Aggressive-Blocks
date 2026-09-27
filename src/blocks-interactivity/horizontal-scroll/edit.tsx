@@ -422,7 +422,9 @@ export default function Edit({
       </InspectorControls>
       <section {...blockProps}>
         <div className='aa-hscroll__range'>
-          <div className='aa-hscroll__viewport'>
+          {/* Mirrors render.php: controls and hint overlay the stage, which
+              never scrolls, so they stay put while the viewport scrolls. */}
+          <div className='aa-hscroll__stage'>
             {showControls && (
               <div className='aa-hscroll__controls'>
                 <button
@@ -458,7 +460,9 @@ export default function Edit({
                 </button>
               </div>
             )}
-            <div {...innerBlocksProps} />
+            <div className='aa-hscroll__viewport'>
+              <div {...innerBlocksProps} />
+            </div>
             {swipeHintStyle !== 'off' && (
               <div
                 className={`aa-hscroll__swipe-hint aa-hscroll__swipe-hint--${swipeHintStyle}`}

@@ -53,9 +53,8 @@ if ( ! in_array( $desktop_behavior, array( 'pinned', 'inline' ), true ) ) {
 
 // Scroll behavior: 'paged' = one deliberate gesture advances one slide
 // (down/next, up/previous); anything else = continuous scrub.
-// Legacy 'proximity' → scrub.
 $snap_behavior = $attributes['snapBehavior'] ?? 'off';
-if ( 'proximity' === $snap_behavior || ! in_array( $snap_behavior, array( 'off', 'paged' ), true ) ) {
+if ( ! in_array( $snap_behavior, array( 'off', 'paged' ), true ) ) {
 	$snap_behavior = 'off';
 }
 
@@ -79,32 +78,44 @@ if ( 'inline' === $desktop_behavior ) {
 // gap must land on `.aa-hscroll__track`, not the section wrapper.
 $style_parts = array(
 	sprintf( '--aa-hscroll-item-width: %s;', esc_attr( $item_width ) ),
-	sprintf( '--aa-hscroll-speed: %s;', esc_attr( (string) $speed ) ),
 );
 $block_gap   = $attributes['style']['spacing']['blockGap'] ?? null;
 if ( is_string( $block_gap ) && '' !== $block_gap ) {
+	$gap_value = '';
 	if ( str_starts_with( $block_gap, 'var:preset|spacing|' ) ) {
-		$gap_slug  = substr( $block_gap, strlen( 'var:preset|spacing|' ) );
-		$gap_value = '0' === $gap_slug ? '0' : 'var(--wp--preset--spacing--' . esc_attr( $gap_slug ) . ')';
-	} else {
-		$gap_value = esc_attr( $block_gap );
+		$gap_slug = substr( $block_gap, strlen( 'var:preset|spacing|' ) );
+		if ( '0' === $gap_slug ) {
+			$gap_value = '0';
+		} elseif ( preg_match( '/^[a-z0-9-]+$/', $gap_slug ) ) {
+			$gap_value = 'var(--wp--preset--spacing--' . $gap_slug . ')';
+		}
+	} elseif (
+		// A single length, or a calc()/clamp()/min()/max() of lengths. The
+		// value lands inside a style attribute, so anything that could close
+		// the declaration (`;`, `{`, quotes, url()) is rejected outright.
+		preg_match( '/^(?:0|-?\d*\.?\d+(?:px|r?em|%|vw|vh|svh|dvh|lvh|vmin|vmax|ch|ex))$/', $block_gap )
+		|| (
+			preg_match( '/^(?:calc|clamp|min|max)\([0-9a-z.%+\-*\/ ,()]+\)$/', $block_gap )
+			&& false === stripos( $block_gap, 'url' )
+		)
+	) {
+		$gap_value = $block_gap;
 	}
-	$style_parts[] = '--aa-hscroll-gap: ' . $gap_value . ';';
+
+	if ( '' !== $gap_value ) {
+		$style_parts[] = '--aa-hscroll-gap: ' . $gap_value . ';';
+	}
 }
 ?>
 <section
 	<?php
 	echo aggressive_blocks_get_block_wrapper_attributes(
 		array(
-			'class'                => $classes,
-			'role'                 => 'region',
-			'aria-roledescription' => 'carousel',
-			'aria-label'           => $aria_label,
-			'data-wp-interactive'  => 'aggressive-blocks/horizontal-scroll',
-			'data-wp-context'      => wp_json_encode(
+			'class'               => $classes,
+			'data-wp-interactive' => 'aggressive-blocks/horizontal-scroll',
+			'data-wp-context'     => wp_json_encode(
 				array(
 					'speed'           => $speed,
-					'progress'        => 0,
 					'desktopBehavior' => $desktop_behavior,
 					'snapBehavior'    => $snap_behavior,
 					'stepDuration'    => $step_duration,
@@ -112,22 +123,36 @@ if ( is_string( $block_gap ) && '' !== $block_gap ) {
 					'i18n'            => array(
 						/* translators: 1: current slide number, 2: total slide count. Announced by screen readers. */
 						'slideAnnouncement' => __( 'Slide %1$s of %2$s', 'aggressive-blocks' ),
-						/* translators: 1: current slide number, 2: total slide count. Per-slide aria-label. */
+						/* translators: 1: current slide number, 2: total slide count. */
 						'slideLabel'        => __( '%1$s of %2$s', 'aggressive-blocks' ),
 					),
 				)
 			),
-			'data-wp-init'         => 'callbacks.init',
-			'style'                => implode( ' ', $style_parts ),
+			'data-wp-init'        => 'callbacks.init',
+			'style'               => implode( ' ', $style_parts ),
 		)
 	);
 	?>
 >
 	<div class="aa-hscroll__range">
-		<div class="aa-hscroll__viewport" data-aa-hscroll>
+		<?php
+		/*
+		 * The stage is the carousel region: one screen tall (sticky while pinned)
+		 * and never scrolled itself, so the controls, swipe hint, and focus ring
+		 * overlaid on it stay put while the viewport inside scrolls in the touch
+		 * carousel. The section spans the whole scroll range; landmarks and focus
+		 * live here instead, or browsers centre them mid-gallery.
+		 */
+		?>
+		<div
+			class="aa-hscroll__stage"
+			role="region"
+			aria-roledescription="carousel"
+			aria-label="<?php echo esc_attr( $aria_label ); ?>"
+		>
 			<?php
 			/*
-			 * Controls come before the track so Tab order is region → prev/next
+			 * Controls come before the viewport so Tab order is gallery → prev/next
 			 * → slide content. Absolute positioning keeps the visual overlay.
 			 */
 			?>
@@ -165,8 +190,17 @@ if ( is_string( $block_gap ) && '' !== $block_gap ) {
 				</button>
 			</div>
 			<?php endif; ?>
-			<div class="aa-hscroll__track">
-				<?php echo aggressive_blocks_trusted_html( $content ); ?>
+			<?php
+			/*
+			 * The viewport clips (pinned) or scrolls (touch) the track. The runtime
+			 * makes it the keyboard stop: it is the scrollable region, one screen
+			 * tall, so focusing it never jumps the page mid-gallery.
+			 */
+			?>
+			<div class="aa-hscroll__viewport">
+				<div class="aa-hscroll__track">
+					<?php echo aggressive_blocks_trusted_html( $content ); ?>
+				</div>
 			</div>
 			<?php if ( $show_progress ) : ?>
 			<div
@@ -175,12 +209,9 @@ if ( is_string( $block_gap ) && '' !== $block_gap ) {
 				aria-label="<?php esc_attr_e( 'Scroll progress', 'aggressive-blocks' ); ?>"
 				aria-valuemin="0"
 				aria-valuemax="100"
-				data-wp-bind--aria-valuenow="context.progress"
+				aria-valuenow="0"
 			>
-				<div
-					class="aa-hscroll__progress-bar"
-					data-wp-bind--style="callbacks.progressStyle"
-				></div>
+				<div class="aa-hscroll__progress-bar"></div>
 			</div>
 			<?php endif; ?>
 			<?php if ( 'off' !== $swipe_hint_style ) : ?>

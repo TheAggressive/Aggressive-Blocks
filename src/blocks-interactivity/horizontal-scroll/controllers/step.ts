@@ -1,17 +1,21 @@
 import {
   clamp,
   computeProgress,
+  getDirectionalSlideIndex,
   getSlideIndexFromProgress,
   getStepScrollPosition,
   isEditableTarget,
   isScrollInPinnedRange,
+  resolveAbsoluteIntent,
   resolveEntrySlideIndex,
-  resolveKeyboardTarget,
+  type KeyboardIntent,
 } from '../logic';
 import { paintScrollPosition } from './paint';
 import { StepCoast } from './step-coast';
 import {
   CLAMP_DRIFT_PX,
+  GESTURE_WINDOW_MS,
+  OWN_SCROLL_TOLERANCE_PX,
   RANGE_SLACK_PX,
   REDUCED_MOTION_QUERY,
   STOP_EPSILON_PX,
@@ -31,7 +35,11 @@ import type {
  * Directional snap controller — enterprise paging model:
  *
  * - While the document is inside the gallery's scroll range, we own vertical
- *   wheel, touch, and keyboard (Arrow / Page / Home / End).
+ *   wheel, touch, and keyboard (Arrow / Page / Space, and Home / End with
+ *   focus inside the gallery).
+ * - Scrolling we did not start — scrollbar drag, middle-click autoscroll,
+ *   find-in-page, assistive tech — is followed, never clamped back: the
+ *   track tracks the document and the next gesture steps from there.
  * - One intentional gesture → one slide. Mid-glide input queues at most one
  *   extra step so holding Arrow Down / a trackpad flick walks slides without
  *   feeling dead or skipping.
@@ -67,6 +75,19 @@ export class StepController implements Controller {
 
   /** Queued step direction while a glide is in flight (at most one). */
   private pendingDirection: 1 | -1 | 0 = 0;
+
+  /**
+   * Document position of our own most recent scrollTo, so onScroll can tell
+   * its own echo from scrolling someone else started. Null once followed.
+   */
+  private expectedScrollY: number | null = null;
+  /** When the last wheel / touch / key input reached this controller. */
+  private lastGestureAt = Number.NEGATIVE_INFINITY;
+  /**
+   * The track is following a foreign scroll and may rest between stops.
+   * Cleared by the next seat or step.
+   */
+  private following = false;
 
   private touchStartY = 0;
   private touchHandled = false;
@@ -119,11 +140,9 @@ export class StepController implements Controller {
       Math.max(0, geometry.slides.length - 1)
     );
 
-    if (wasOwning) {
-      window.scrollTo({
-        top: this.stopPosition(this.settledIndex),
-        behavior: 'auto',
-      });
+    if (wasOwning && !this.following) {
+      // Layout changed while seated (fonts, images, resize): stay seated.
+      this.scrollDocument(this.stopPosition(this.settledIndex));
     } else {
       this.settledIndex = this.nearestIndex();
     }
@@ -134,20 +153,13 @@ export class StepController implements Controller {
   };
 
   /**
-   * Shared keyboard handler (window capture + runtime focus path).
-   * Returns true when the event was consumed.
+   * Keyboard paging intent from the runtime's window listener (already
+   * filtered for modifiers, form fields, widgets, and dialogs). Returns true
+   * when consumed.
    */
-  keydown = (event: KeyboardEvent): boolean => {
+  keydown = (intent: KeyboardIntent): boolean => {
     if (this.destroyed || this.abortController.signal.aborted) return false;
-    if (isEditableTarget(event.target)) return false;
-
-    const target = resolveKeyboardTarget({
-      key: event.key,
-      currentIndex: this.settledIndex,
-      slideCount: this.geometry.slides.length,
-      rtl: this.geometry.rtl,
-    });
-    if (target === null) return false;
+    if (this.geometry.slides.length === 0) return false;
 
     // Only own keys while inside (or mid-glide). Outside → page scrolls.
     // After an exit latch, still allow keys while physically in-range so
@@ -158,6 +170,11 @@ export class StepController implements Controller {
       this.owning = true;
     }
 
+    this.lastGestureAt = performance.now();
+    const target =
+      resolveAbsoluteIntent(intent, this.geometry.slides.length) ??
+      this.directionalTarget(intent === 'next' ? 1 : -1);
+
     if (this.animating) {
       const direction: 1 | -1 | 0 =
         target > this.settledIndex ? 1 : target < this.settledIndex ? -1 : 0;
@@ -165,8 +182,8 @@ export class StepController implements Controller {
       return true;
     }
 
-    if (target === this.settledIndex) {
-      // Boundary: release so Arrow Up/Down can leave the gallery.
+    if (target === this.settledIndex && this.isAtStop(target)) {
+      // Boundary: release so Arrow Up/Down / Space can leave the gallery.
       this.releaseOwnership(true);
       return false;
     }
@@ -176,15 +193,15 @@ export class StepController implements Controller {
     return true;
   };
 
-  goToIndex = (index: number): boolean => {
+  step = (direction: 1 | -1): boolean => {
     if (this.destroyed || this.abortController.signal.aborted) return false;
+    if (this.geometry.slides.length === 0) return false;
 
-    const target = clamp(index, 0, this.geometry.slides.length - 1);
+    const target = this.directionalTarget(direction);
     if (target === this.settledIndex && this.isAtStop(target)) return false;
 
     if (this.animating) {
-      this.pendingDirection =
-        target > this.settledIndex ? 1 : target < this.settledIndex ? -1 : 0;
+      this.pendingDirection = direction;
       return true;
     }
 
@@ -262,6 +279,58 @@ export class StepController implements Controller {
   private isAtStop = (index: number): boolean =>
     Math.abs(window.scrollY - this.stopPosition(index)) < STOP_EPSILON_PX;
 
+  /**
+   * Next / previous slide from where the track actually is. Seated, that is
+   * settled ± 1; after following a foreign scroll it is the slide ahead of
+   * the current position (never skipping the one being approached).
+   */
+  private directionalTarget = (direction: 1 | -1): number => {
+    if (this.isAtStop(this.settledIndex)) {
+      return clamp(
+        this.settledIndex + direction,
+        0,
+        this.geometry.slides.length - 1
+      );
+    }
+
+    return getDirectionalSlideIndex(
+      computeProgress(
+        window.scrollY,
+        this.geometry.scrollStart,
+        this.geometry.scrollDistance
+      ),
+      this.geometry.slideStops,
+      direction,
+      this.geometry.scrollDistance > 0
+        ? STOP_EPSILON_PX / this.geometry.scrollDistance
+        : 0
+    );
+  };
+
+  /** Scroll the document, remembering the position as our own. */
+  private scrollDocument = (top: number): void => {
+    this.expectedScrollY = top;
+    window.scrollTo(0, top);
+  };
+
+  /**
+   * Adopt a scroll we did not start: keep ownership (so the next gesture
+   * steps from here) but let the document move freely, painting the track
+   * where the reader put it.
+   */
+  private follow = (): void => {
+    this.owning = true;
+    this.exitLatch = false;
+    this.following = true;
+    this.expectedScrollY = null;
+    this.pendingDirection = 0;
+    this.coast.clear();
+    this.cancelClamp();
+    this.settledIndex = this.nearestIndex();
+    this.paint(window.scrollY);
+    this.reflectState();
+  };
+
   private prefersReducedMotion = (): boolean => {
     if (typeof window.matchMedia !== 'function') return false;
     return window.matchMedia(REDUCED_MOTION_QUERY).matches;
@@ -281,6 +350,10 @@ export class StepController implements Controller {
 
     const deltaY = normalizeWheelDeltaY(event, window.innerHeight);
     if (deltaY === 0) return;
+
+    // Any vertical wheel near the range counts as a gesture, including ones
+    // we let through: the scroll they cause is wheel-driven, not foreign.
+    this.lastGestureAt = performance.now();
 
     const direction: 1 | -1 = deltaY > 0 ? 1 : -1;
 
@@ -332,11 +405,13 @@ export class StepController implements Controller {
   };
 
   private onTouchStart = (event: TouchEvent): void => {
+    this.lastGestureAt = performance.now();
     this.touchHandled = false;
     this.touchStartY = event.touches[0]?.clientY ?? 0;
   };
 
   private onTouchMove = (event: TouchEvent): void => {
+    this.lastGestureAt = performance.now();
     if (this.animating) {
       event.preventDefault();
       return;
@@ -392,23 +467,52 @@ export class StepController implements Controller {
   };
 
   private onScroll = (): void => {
-    if (!this.animating) {
-      const inRange = this.isInRange();
+    if (!this.animating) this.handleScroll();
+    this.syncWindowWheel();
+  };
 
-      if (!inRange) {
-        this.exitLatch = false;
-        if (this.owning) this.releaseOwnership(false);
-      } else if (!this.owning) {
-        // Don't reclaim while the user is scrolling out through the band.
-        if (!this.exitLatch) {
-          this.takeOwnership(0);
-        }
-      } else {
-        this.scheduleClamp();
-      }
+  private handleScroll = (): void => {
+    const y = window.scrollY;
+
+    // Our own scrollTo echoing back — nothing to reconcile.
+    if (
+      this.expectedScrollY !== null &&
+      Math.abs(y - this.expectedScrollY) <= OWN_SCROLL_TOLERANCE_PX
+    ) {
+      return;
     }
 
-    this.syncWindowWheel();
+    if (!this.isInRange()) {
+      this.exitLatch = false;
+      this.following = false;
+      if (this.owning) this.releaseOwnership(false);
+      // Keep progress / active slide true to the page (e.g. End jumped past
+      // the gallery). Painting only writes what changed.
+      this.paint(y);
+      return;
+    }
+
+    const gesture = performance.now() - this.lastGestureAt < GESTURE_WINDOW_MS;
+    if (!gesture) {
+      // Scrollbar, autoscroll, find-in-page, assistive tech: follow it.
+      this.follow();
+      return;
+    }
+
+    if (this.following) {
+      // A gesture after following steps from here (onWheel / keydown).
+      this.paint(y);
+      return;
+    }
+
+    if (!this.owning) {
+      // Don't reclaim while the user is scrolling out through the band.
+      if (!this.exitLatch) {
+        this.takeOwnership(0);
+      }
+    } else {
+      this.scheduleClamp();
+    }
   };
 
   /**
@@ -466,8 +570,9 @@ export class StepController implements Controller {
     options: { announce?: boolean } = {}
   ): void => {
     this.settledIndex = clamp(index, 0, this.geometry.slides.length - 1);
+    this.following = false;
     const exact = this.stopPosition(this.settledIndex);
-    window.scrollTo(0, exact);
+    this.scrollDocument(exact);
     this.paint(exact);
     this.presentation.setActive(this.settledIndex, {
       announce: options.announce ?? false,
@@ -483,7 +588,7 @@ export class StepController implements Controller {
       if (this.animating || !this.owning) return;
       const exact = this.stopPosition(this.settledIndex);
       if (Math.abs(window.scrollY - exact) > CLAMP_DRIFT_PX) {
-        window.scrollTo(0, exact);
+        this.scrollDocument(exact);
       }
       this.paint(exact);
     });
@@ -500,8 +605,9 @@ export class StepController implements Controller {
   };
 
   private stepInDirection = (direction: 1 | -1): boolean => {
-    if (!this.canStep(direction)) return false;
-    this.startStep(this.settledIndex + direction);
+    const target = this.directionalTarget(direction);
+    if (target === this.settledIndex && this.isAtStop(target)) return false;
+    this.startStep(target);
     return true;
   };
 
@@ -523,6 +629,7 @@ export class StepController implements Controller {
     this.cancelClamp();
     this.pendingDirection = 0;
     this.owning = true;
+    this.following = false;
     this.animating = true;
     this.reflectState();
     this.syncWindowWheel();
@@ -539,7 +646,7 @@ export class StepController implements Controller {
       callbacks: {
         isCurrent: () => generation === this.tweenGeneration,
         onFrame: position => {
-          window.scrollTo(0, position);
+          this.scrollDocument(position);
           this.paint(position);
         },
         onComplete: () => {
@@ -567,7 +674,7 @@ export class StepController implements Controller {
     this.animating = false;
 
     const exact = this.stopPosition(target);
-    window.scrollTo(0, exact);
+    this.scrollDocument(exact);
     this.paint(exact);
     this.presentation.setActive(target, { announce: true });
 
@@ -605,8 +712,13 @@ export class StepController implements Controller {
       : 'ready';
   };
 
+  /**
+   * Paint where the document actually is. Seated, that is the settled stop;
+   * following, wherever the reader scrolled; outside the range, the clamped
+   * start or end — the same thing the compositor timeline shows.
+   */
   private render = (): void => {
-    this.paint(this.stopPosition(this.settledIndex));
+    this.paint(window.scrollY);
   };
 
   private paint = (position: number): void => {

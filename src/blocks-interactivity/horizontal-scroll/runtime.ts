@@ -1,68 +1,48 @@
 /**
  * Horizontal-scroll runtime coordinator.
  *
- * Measurement, mode selection, and shared presentation live here. Each actual
- * scrolling model is isolated in its own controller module.
+ * Measurement, mode selection, and event wiring live here. What readers and
+ * assistive tech observe lives in presentation.ts, and each scrolling model is
+ * isolated in its own controller module.
  */
 
 import {
   addMediaChangeListener,
   buildSlideStops,
-  clamp,
   computeScrollStart,
-  formatSlideAnnouncement,
   getSlides,
   normalizeSnapBehavior,
   pickMode,
-  progressToPercentage,
+  resolveKeyboardIntent,
   resolveSpeed,
   resolveStepDurationMs,
-  shouldShowSwipeHint,
+  setAttributeIfChanged,
+  shouldIgnoreKeyboardEvent,
   toLogicalSlideOffsets,
   toSignedTranslate,
   type HScrollMode,
-  type SnapBehavior,
-  type SwipeHintStyle,
 } from './logic';
 import {
   createController,
   type Controller,
   type ControllerElements,
   type Geometry,
-  type Presentation,
 } from './controllers';
-
-export interface HScrollI18n {
-  /** sprintf-style template for the live announcement, e.g. "Slide %1$s of %2$s". */
-  slideAnnouncement?: string;
-  /** sprintf-style template for each slide's aria-label, e.g. "%1$s of %2$s". */
-  slideLabel?: string;
-}
-
-export interface HScrollContext {
-  speed: number;
-  progress: number;
-  desktopBehavior?: 'pinned' | 'inline';
-  snapBehavior?: SnapBehavior | 'proximity';
-  /** Author step glide length in seconds (0.2–2). */
-  stepDuration?: number;
-  swipeHintStyle?: SwipeHintStyle;
-  i18n?: HScrollI18n;
-}
-
-interface RuntimePresentation extends Presentation {
-  setMode: (mode: HScrollMode) => void;
-  setSlides: (slides: HTMLElement[]) => void;
-}
+import { createPresentation } from './presentation';
+import type { HScrollContext } from './types';
 
 const DESKTOP_QUERY = '(pointer: fine) and (min-width: 782px)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
+/** Keys that jump to the ends; the page's own Home/End unless focus is inside. */
+const JUMP_KEYS = new Set(['Home', 'End']);
+
 /**
  * Whether the browser supports CSS scroll-driven animations. When true the
  * runtime applies the compositor scrub animation (inline, see applyScrubTimeline)
- * on top of the JS baseline; the animation runs off the main thread for perfect
- * scroll sync. A static browser capability, evaluated once.
+ * to the track and the progress bar; both then run off the main thread, and the
+ * JS baseline stops writing their transforms. A static browser capability,
+ * evaluated once.
  */
 const SUPPORTS_SCROLL_TIMELINE =
   typeof CSS !== 'undefined' &&
@@ -88,178 +68,69 @@ const MODE_CLASSES = [
 
 const runtimes = new WeakMap<HTMLElement, () => void>();
 
+/** Apply (or clear) one inline scroll-driven animation on an element. */
+function setScrollAnimation(
+  element: HTMLElement | null,
+  name: string | null,
+  scrollStart: number,
+  scrollDistance: number
+): void {
+  if (!element) return;
+
+  if (!name) {
+    SCRUB_ANIMATION_PROPS.forEach(prop => element.style.removeProperty(prop));
+    return;
+  }
+
+  element.style.setProperty('animation-name', name);
+  element.style.setProperty('animation-timing-function', 'linear');
+  element.style.setProperty('animation-fill-mode', 'both');
+  element.style.setProperty('animation-duration', 'auto');
+  element.style.setProperty('animation-timeline', 'scroll(root block)');
+  element.style.setProperty(
+    'animation-range',
+    `${scrollStart}px ${scrollStart + scrollDistance}px`
+  );
+}
+
 /**
- * Apply (or clear) the compositor scroll-driven scrub animation on the track via
- * inline style. Kept out of the stylesheet on purpose: setting it here means the
- * CSS minifier never sees `animation-timeline` and so cannot fold it into the
- * `animation` shorthand (which would invalidate the whole declaration). Applied
- * only for pinned/paged modes on supporting browsers; otherwise the JS
- * `--aa-hscroll-x` baseline drives the transform.
+ * Apply (or clear) the compositor scroll-driven scrub on the track and the
+ * progress bar via inline style. Kept out of the stylesheet on purpose: set
+ * here, the CSS minifier never sees `animation-timeline` and so cannot fold it
+ * into the `animation` shorthand (which would invalidate the declaration).
+ *
+ * Both pinned modes use it: in paged mode the step tween drives the document
+ * scroll, and the track is the same pure function of that scroll position.
+ * Returns whether the timeline is active, so painting can skip the JS path.
  */
 function applyScrubTimeline(
   track: HTMLElement,
+  progressBar: HTMLElement | null,
   active: boolean,
   scrollStart: number,
   scrollDistance: number,
   maxTranslate: number,
   rtl: boolean
-): void {
-  if (!SUPPORTS_SCROLL_TIMELINE || !active) {
+): boolean {
+  if (!SUPPORTS_SCROLL_TIMELINE || !active || scrollDistance <= 0) {
     track.style.removeProperty('--aa-hscroll-translate-end');
-    SCRUB_ANIMATION_PROPS.forEach(prop => track.style.removeProperty(prop));
-    return;
+    setScrollAnimation(track, null, 0, 0);
+    setScrollAnimation(progressBar, null, 0, 0);
+    return false;
   }
 
   track.style.setProperty(
     '--aa-hscroll-translate-end',
     `${toSignedTranslate(maxTranslate, rtl)}px`
   );
-  track.style.setProperty('animation-name', 'aa-hscroll-scrub');
-  track.style.setProperty('animation-timing-function', 'linear');
-  track.style.setProperty('animation-fill-mode', 'both');
-  track.style.setProperty('animation-duration', 'auto');
-  track.style.setProperty('animation-timeline', 'scroll(root block)');
-  track.style.setProperty(
-    'animation-range',
-    `${scrollStart}px ${scrollStart + scrollDistance}px`
+  setScrollAnimation(track, 'aa-hscroll-scrub', scrollStart, scrollDistance);
+  setScrollAnimation(
+    progressBar,
+    'aa-hscroll-progress',
+    scrollStart,
+    scrollDistance
   );
-}
-
-function createPresentation(
-  ref: HTMLElement,
-  context: HScrollContext,
-  progressElement: HTMLElement | null,
-  liveRegion: HTMLElement | null,
-  swipeHint: HTMLElement | null,
-  prevButton: HTMLButtonElement | null,
-  nextButton: HTMLButtonElement | null
-): RuntimePresentation {
-  let mode: HScrollMode = 'static';
-  let slides: HTMLElement[] = [];
-  let currentIndex = 0;
-  let announcedIndex = -1;
-  let swipeHintDismissed = false;
-  /** Cached progress-bar active flag to avoid per-frame classList churn. */
-  let progressActive: boolean | null = null;
-
-  const updateSwipeHint = (): void => {
-    const style = context.swipeHintStyle ?? 'cue';
-    const visible = shouldShowSwipeHint({
-      mode,
-      slideCount: slides.length,
-      currentIndex,
-      dismissed: swipeHintDismissed,
-      style,
-    });
-
-    ref.classList.toggle('is-swipe-hint-visible', visible);
-    swipeHint?.toggleAttribute('hidden', !visible);
-  };
-
-  const syncControls = (index: number, slideCount: number): void => {
-    const interactive = mode !== 'static' && slideCount > 1;
-    if (prevButton) {
-      prevButton.disabled = !interactive || index <= 0;
-      prevButton.hidden = mode === 'static';
-    }
-    if (nextButton) {
-      nextButton.disabled = !interactive || index >= slideCount - 1;
-      nextButton.hidden = mode === 'static';
-    }
-  };
-
-  /*
-   * Deliberately no aria-hidden management here: in pinned/paged mode
-   * several slides can be partially visible at once, and hiding focusable
-   * content from assistive tech while it remains reachable is a WCAG
-   * violation. Position is conveyed by each slide's aria-label plus the
-   * polite live-region announcement instead.
-   */
-
-  return {
-    getIndex: () => currentIndex,
-
-    setMode(nextMode) {
-      mode = nextMode;
-      updateSwipeHint();
-      syncControls(currentIndex, slides.length);
-    },
-
-    setSlides(nextSlides) {
-      slides = nextSlides;
-      currentIndex = clamp(currentIndex, 0, Math.max(0, slides.length - 1));
-      announcedIndex = -1;
-
-      slides.forEach((slide, index) => {
-        slide.setAttribute('role', 'group');
-        slide.setAttribute('aria-roledescription', 'slide');
-        slide.setAttribute(
-          'aria-label',
-          formatSlideAnnouncement(
-            index,
-            slides.length,
-            context.i18n?.slideLabel ?? '%1$s of %2$s'
-          )
-        );
-      });
-
-      updateSwipeHint();
-      syncControls(currentIndex, slides.length);
-    },
-
-    setActive(index, options = {}) {
-      if (slides.length === 0) return 0;
-
-      const { announce = false } = options;
-      const nextIndex = clamp(index, 0, slides.length - 1);
-
-      // Fast path: called once per animation frame while scrolling, so skip
-      // all DOM side effects when nothing observable changes.
-      if (nextIndex !== currentIndex) {
-        currentIndex = nextIndex;
-        updateSwipeHint();
-        syncControls(currentIndex, slides.length);
-      }
-
-      if (announce && announcedIndex !== currentIndex && liveRegion) {
-        announcedIndex = currentIndex;
-        liveRegion.textContent = formatSlideAnnouncement(
-          currentIndex,
-          slides.length,
-          context.i18n?.slideAnnouncement
-        );
-      }
-
-      return currentIndex;
-    },
-
-    setProgress(progress) {
-      const bounded = clamp(progress, 0, 1);
-      const nextProgress = progressToPercentage(bounded);
-      const active =
-        (mode === 'pinned' || mode === 'paged') &&
-        bounded > 0.01 &&
-        bounded < 0.99;
-
-      if (context.progress !== nextProgress) {
-        context.progress = nextProgress;
-      }
-
-      // Skip redundant classList work — called every animation frame while scrubbing.
-      if (progressActive !== active) {
-        progressActive = active;
-        progressElement?.classList.toggle('is-active', active);
-      }
-    },
-
-    dismissSwipeHint() {
-      if (swipeHintDismissed) return;
-      swipeHintDismissed = true;
-      updateSwipeHint();
-    },
-
-    syncControls,
-  };
+  return true;
 }
 
 export function setupHorizontalScroll(
@@ -270,9 +141,15 @@ export function setupHorizontalScroll(
 
   const range = ref.querySelector<HTMLElement>('.aa-hscroll__range') ?? ref;
   const viewport = ref.querySelector<HTMLElement>('.aa-hscroll__viewport');
+  // The sticky, never-scrolled region that overlays controls on the viewport.
+  const stage =
+    ref.querySelector<HTMLElement>('.aa-hscroll__stage') ?? viewport;
   const track = ref.querySelector<HTMLElement>('.aa-hscroll__track');
   const progressElement = ref.querySelector<HTMLElement>(
     '.aa-hscroll__progress'
+  );
+  const progressBar = ref.querySelector<HTMLElement>(
+    '.aa-hscroll__progress-bar'
   );
   const liveRegion = ref.querySelector<HTMLElement>('.aa-hscroll__live-region');
   const swipeHint = ref.querySelector<HTMLElement>('.aa-hscroll__swipe-hint');
@@ -286,22 +163,28 @@ export function setupHorizontalScroll(
   if (!viewport || !track) return () => {};
 
   const elements: ControllerElements = { ref, viewport };
-  const presentation = createPresentation(
-    ref,
-    context,
+  const presentation = createPresentation(ref, context, {
     progressElement,
+    progressBar,
     liveRegion,
     swipeHint,
     prevButton,
-    nextButton
-  );
+    nextButton,
+  });
   const desktopMedia = window.matchMedia(DESKTOP_QUERY);
   const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
   const abortController = new AbortController();
   const mediaCleanups: Array<() => void> = [];
   const observedSlides = new Set<HTMLElement>();
-  const hadTabindex = ref.hasAttribute('tabindex');
-  const originalTabindex = ref.getAttribute('tabindex');
+  /*
+   * The keyboard stop is the viewport — the labelled carousel region, one
+   * screen tall. The section spans the whole scroll range (thousands of px),
+   * and focusing that made the browser centre it: Tab landed mid-gallery.
+   * In native mode the viewport is also the element that actually scrolls.
+   */
+  const focusTarget = viewport;
+  const hadTabindex = focusTarget.hasAttribute('tabindex');
+  const originalTabindex = focusTarget.getAttribute('tabindex');
 
   let mode: HScrollMode | null = null;
   let controller: Controller | null = null;
@@ -311,38 +194,46 @@ export function setupHorizontalScroll(
 
   const restoreTabstop = (): void => {
     if (hadTabindex && originalTabindex !== null) {
-      ref.setAttribute('tabindex', originalTabindex);
+      setAttributeIfChanged(focusTarget, 'tabindex', originalTabindex);
     } else if (!hadTabindex) {
-      ref.removeAttribute('tabindex');
+      focusTarget.removeAttribute('tabindex');
     }
   };
 
+  const MODE_CLASS_SETS: Record<HScrollMode, readonly string[]> = {
+    static: ['is-static'],
+    native: ['is-horizontal', 'is-snap'],
+    paged: ['is-horizontal', 'is-enhanced', 'is-paged'],
+    pinned: ['is-horizontal', 'is-enhanced'],
+  };
+
   const applyMode = (nextMode: HScrollMode, scrollDistance: number): void => {
-    // Always reconcile the full class set: measure() adds a temporary
-    // is-horizontal class before reading layout, so a change-only reset
-    // would leak it into static mode on the second measure of a resize.
-    MODE_CLASSES.forEach(className => ref.classList.remove(className));
+    // Reconcile the full class set (measure() adds a temporary is-horizontal
+    // before reading layout), but toggle each class to its target state so
+    // an unchanged mode causes no mutation and no style recalculation.
+    const wanted = new Set(MODE_CLASS_SETS[nextMode]);
+    MODE_CLASSES.forEach(className => {
+      if (ref.classList.contains(className) !== wanted.has(className)) {
+        ref.classList.toggle(className, wanted.has(className));
+      }
+    });
 
-    if (nextMode === 'static') {
-      ref.classList.add('is-static');
-    } else if (nextMode === 'native') {
-      ref.classList.add('is-horizontal', 'is-snap');
-    } else if (nextMode === 'paged') {
-      ref.classList.add('is-horizontal', 'is-enhanced', 'is-paged');
-    } else {
-      ref.classList.add('is-horizontal', 'is-enhanced');
-    }
-
-    if (nextMode === 'pinned' || nextMode === 'paged') {
-      ref.style.setProperty('--aa-hscroll-distance', `${scrollDistance}px`);
-    } else {
-      ref.style.removeProperty('--aa-hscroll-distance');
+    const distance =
+      nextMode === 'pinned' || nextMode === 'paged'
+        ? `${scrollDistance}px`
+        : '';
+    if (ref.style.getPropertyValue('--aa-hscroll-distance') !== distance) {
+      if (distance) {
+        ref.style.setProperty('--aa-hscroll-distance', distance);
+      } else {
+        ref.style.removeProperty('--aa-hscroll-distance');
+      }
     }
 
     if (nextMode === 'static') {
       restoreTabstop();
     } else if (!hadTabindex) {
-      ref.setAttribute('tabindex', '0');
+      setAttributeIfChanged(focusTarget, 'tabindex', '0');
     }
   };
 
@@ -381,12 +272,7 @@ export function setupHorizontalScroll(
     const maxTranslate = reducedMotionMedia.matches
       ? 0
       : Math.max(0, track.scrollWidth - viewport.clientWidth);
-    const speed = resolveSpeed(
-      Number(context.speed),
-      parseFloat(
-        window.getComputedStyle(ref).getPropertyValue('--aa-hscroll-speed')
-      )
-    );
+    const speed = resolveSpeed(Number(context.speed));
     const scrollDistance = Math.ceil(maxTranslate * speed);
     const snapBehavior = normalizeSnapBehavior(context.snapBehavior);
     const nextMode = pickMode({
@@ -401,7 +287,7 @@ export function setupHorizontalScroll(
 
     const stickyTop =
       nextMode === 'pinned' || nextMode === 'paged'
-        ? parseFloat(window.getComputedStyle(viewport).top) || 0
+        ? parseFloat(window.getComputedStyle(stage ?? viewport).top) || 0
         : 0;
     const scrollStart = computeScrollStart(
       window.scrollY + range.getBoundingClientRect().top,
@@ -416,6 +302,16 @@ export function setupHorizontalScroll(
     });
     const slideStops = buildSlideStops(logicalOffsets, maxTranslate);
     const stepDurationMs = resolveStepDurationMs(context.stepDuration);
+    const compositor = applyScrubTimeline(
+      track,
+      progressBar,
+      nextMode === 'pinned' || nextMode === 'paged',
+      scrollStart,
+      scrollDistance,
+      maxTranslate,
+      rtl
+    );
+    presentation.setCompositor(compositor);
 
     geometry = {
       slides,
@@ -425,18 +321,8 @@ export function setupHorizontalScroll(
       scrollStart,
       rtl,
       stepDurationMs,
+      compositor,
     };
-
-    // Compositor scrub is continuous — only for free scrub mode. Directional
-    // snap paints discrete stops via JS so there is no free play between slides.
-    applyScrubTimeline(
-      track,
-      nextMode === 'pinned',
-      scrollStart,
-      scrollDistance,
-      maxTranslate,
-      rtl
-    );
 
     presentation.setSlides(slides);
     presentation.setMode(nextMode);
@@ -491,12 +377,14 @@ export function setupHorizontalScroll(
     }
   };
 
-  // Window capture so Arrow Up/Down page slides while the gallery owns the
-  // scroll range — no Tab-focus required (matches wheel ownership).
+  // Window capture so Arrow / Page (and Space, when paged) page slides while
+  // the gallery owns the scroll range — no Tab-focus required, matching wheel
+  // ownership. shouldIgnoreKeyboardEvent keeps browser shortcuts, text entry,
+  // widgets, and dialogs out of it; Home/End need focus inside the gallery.
   window.addEventListener(
     'keydown',
     event => {
-      if (!controller) return;
+      if (!controller || !geometry) return;
 
       // Tab into the gallery → show controls. Arrow paging stays chrome-free.
       if (
@@ -512,7 +400,18 @@ export function setupHorizontalScroll(
         });
       }
 
-      if (controller.keydown(event)) {
+      if (shouldIgnoreKeyboardEvent(event, ref)) return;
+      if (JUMP_KEYS.has(event.key) && !ref.contains(document.activeElement)) {
+        return;
+      }
+
+      const intent = resolveKeyboardIntent({
+        key: event.key,
+        shiftKey: event.shiftKey,
+        rtl: geometry.rtl,
+        allowSpace: mode === 'paged',
+      });
+      if (intent && controller.keydown(intent)) {
         event.preventDefault();
       }
     },
@@ -530,9 +429,7 @@ export function setupHorizontalScroll(
   );
 
   const onControlClick = (direction: 1 | -1): void => {
-    if (!controller) return;
-    const next = presentation.getIndex() + direction;
-    if (controller.goToIndex(next)) {
+    if (controller?.step(direction)) {
       presentation.dismissSwipeHint();
     }
   };
@@ -605,7 +502,8 @@ export function setupHorizontalScroll(
     MODE_CLASSES.forEach(className => ref.classList.remove(className));
     ref.style.removeProperty('--aa-hscroll-distance');
     ref.style.removeProperty('--aa-hscroll-x');
-    applyScrubTimeline(track, false, 0, 0, 0, false);
+    applyScrubTimeline(track, progressBar, false, 0, 0, 0, false);
+    progressBar?.style.removeProperty('transform');
     progressElement?.classList.remove('is-active');
     restoreTabstop();
     delete ref.dataset.aaHscrollKeyboard;
