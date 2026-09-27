@@ -1,0 +1,121 @@
+/**
+ * Icon button baseline — `.aa-icon-button`, used by the ticker, hero
+ * carousel, horizontal scroll, card flip, and modal controls.
+ *
+ * The Aggressive Apparel theme styles this class; other themes do not. This
+ * baseline mirrors the theme's rules at the same zero specificity (`:where`)
+ * and reads the same custom properties, each with a fallback:
+ *
+ * - With the theme, every value resolves exactly as the theme's own rule, so
+ *   load order between the two does not matter. Component overrides of the
+ *   `--aa-icon-button-*` properties are more specific and still win.
+ * - Without it, the fallbacks give a usable, accessible control: a 44px
+ *   target, visible focus, and hover / disabled / pressed states.
+ *
+ * Imported into each consuming block's style.css.
+ *
+ * @package Aggressive_Blocks
+ */
+
+:where(.aa-icon-button) {
+  --aa-icon-button-background: var(
+    --wp--custom--button--icon--background,
+    transparent
+  );
+  --aa-icon-button-color: var(--wp--custom--button--icon--text, currentcolor);
+  --aa-icon-button-border: var(--wp--custom--button--icon--border, transparent);
+  --aa-icon-button-hover-background: var(--aa-icon-button-background);
+  --aa-icon-button-hover-border: var(--aa-icon-button-border);
+  --aa-icon-button-hover-color: var(
+    --wp--custom--button--icon--hover-text,
+    currentcolor
+  );
+
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 0.375rem;
+  min-width: var(--aa-icon-button-size, 2.75rem);
+  min-height: var(--aa-icon-button-size, 2.75rem);
+  padding: 0.625rem;
+  border: 1px solid var(--aa-icon-button-border);
+  border-radius: var(--aa-radius-full, 9999px);
+  background: var(--aa-icon-button-background);
+  color: var(--aa-icon-button-color);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity var(--aa-duration-fast, 150ms)
+      var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color var(--aa-duration-fast, 150ms)
+      var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--aa-duration-fast, 150ms)
+      var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    color var(--aa-duration-fast, 150ms)
+      var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    transform var(--aa-duration-fast, 150ms)
+      var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+:where(.aa-icon-button--only) {
+  width: var(--aa-icon-button-size, 2.75rem);
+  height: var(--aa-icon-button-size, 2.75rem);
+  padding: 0;
+  line-height: 0;
+}
+
+@media (hover: hover) {
+
+  :where(.aa-icon-button):hover:not(:disabled, [aria-disabled="true"]) {
+    border-color: var(--aa-icon-button-hover-border);
+    background: var(--aa-icon-button-hover-background);
+    color: var(--aa-icon-button-hover-color);
+  }
+}
+
+/*
+ * The ring is a box-shadow (it follows the border radius); the transparent
+ * outline is invisible normally but is what forced-colors mode (Windows High
+ * Contrast) draws, since that mode removes box-shadows.
+ */
+:where(.aa-icon-button):focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(
+    --aa-focus-ring,
+    0 0 0 2px Canvas,
+    0 0 0 4px currentcolor
+  );
+}
+
+:where(.aa-icon-button):active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(0.94);
+}
+
+:where(.aa-icon-button):is(:disabled, [aria-disabled="true"]) {
+  opacity: var(--wp--custom--button--disabled-opacity, 0.5);
+  cursor: not-allowed;
+}
+
+:where(.aa-icon-button--danger) {
+  --aa-icon-button-hover-color: var(--aa-color-error, #b32d2e);
+}
+
+:where(.aa-icon-button--square) {
+  border-radius: var(--aa-radius-md, 0.375rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  :where(.aa-icon-button) {
+    transition: none;
+  }
+
+  :where(.aa-icon-button):is(:hover, :active) {
+    transform: none;
+  }
+}
