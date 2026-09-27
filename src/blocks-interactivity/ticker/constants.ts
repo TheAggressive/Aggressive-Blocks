@@ -14,8 +14,23 @@ export const CLONE_ATTR = 'data-ticker-clone';
  */
 export const MAX_TICKER_CLONES = 100;
 
+/**
+ * localStorage key for a visitor's manual pause. One site-wide preference:
+ * a visitor who stops one marquee doesn't want the next page's moving either.
+ */
+export const PAUSE_STORAGE_KEY = 'aggressive-blocks:ticker-paused';
+
+/** Document event that keeps every ticker on the page on the same pause. */
+export const PAUSE_EVENT = 'aggressive-blocks:ticker-pause';
+
 /** Default loop duration in seconds when `data-ticker-speed` is missing. */
 export const DEFAULT_TICKER_SPEED = 30;
+
+/**
+ * How long the marquee takes to glide from full speed to a stop, or back up,
+ * when paused, held, or resumed.
+ */
+export const TICKER_MOTION_EASE_MS = 400;
 
 /**
  * CSS custom property for the pause/play control color.

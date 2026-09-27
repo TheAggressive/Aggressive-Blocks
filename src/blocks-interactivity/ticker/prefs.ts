@@ -4,6 +4,8 @@
  * @package Aggressive_Blocks
  */
 
+import { PAUSE_STORAGE_KEY } from './constants';
+
 /** Whether the visitor prefers reduced motion. */
 export function prefersReducedMotion(): boolean {
   return (
@@ -24,6 +26,31 @@ export function canUseHoverPause(): boolean {
     typeof window !== 'undefined' &&
     window.matchMedia('(hover: hover) and (pointer: fine)').matches
   );
+}
+
+/**
+ * Whether the visitor paused a ticker on an earlier page. Storage can be
+ * unavailable or throw (private mode, blocked site data) — treat as unset.
+ */
+export function readStoredPause(): boolean {
+  try {
+    return window.localStorage.getItem(PAUSE_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Remember (or forget) the visitor's manual pause for later pages. */
+export function writeStoredPause(paused: boolean): void {
+  try {
+    if (paused) {
+      window.localStorage.setItem(PAUSE_STORAGE_KEY, '1');
+    } else {
+      window.localStorage.removeItem(PAUSE_STORAGE_KEY);
+    }
+  } catch {
+    // Unavailable storage just means the pause lasts for this page only.
+  }
 }
 
 /**

@@ -12,12 +12,20 @@
  * @package Aggressive_Blocks
  */
 
-import { getContext, getElement, store } from '@wordpress/interactivity';
+import {
+  getContext,
+  getElement,
+  store,
+  withScope,
+} from '@wordpress/interactivity';
+import { PAUSE_EVENT, PAUSE_STORAGE_KEY } from './constants';
 import { isEffectivelyPaused, isTickerPauseControl } from './logic';
 import {
   canUseHoverPause,
   prefersReducedMotion,
+  readStoredPause,
   whenDocumentFontsReady,
+  writeStoredPause,
 } from './prefs';
 import { destroyTicker, setupTicker } from './runtime';
 import type { TickerContext } from './types';
@@ -75,6 +83,10 @@ store('aggressive-blocks/ticker', {
       }
 
       ctx.isPaused = !ctx.isPaused;
+      writeStoredPause(ctx.isPaused);
+      document.dispatchEvent(
+        new CustomEvent<boolean>(PAUSE_EVENT, { detail: ctx.isPaused })
+      );
 
       // Resuming from the control must clear hover/focus hold. On touch, tap
       // leaves focus on the button; without this, Play toggles `isPaused` off
@@ -146,7 +158,32 @@ store('aggressive-blocks/ticker', {
         ctx.isPaused = true;
         ctx.motionLocked = true;
         syncControlLabel(ctx);
+      } else if (readStoredPause()) {
+        // Paused on an earlier page — start stopped, not with a glide.
+        ctx.isPaused = true;
+        syncControlLabel(ctx);
       }
+
+      // The pause is one site-wide preference: follow it when another ticker
+      // on this page (event) or in another tab (storage) is toggled.
+      const applyPause = withScope((paused: boolean) => {
+        if (ctx.motionLocked) {
+          return;
+        }
+
+        ctx.isPaused = paused;
+        syncControlLabel(ctx);
+      });
+      const handlePauseEvent = (event: Event): void => {
+        applyPause((event as CustomEvent<boolean>).detail === true);
+      };
+      const handleStorage = (event: StorageEvent): void => {
+        if (event.key === PAUSE_STORAGE_KEY || event.key === null) {
+          applyPause(event.newValue === '1');
+        }
+      };
+      document.addEventListener(PAUSE_EVENT, handlePauseEvent);
+      window.addEventListener('storage', handleStorage);
 
       let cancelled = false;
 
@@ -158,6 +195,8 @@ store('aggressive-blocks/ticker', {
 
       return () => {
         cancelled = true;
+        document.removeEventListener(PAUSE_EVENT, handlePauseEvent);
+        window.removeEventListener('storage', handleStorage);
         destroyTicker(ref);
       };
     },

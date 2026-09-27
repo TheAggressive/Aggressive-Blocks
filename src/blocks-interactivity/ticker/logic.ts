@@ -11,7 +11,10 @@ export interface TickerAnimationState {
   isIntersecting: boolean;
   isDocumentVisible: boolean;
   reducedMotion: boolean;
+  /** Paused or held — the marquee is gliding to a stop, or stopped. */
   isPaused: boolean;
+  /** Eased-motion progress: 0 = stopped, 1 = full speed. */
+  motion: number;
   pxPerMs: number;
 }
 
@@ -65,7 +68,8 @@ export function isEffectivelyPaused(state: TickerPauseState): boolean {
 }
 
 /**
- * Whether a ticker should consume animation frames right now.
+ * Whether a ticker should consume animation frames right now. A paused
+ * ticker keeps running until it has glided to a stop.
  */
 export function shouldAnimateTicker(state: TickerAnimationState): boolean {
   return (
@@ -73,9 +77,38 @@ export function shouldAnimateTicker(state: TickerAnimationState): boolean {
     state.isIntersecting &&
     state.isDocumentVisible &&
     !state.reducedMotion &&
-    !state.isPaused &&
+    (!state.isPaused || state.motion > 0) &&
     state.pxPerMs > 0
   );
+}
+
+/**
+ * Advance motion progress toward `target` at a constant rate, so a full
+ * 0 → 1 ramp (or 1 → 0 glide) takes `durationMs`.
+ */
+export function stepTickerMotion(
+  motion: number,
+  target: number,
+  deltaMs: number,
+  durationMs: number
+): number {
+  if (durationMs <= 0) {
+    return target;
+  }
+
+  const step = Math.max(deltaMs, 0) / durationMs;
+  return target > motion
+    ? Math.min(target, motion + step)
+    : Math.max(target, motion - step);
+}
+
+/**
+ * Speed multiplier for a motion progress. Smoothstep, so the marquee eases
+ * out of full speed and settles into a stop (and the reverse) with no jolt.
+ */
+export function easeTickerMotion(motion: number): number {
+  const p = Math.min(Math.max(motion, 0), 1);
+  return p * p * (3 - 2 * p);
 }
 
 /**

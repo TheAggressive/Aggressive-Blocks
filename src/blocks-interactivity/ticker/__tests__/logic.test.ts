@@ -5,6 +5,7 @@
  */
 
 import {
+  easeTickerMotion,
   getTickerPxPerMs,
   isEffectivelyPaused,
   isTickerPauseControl,
@@ -13,6 +14,7 @@ import {
   pickAllowed,
   resolveTickerControlColor,
   shouldAnimateTicker,
+  stepTickerMotion,
 } from '../logic';
 import { PATTERN_SLUGS, TICKER_DIRECTIONS } from '../constants';
 
@@ -86,6 +88,7 @@ describe('shouldAnimateTicker', () => {
     isDocumentVisible: true,
     reducedMotion: false,
     isPaused: false,
+    motion: 1,
     pxPerMs: 1,
   };
 
@@ -98,10 +101,59 @@ describe('shouldAnimateTicker', () => {
     ['offscreen', { isIntersecting: false }],
     ['in a hidden document', { isDocumentVisible: false }],
     ['reduced motion', { reducedMotion: true }],
-    ['paused', { isPaused: true }],
+    ['paused and settled', { isPaused: true, motion: 0 }],
     ['not measured', { pxPerMs: 0 }],
   ])('stops when %s', (_label, change) => {
     expect(shouldAnimateTicker({ ...active, ...change })).toBe(false);
+  });
+
+  it('keeps running while a paused ticker glides to a stop', () => {
+    expect(
+      shouldAnimateTicker({ ...active, isPaused: true, motion: 0.4 })
+    ).toBe(true);
+  });
+
+  it('runs to ramp a resumed ticker up from a stop', () => {
+    expect(shouldAnimateTicker({ ...active, motion: 0 })).toBe(true);
+  });
+});
+
+describe('stepTickerMotion', () => {
+  it('moves toward the target so a full ramp takes the duration', () => {
+    expect(stepTickerMotion(0, 1, 100, 400)).toBeCloseTo(0.25);
+    expect(stepTickerMotion(1, 0, 100, 400)).toBeCloseTo(0.75);
+  });
+
+  it('never overshoots the target', () => {
+    expect(stepTickerMotion(0.9, 1, 100, 400)).toBe(1);
+    expect(stepTickerMotion(0.1, 0, 100, 400)).toBe(0);
+  });
+
+  it('holds on a zero or negative delta', () => {
+    expect(stepTickerMotion(0.5, 1, 0, 400)).toBe(0.5);
+    expect(stepTickerMotion(0.5, 0, -16, 400)).toBe(0.5);
+  });
+
+  it('jumps straight to the target without a duration', () => {
+    expect(stepTickerMotion(1, 0, 16, 0)).toBe(0);
+  });
+});
+
+describe('easeTickerMotion', () => {
+  it('maps the ends to stopped and full speed', () => {
+    expect(easeTickerMotion(0)).toBe(0);
+    expect(easeTickerMotion(1)).toBe(1);
+    expect(easeTickerMotion(0.5)).toBeCloseTo(0.5);
+  });
+
+  it('eases in and out, flat at both ends', () => {
+    expect(easeTickerMotion(0.1)).toBeLessThan(0.1);
+    expect(easeTickerMotion(0.9)).toBeGreaterThan(0.9);
+  });
+
+  it('clamps out-of-range progress', () => {
+    expect(easeTickerMotion(-1)).toBe(0);
+    expect(easeTickerMotion(2)).toBe(1);
   });
 });
 
