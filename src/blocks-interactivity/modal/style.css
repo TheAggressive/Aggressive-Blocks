@@ -7,6 +7,8 @@
  *  - prefers-reduced-motion: disables all transitions and backdrop-filter.
  * ============================================================ */
 
+@import '../../utils/icon-button.css';
+
 /* ──────────────────────────────────────────────
  * Wrapper (data-wp-interactive root)
  * ────────────────────────────────────────────── */
@@ -60,7 +62,7 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	text-transform: uppercase;
 	background: var(--aa-trigger-bg, transparent);
 	color: var(--aa-trigger-text, currentcolor);
-	border-radius: var(--aa-trigger-radius, var(--aa-radius-button));
+	border-radius: var(--aa-trigger-radius, var(--aa-radius-button, 9999px));
 	transition:
 		background-color var(--aa-duration-fast, 0.15s) var(--aa-ease-default, ease),
 		color var(--aa-duration-fast, 0.15s) var(--aa-ease-default, ease),
@@ -68,13 +70,17 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		box-shadow var(--aa-duration-fast, 0.15s) var(--aa-ease-default, ease);
 
 	&:hover {
-		background-color: var(--aa-trigger-hover-bg, var(--aa-color-hover-subtle));
+		background-color: var(--aa-trigger-hover-bg, var(--aa-color-hover-subtle, color-mix(in oklch, currentcolor 6%, transparent)));
 		color: var(--aa-trigger-hover-text, currentcolor);
 	}
 
 	&:focus-visible {
-		outline: none;
-		box-shadow: var(--aa-focus-ring);
+
+		/* Transparent outline: invisible normally, drawn in forced-colors mode,
+		   which removes the box-shadow ring. */
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		box-shadow: var(--aa-focus-ring, 0 0 0 2px Canvas, 0 0 0 4px currentcolor);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -86,19 +92,19 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	&.trigger-size-sm {
 		padding: 0.4em 0.875em;
 		font-size: var(--wp--preset--font-size--x-small);
-		min-height: var(--aa-control-min);
+		min-height: var(--aa-control-min, 2.75rem);
 	}
 
 	&.trigger-size-md {
 		padding: 0.55em 1.125em;
 		font-size: var(--wp--preset--font-size--small);
-		min-height: var(--aa-button-height-md);
+		min-height: var(--aa-button-height-md, 2.75rem);
 	}
 
 	&.trigger-size-lg {
 		padding: 0.7em 1.5em;
 		font-size: var(--wp--preset--font-size--medium);
-		min-height: var(--aa-button-height-lg);
+		min-height: var(--aa-button-height-lg, 3.25rem);
 	}
 
 	/* ── Style variants ────── */
@@ -132,7 +138,7 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		background: transparent;
 
 		&:hover {
-			background-color: var(--aa-trigger-hover-bg, var(--aa-color-hover-subtle));
+			background-color: var(--aa-trigger-hover-bg, var(--aa-color-hover-subtle, color-mix(in oklch, currentcolor 6%, transparent)));
 		}
 	}
 
@@ -140,7 +146,7 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		border: none;
 		background: transparent;
 		padding: 0;
-		min-height: var(--aa-control-min);
+		min-height: var(--aa-control-min, 2.75rem);
 		border-radius: 0;
 
 		&:hover {
@@ -224,7 +230,7 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 .wp-block-aggressive-apparel-modal__dialog {
 
 	/* Shared by the panel and its ::backdrop, which inherits from the dialog. */
-	--aa-modal-duration: var(--aa-duration-normal);
+	--aa-modal-duration: var(--aa-duration-normal, 300ms);
 
 	/* Gap between a corner-positioned panel and the viewport edge. */
 	--aa-dialog-inset: 1rem;
@@ -239,24 +245,24 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	width: min(90vw, var(--aa-dialog-max-width, var(--aa-panel-width-lg)));
+	width: min(90vw, var(--aa-dialog-max-width, var(--aa-panel-width-lg, 40rem)));
 	max-height: 85dvh;
 
 	/* Match aggressive-apparel-panel chrome. render.php writes the block's
 	   color, border, padding, and shadow supports inline, which wins. */
-	background-color: var(--aa-color-surface);
-	color: var(--aa-color-foreground);
-	border: 0 solid var(--aa-color-border-muted);
-	border-radius: var(--aa-radius-panel);
-	box-shadow: var(--aa-shadow-panel);
+	background-color: var(--aa-color-surface, Canvas);
+	color: var(--aa-color-foreground, CanvasText);
+	border: 0 solid var(--aa-color-border-muted, color-mix(in oklch, currentcolor 20%, transparent));
+	border-radius: var(--aa-radius-panel, 0.75rem);
+	box-shadow: var(--aa-shadow-panel, 0 25px 50px -12px rgb(0 0 0 / 25%));
 	padding: 1.5rem;
 	outline: none;
 
 	/* Entrance/exit animation — always transition opacity so transitionend fires. */
 	opacity: 0;
 	transition:
-		opacity var(--aa-modal-duration) var(--aa-ease-default),
-		transform var(--aa-modal-duration) var(--aa-ease-default);
+		opacity var(--aa-modal-duration) var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1)),
+		transform var(--aa-modal-duration) var(--aa-ease-default, cubic-bezier(0.4, 0, 0.2, 1));
 
 	&.wp-block-aggressive-apparel-modal__shell.is-open {
 		opacity: 1;
@@ -311,8 +317,8 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		width: 100%;
 		max-width: none;
 		max-height: 90dvh;
-		border-radius: var(--aa-radius-panel) var(--aa-radius-panel) 0 0;
-		box-shadow: 0 -4px 24px var(--aa-color-shadow);
+		border-radius: var(--aa-radius-panel, 0.75rem) var(--aa-radius-panel, 0.75rem) 0 0;
+		box-shadow: 0 -4px 24px var(--aa-color-shadow, rgb(0 0 0 / 15%));
 		transform: translateY(100%); /* Closed: off-screen below. */
 	}
 
@@ -324,8 +330,8 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		width: 100%;
 		max-width: none;
 		max-height: 90dvh;
-		border-radius: 0 0 var(--aa-radius-panel) var(--aa-radius-panel);
-		box-shadow: 0 4px 24px var(--aa-color-shadow);
+		border-radius: 0 0 var(--aa-radius-panel, 0.75rem) var(--aa-radius-panel, 0.75rem);
+		box-shadow: 0 4px 24px var(--aa-color-shadow, rgb(0 0 0 / 15%));
 		transform: translateY(-100%); /* Closed: off-screen above. */
 	}
 
@@ -338,8 +344,8 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		max-width: none;
 		max-height: 100%;
 		height: 100%;
-		border-radius: 0 var(--aa-radius-panel) var(--aa-radius-panel) 0;
-		box-shadow: 4px 0 24px var(--aa-color-shadow);
+		border-radius: 0 var(--aa-radius-panel, 0.75rem) var(--aa-radius-panel, 0.75rem) 0;
+		box-shadow: 4px 0 24px var(--aa-color-shadow, rgb(0 0 0 / 15%));
 		transform: translateX(-100%); /* Closed: off-screen left. */
 	}
 
@@ -352,8 +358,8 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 		max-width: none;
 		max-height: 100%;
 		height: 100%;
-		border-radius: var(--aa-radius-panel) 0 0 var(--aa-radius-panel);
-		box-shadow: -4px 0 24px var(--aa-color-shadow);
+		border-radius: var(--aa-radius-panel, 0.75rem) 0 0 var(--aa-radius-panel, 0.75rem);
+		box-shadow: -4px 0 24px var(--aa-color-shadow, rgb(0 0 0 / 15%));
 		transform: translateX(100%); /* Closed: off-screen right. */
 	}
 
@@ -489,10 +495,15 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 .wp-block-aggressive-apparel-modal__dialog-body {
 	flex: 1 1 auto;
 	min-height: 0;
-	outline: none;
 	overflow-y: auto;
 	overscroll-behavior: contain;
 	scrollbar-gutter: stable;
+}
+
+/* A scroller with no focusable content is keyboard-focusable in current
+   browsers; keep its focus visible, hiding only mouse / programmatic focus. */
+.wp-block-aggressive-apparel-modal__dialog-body:focus:not(:focus-visible) {
+	outline: none;
 }
 
 /* ──────────────────────────────────────────────
@@ -503,7 +514,7 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	--aa-icon-button-background: var(--aa-close-btn-bg, transparent);
 	--aa-icon-button-color: var(--aa-close-btn-color, var(--aa-color-foreground-muted, currentcolor));
 	--aa-icon-button-hover-background: var(--aa-close-btn-hover-bg, var(--aa-icon-button-background));
-	--aa-icon-button-hover-color: var(--aa-close-btn-hover-color, var(--aa-color-accent));
+	--aa-icon-button-hover-color: var(--aa-close-btn-hover-color, var(--aa-color-accent, currentcolor));
 
 	flex-shrink: 0;
 	font-size: var(--wp--preset--font-size--medium);
@@ -526,11 +537,11 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	}
 
 	&.close-variant-outlined {
-		--aa-icon-button-border: var(--aa-color-border);
+		--aa-icon-button-border: var(--aa-color-border, color-mix(in oklch, currentcolor 30%, transparent));
 	}
 
 	&.close-variant-filled {
-		--aa-icon-button-background: var(--aa-close-btn-bg, var(--aa-color-hover-default));
+		--aa-icon-button-background: var(--aa-close-btn-bg, var(--aa-color-hover-default, color-mix(in oklch, currentcolor 8%, transparent)));
 	}
 
 	&.close-placement-inside-top-right {
@@ -556,7 +567,7 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	}
 
 	&.close-placement-sticky-top-right {
-		--aa-icon-button-background: var(--aa-close-btn-bg, var(--aa-dialog-bg, var(--aa-color-surface)));
+		--aa-icon-button-background: var(--aa-close-btn-bg, var(--aa-dialog-bg, var(--aa-color-surface, Canvas)));
 
 		align-self: flex-end;
 		position: sticky;
@@ -568,8 +579,8 @@ html:has(.wp-block-aggressive-apparel-modal__dialog:modal) {
 	/* Outside close sits on the scrim — light chrome for contrast. */
 	&.close-placement-outside-top-right,
 	&.close-placement-outside-top-left {
-		--aa-icon-button-background: var(--aa-close-btn-bg, color-mix(in oklch, var(--aa-color-black) 40%, transparent));
-		--aa-icon-button-color: var(--aa-close-btn-color, var(--aa-color-on-scrim));
+		--aa-icon-button-background: var(--aa-close-btn-bg, color-mix(in oklch, var(--aa-color-black, #000) 40%, transparent));
+		--aa-icon-button-color: var(--aa-close-btn-color, var(--aa-color-on-scrim, #fff));
 
 		position: fixed;
 		z-index: 2;

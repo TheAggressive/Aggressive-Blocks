@@ -6,11 +6,8 @@
 
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { select } from '@wordpress/data';
-import {
-  cleanupAllHighlights,
-  highlightModalTrigger,
-  queryAllEditorDocuments,
-} from '../highlights';
+import { queryAllEditorDocuments } from '../editor-dom';
+import { cleanupAllHighlights, highlightModalTrigger } from '../highlights';
 import { Debug } from './debug';
 
 type UpdateTriggerClassFn = (

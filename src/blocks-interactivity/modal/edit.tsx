@@ -27,11 +27,8 @@ import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import type { CSSProperties } from 'react';
 import { __ } from '@wordpress/i18n';
 import './editor.css';
-import {
-  cleanupAllHighlights,
-  highlightModalTrigger,
-  queryAllEditorDocuments,
-} from './highlights';
+import { queryAllEditorDocuments } from './editor-dom';
+import { cleanupAllHighlights, highlightModalTrigger } from './highlights';
 import { useTriggerManagement } from './hooks/useTriggerManagement';
 import { useUpdateBlockTriggerClass } from './hooks/useUpdateBlockTriggerClass';
 import type { ModalAttributes } from './types';

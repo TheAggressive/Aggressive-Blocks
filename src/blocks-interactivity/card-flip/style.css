@@ -1,5 +1,7 @@
 /* Card Flip Block — Frontend Styles */
 
+@import '../../utils/icon-button.css';
+
 .aa-card-flip {
   position: relative;
   display: grid;
