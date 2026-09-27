@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-27T18:24:35+00:00\n"
+"POT-Creation-Date: 2026-09-27T19:05:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: aggressive-blocks\n"
@@ -1716,6 +1716,185 @@ msgid "Badge (circle)"
 msgstr ""
 
 #: build/blocks-interactivity/modal/index.js:1
+msgid "Close Button"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Placement"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Top Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Bottom Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Inside — Bottom Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Sticky — Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Outside — Top Right"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Outside — Top Left"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Modal closes via backdrop click or Escape only."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Button floats in the overlay corner, independent of the dialog."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "With the overlay disabled there is no backdrop to click, so the close button stays visible."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Icon"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Close (×)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Arrow Left (←)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Chevron Down (↓)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Text only"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Size"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Small (32px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Medium (44px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Large (56px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Style"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Ghost (transparent)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Filled"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Outlined"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Label"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "e.g. Close"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Optional visible text alongside the icon."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Close Button Colors"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Icon / text color"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Background"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Hover icon / text color"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Hover background"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Trigger Button"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Variant"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Ghost"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+#: build/blocks-interactivity/ticker/index.js:1
+msgid "Text"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Large (52px)"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Full Width"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Stretch the button to fill its container."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Border Radius"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "e.g. 0.25rem, 9999px for pill. Leave empty for square."
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Colors"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
+msgid "Hover text"
+msgstr ""
+
+#: build/blocks-interactivity/modal/index.js:1
 msgid "Modal Settings"
 msgstr ""
 
@@ -1968,185 +2147,6 @@ msgstr ""
 
 #: build/blocks-interactivity/modal/index.js:1
 msgid "Animation Duration (ms)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Close Button"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Placement"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Inside — Top Right"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Inside — Top Left"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Inside — Bottom Right"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Inside — Bottom Left"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Sticky — Top Right"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Outside — Top Right"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Outside — Top Left"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Modal closes via backdrop click or Escape only."
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Button floats in the overlay corner, independent of the dialog."
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "With the overlay disabled there is no backdrop to click, so the close button stays visible."
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-#: build/blocks-interactivity/ticker/index.js:1
-msgid "Icon"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Close (×)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Arrow Left (←)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Chevron Down (↓)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Text only"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Size"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Small (32px)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Medium (44px)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Large (56px)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Style"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Ghost (transparent)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Filled"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Outlined"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-#: build/blocks-interactivity/ticker/index.js:1
-msgid "Label"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "e.g. Close"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Optional visible text alongside the icon."
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Close Button Colors"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Icon / text color"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Background"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Hover icon / text color"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Hover background"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Trigger Button"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Variant"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Ghost"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-#: build/blocks-interactivity/ticker/index.js:1
-msgid "Text"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Large (52px)"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Full Width"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Stretch the button to fill its container."
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Border Radius"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "e.g. 0.25rem, 9999px for pill. Leave empty for square."
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Colors"
-msgstr ""
-
-#: build/blocks-interactivity/modal/index.js:1
-msgid "Hover text"
 msgstr ""
 
 #: build/blocks-interactivity/modal/index.js:1
