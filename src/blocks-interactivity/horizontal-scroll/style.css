@@ -14,12 +14,35 @@
   position: relative;
 }
 
-/* Visible focus ring for keyboard users: the runtime makes the section
-   focusable (tabindex="0") in every enhanced/native mode so it can receive
-   arrow/Home/End/Page keys. */
-.aa-hscroll:focus-visible {
-  outline: 2px solid var(--aa-color-accent);
-  outline-offset: 4px;
+/* Visible focus ring for keyboard users. The runtime makes the viewport
+   focusable in every enhanced/native mode. The ring is drawn by an overlay on
+   the stage: an outline on the viewport itself is painted beneath the track
+   (its own compositing layer), and an outside offset on a full-bleed element
+   falls off-screen. Falls back to currentcolor off the parent theme. */
+.aa-hscroll__stage {
+  position: relative;
+}
+
+.aa-hscroll__viewport:focus-visible {
+  outline: 3px solid var(--aa-color-accent, currentcolor);
+  outline-offset: -3px;
+}
+
+@supports selector(:has(*)) {
+
+  .aa-hscroll__viewport:focus-visible {
+    outline: none;
+  }
+
+  .aa-hscroll__stage:has(> .aa-hscroll__viewport:focus-visible)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    outline: 3px solid var(--aa-color-accent, currentcolor);
+    outline-offset: -3px;
+    pointer-events: none;
+  }
 }
 
 .aa-hscroll__range {
@@ -86,11 +109,16 @@
   min-height: var(--aa-hscroll-pin-height);
 }
 
-.aa-hscroll.is-enhanced .aa-hscroll__viewport {
+.aa-hscroll.is-enhanced .aa-hscroll__stage {
   position: sticky;
   top: var(--aa-hscroll-sticky-top);
   width: 100%;
   height: var(--aa-hscroll-pin-height);
+}
+
+.aa-hscroll.is-enhanced .aa-hscroll__viewport {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -185,7 +213,7 @@
 }
 
 .aa-hscroll--inline.is-snap .aa-hscroll__viewport::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklch, var(--aa-color-border) 60%, transparent);
+  background-color: color-mix(in oklch, var(--aa-color-border, currentcolor) 60%, transparent);
   border-radius: 4px;
 }
 
@@ -206,7 +234,7 @@
   z-index: 10;
   display: block;
   height: 3px;
-  background-color: color-mix(in oklch, var(--aa-color-border) 40%, transparent);
+  background-color: color-mix(in oklch, var(--aa-color-border, currentcolor) 40%, transparent);
   opacity: 0;
   transition: opacity 500ms ease;
 }
@@ -219,11 +247,25 @@
   width: 100%;
   height: 100%;
   max-width: 100%;
-  background-color: var(--aa-color-accent);
+  background-color: var(--aa-color-accent, currentcolor);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 80ms linear;
   will-change: transform;
+}
+
+/* Compositor progress keyframes, applied inline alongside aa-hscroll-scrub
+   (see runtime.ts) so the bar tracks the same scroll range off the main
+   thread. The static scaleX(0) above is the pre-JS / reduced-motion state. */
+@keyframes aa-hscroll-progress {
+
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .aa-hscroll__live-region {
@@ -238,10 +280,11 @@
   border-width: 0;
 }
 
-/* Prev / next — early in the DOM (before the track) so Tab order is
-   region → arrows → slide content. Visually overlaid; revealed only when
-   the gallery (or a control) has :focus-visible. Pointer / wheel users never
-   see chrome. */
+/* Prev / next — early in the DOM (before the viewport) so Tab order is
+   gallery → arrows → slide content. Overlaid on the stage, which never
+   scrolls, so they stay put while the touch carousel scrolls beneath. On
+   desktop they are revealed only for keyboard focus; mouse users in the
+   native carousel always see them (below). */
 .aa-hscroll__controls {
   display: none;
 }
@@ -263,15 +306,15 @@
 .aa-hscroll.is-snap .aa-hscroll__control {
   --aa-icon-button-background: color-mix(
     in oklch,
-    var(--aa-color-surface-elevated) 92%,
+    var(--aa-color-surface-elevated, Canvas) 92%,
     transparent
   );
   --aa-icon-button-border: color-mix(
     in oklch,
-    var(--aa-color-border) 70%,
+    var(--aa-color-border, currentcolor) 70%,
     transparent
   );
-  --aa-icon-button-color: var(--aa-color-foreground);
+  --aa-icon-button-color: var(--aa-color-foreground, CanvasText);
 
   position: absolute;
   inset-block-start: 50%;
@@ -280,12 +323,11 @@
   opacity: 0;
   pointer-events: none;
   translate: 0 -50%;
-  transition: opacity var(--aa-duration-fast) var(--aa-ease-default);
+  transition: opacity var(--aa-duration-fast, 150ms) var(--aa-ease-default, ease);
 }
 
-/* Keyboard reveal: Tab / :focus-visible only — not Arrow Up/Down paging. */
-.aa-hscroll.is-enhanced:focus-visible .aa-hscroll__control,
-.aa-hscroll.is-snap:focus-visible .aa-hscroll__control,
+/* Keyboard reveal: Tab / :focus-visible only — not Arrow Up/Down paging.
+   (:has covers the focusable viewport as well as the controls and slides.) */
 .aa-hscroll.is-enhanced:has(:focus-visible) .aa-hscroll__control,
 .aa-hscroll.is-snap:has(:focus-visible) .aa-hscroll__control,
 .aa-hscroll.is-enhanced[data-aa-hscroll-keyboard] .aa-hscroll__control,
@@ -303,8 +345,6 @@
 }
 
 /* When keyboard-revealed, disabled controls stay visible but dimmed. */
-.aa-hscroll.is-enhanced:focus-visible .aa-hscroll__control:disabled,
-.aa-hscroll.is-snap:focus-visible .aa-hscroll__control:disabled,
 .aa-hscroll.is-enhanced:has(:focus-visible) .aa-hscroll__control:disabled,
 .aa-hscroll.is-snap:has(:focus-visible) .aa-hscroll__control:disabled,
 .aa-hscroll.is-enhanced[data-aa-hscroll-keyboard] .aa-hscroll__control:disabled,
@@ -315,6 +355,40 @@
 
 .aa-hscroll__control[hidden] {
   display: none;
+}
+
+/*
+ * Mouse / trackpad in the native carousel — a narrow desktop window, or a
+ * wide one zoomed past the desktop breakpoint (WCAG 1.4.10 reflow). There is
+ * no swipe, and a vertical wheel scrolls the page, so the prev/next controls
+ * stay visible and the scrollbar returns as an affordance.
+ */
+@media (hover: hover) and (pointer: fine) {
+
+  .aa-hscroll.is-snap .aa-hscroll__control {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .aa-hscroll.is-snap .aa-hscroll__control:disabled {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .aa-hscroll.is-snap .aa-hscroll__viewport {
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+  }
+
+  .aa-hscroll.is-snap .aa-hscroll__viewport::-webkit-scrollbar {
+    display: block;
+    height: 8px;
+  }
+
+  .aa-hscroll.is-snap .aa-hscroll__viewport::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--aa-color-border, currentcolor) 60%, transparent);
+    border-radius: 4px;
+  }
 }
 
 /* Flip chevrons in RTL so they point toward inline-start / inline-end. */
@@ -380,7 +454,7 @@
 
 /* Default: bare chevron — reads as motion cue, not a control. */
 .aa-hscroll__swipe-hint--cue .aa-hscroll__swipe-hint-icon {
-  color: var(--wp--preset--color--white);
+  color: var(--wp--preset--color--white, #fff);
 }
 
 .aa-hscroll__swipe-hint--cue .aa-hscroll__swipe-hint-chevron {
@@ -407,12 +481,12 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--wp--preset--color--white);
+  color: var(--wp--preset--color--white, #fff);
   text-shadow: var(--aa-hscroll-swipe-hint-text-shadow);
 }
 
 .aa-hscroll__swipe-hint--label .aa-hscroll__swipe-hint-icon {
-  color: var(--wp--preset--color--white);
+  color: var(--wp--preset--color--white, #fff);
 }
 
 .aa-hscroll__swipe-hint--label .aa-hscroll__swipe-hint-chevron {
@@ -437,11 +511,11 @@
   min-width: 3.5rem;
   height: 3.5rem;
   padding-inline: 0.35rem;
-  border: 1px solid var(--aa-color-border);
-  border-radius: var(--aa-radius-full);
-  background-color: var(--aa-color-surface-elevated);
-  color: var(--aa-color-accent);
-  box-shadow: var(--aa-shadow-sm);
+  border: 1px solid var(--aa-color-border, currentcolor);
+  border-radius: var(--aa-radius-full, 9999px);
+  background-color: var(--aa-color-surface-elevated, Canvas);
+  color: var(--aa-color-accent, CanvasText);
+  box-shadow: var(--aa-shadow-sm, 0 1px 2px rgb(0 0 0 / 15%));
   animation: aa-hscroll-swipe-hint-float 1.35s ease-in-out infinite;
 }
 
@@ -474,7 +548,9 @@
   transform: scaleX(-1);
 }
 
-@media (width <= 781px), (pointer: coarse) {
+/* Touch only: "Swipe" is the wrong instruction for a mouse in a narrow or
+   zoomed window, which gets visible controls instead (above). */
+@media (pointer: coarse) {
 
   .aa-hscroll.is-snap.is-swipe-hint-visible .aa-hscroll__swipe-hint {
     display: flex;
@@ -501,8 +577,12 @@
     min-height: 0;
   }
 
+  .aa-hscroll.is-enhanced .aa-hscroll__stage {
+    position: relative;
+    height: auto;
+  }
+
   .aa-hscroll.is-enhanced .aa-hscroll__viewport {
-    position: static;
     height: auto;
     overflow: visible;
   }

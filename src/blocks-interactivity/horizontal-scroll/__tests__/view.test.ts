@@ -12,6 +12,7 @@ import {
   computeScrollStart,
   easeInOutCubic,
   formatSlideAnnouncement,
+  getDirectionalSlideIndex,
   getSlideIndexFromProgress,
   getSlides,
   getSlideTarget,
@@ -21,10 +22,12 @@ import {
   normalizeSnapBehavior,
   pickMode,
   progressToPercentage,
+  resolveAbsoluteIntent,
   resolveEntrySlideIndex,
-  resolveKeyboardTarget,
+  resolveKeyboardIntent,
   resolveSpeed,
   resolveStepDurationMs,
+  shouldIgnoreKeyboardEvent,
   shouldShowSwipeHint,
   toLogicalSlideOffsets,
   toSignedTranslate,
@@ -185,48 +188,199 @@ describe('easeInOutCubic', () => {
   });
 });
 
-describe('resolveKeyboardTarget', () => {
-  const base = { currentIndex: 1, slideCount: 4, rtl: false };
+describe('resolveKeyboardIntent', () => {
+  const ltr = { rtl: false };
 
   it('maps the jump and paging keys', () => {
-    expect(resolveKeyboardTarget({ ...base, key: 'Home' })).toBe(0);
-    expect(resolveKeyboardTarget({ ...base, key: 'End' })).toBe(3);
-    expect(resolveKeyboardTarget({ ...base, key: 'PageDown' })).toBe(2);
-    expect(resolveKeyboardTarget({ ...base, key: 'PageUp' })).toBe(0);
+    expect(resolveKeyboardIntent({ ...ltr, key: 'Home' })).toBe('first');
+    expect(resolveKeyboardIntent({ ...ltr, key: 'End' })).toBe('last');
+    expect(resolveKeyboardIntent({ ...ltr, key: 'PageDown' })).toBe('next');
+    expect(resolveKeyboardIntent({ ...ltr, key: 'PageUp' })).toBe('prev');
   });
 
-  it('mirrors the arrow keys for writing direction', () => {
-    expect(resolveKeyboardTarget({ ...base, key: 'ArrowRight' })).toBe(2);
-    expect(resolveKeyboardTarget({ ...base, key: 'ArrowLeft' })).toBe(0);
-    expect(
-      resolveKeyboardTarget({ ...base, key: 'ArrowRight', rtl: true })
-    ).toBe(0);
-    expect(
-      resolveKeyboardTarget({ ...base, key: 'ArrowLeft', rtl: true })
-    ).toBe(2);
-  });
-
-  it('maps vertical arrows to next / previous (matching wheel)', () => {
-    expect(resolveKeyboardTarget({ ...base, key: 'ArrowDown' })).toBe(2);
-    expect(resolveKeyboardTarget({ ...base, key: 'ArrowUp' })).toBe(0);
-    // Vertical keys are reading-order, not mirrored for RTL.
-    expect(
-      resolveKeyboardTarget({ ...base, key: 'ArrowDown', rtl: true })
-    ).toBe(2);
-    expect(resolveKeyboardTarget({ ...base, key: 'ArrowUp', rtl: true })).toBe(
-      0
+  it('mirrors the horizontal arrows for writing direction', () => {
+    expect(resolveKeyboardIntent({ ...ltr, key: 'ArrowRight' })).toBe('next');
+    expect(resolveKeyboardIntent({ ...ltr, key: 'ArrowLeft' })).toBe('prev');
+    expect(resolveKeyboardIntent({ key: 'ArrowRight', rtl: true })).toBe(
+      'prev'
     );
+    expect(resolveKeyboardIntent({ key: 'ArrowLeft', rtl: true })).toBe('next');
   });
 
-  it('clamps at the ends and ignores unrelated keys', () => {
+  it('keeps vertical arrows in reading order (matching wheel)', () => {
+    expect(resolveKeyboardIntent({ ...ltr, key: 'ArrowDown' })).toBe('next');
+    expect(resolveKeyboardIntent({ ...ltr, key: 'ArrowUp' })).toBe('prev');
+    expect(resolveKeyboardIntent({ key: 'ArrowDown', rtl: true })).toBe('next');
+  });
+
+  it('pages with Space only where the mode owns vertical scrolling', () => {
+    expect(resolveKeyboardIntent({ ...ltr, key: ' ' })).toBeNull();
+    expect(resolveKeyboardIntent({ ...ltr, key: ' ', allowSpace: true })).toBe(
+      'next'
+    );
     expect(
-      resolveKeyboardTarget({ ...base, currentIndex: 0, key: 'ArrowLeft' })
-    ).toBe(0);
+      resolveKeyboardIntent({
+        ...ltr,
+        key: ' ',
+        shiftKey: true,
+        allowSpace: true,
+      })
+    ).toBe('prev');
+  });
+
+  it('ignores unrelated keys', () => {
+    expect(resolveKeyboardIntent({ ...ltr, key: 'Enter' })).toBeNull();
+    expect(resolveKeyboardIntent({ ...ltr, key: 'a' })).toBeNull();
+  });
+});
+
+describe('resolveAbsoluteIntent', () => {
+  it('resolves first/last and leaves relative intents to the mode', () => {
+    expect(resolveAbsoluteIntent('first', 4)).toBe(0);
+    expect(resolveAbsoluteIntent('last', 4)).toBe(3);
+    expect(resolveAbsoluteIntent('last', 0)).toBe(0);
+    expect(resolveAbsoluteIntent('next', 4)).toBeNull();
+    expect(resolveAbsoluteIntent('prev', 4)).toBeNull();
+  });
+});
+
+describe('getDirectionalSlideIndex', () => {
+  const stops = [0, 0.25, 0.5, 0.75, 1];
+
+  it('steps from a stop to its neighbour', () => {
+    expect(getDirectionalSlideIndex(0.25, stops, 1)).toBe(2);
+    expect(getDirectionalSlideIndex(0.25, stops, -1)).toBe(0);
+  });
+
+  it('targets the slide ahead of an in-between position, never skipping it', () => {
+    // Nearer slide 1 (0.25) than slide 0 — "next" is still slide 1.
+    expect(getDirectionalSlideIndex(0.16, stops, 1)).toBe(1);
+    // Nearer slide 1 than slide 2 — "prev" is still slide 1.
+    expect(getDirectionalSlideIndex(0.4, stops, -1)).toBe(1);
+  });
+
+  it('treats positions within epsilon of a stop as on it', () => {
+    expect(getDirectionalSlideIndex(0.2505, stops, 1, 0.001)).toBe(2);
+    expect(getDirectionalSlideIndex(0.2495, stops, -1, 0.001)).toBe(0);
+  });
+
+  it('returns the boundary slide at either end', () => {
+    expect(getDirectionalSlideIndex(1, stops, 1)).toBe(4);
+    expect(getDirectionalSlideIndex(0, stops, -1)).toBe(0);
+    expect(getDirectionalSlideIndex(0.5, [], 1)).toBe(0);
+  });
+
+  it('skips duplicate end stops that share a position', () => {
+    // The last two slides both clamp to the end of the track.
+    const clamped = [0, 0.5, 1, 1];
+    expect(getDirectionalSlideIndex(0.5, clamped, 1)).toBe(2);
+    expect(getDirectionalSlideIndex(1, clamped, -1)).toBe(1);
+  });
+});
+
+describe('shouldIgnoreKeyboardEvent', () => {
+  const press = (
+    key: string,
+    target: EventTarget | null,
+    init: Partial<KeyboardEventInit> = {}
+  ): KeyboardEvent => {
+    const event = new KeyboardEvent('keydown', { key, ...init });
+    // jsdom only sets `target` during dispatch; the guard just reads it.
+    Object.defineProperty(event, 'target', { value: target });
+    return event;
+  };
+  const el = (html: string): HTMLElement => {
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    return host.firstElementChild as HTMLElement;
+  };
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('lets plain paging keys through from the page', () => {
+    expect(shouldIgnoreKeyboardEvent(press('ArrowDown', document.body))).toBe(
+      false
+    );
+    expect(shouldIgnoreKeyboardEvent(press(' ', document.body))).toBe(false);
     expect(
-      resolveKeyboardTarget({ ...base, currentIndex: 3, key: 'PageDown' })
-    ).toBe(3);
-    expect(resolveKeyboardTarget({ ...base, key: 'Enter' })).toBeNull();
-    expect(resolveKeyboardTarget({ ...base, key: 'a' })).toBeNull();
+      shouldIgnoreKeyboardEvent(press(' ', document.body, { shiftKey: true }))
+    ).toBe(false);
+  });
+
+  it('leaves browser shortcuts and text selection alone', () => {
+    // Alt+Arrow is Back / Forward; Ctrl/Cmd+Home jump; Shift+Arrow selects.
+    expect(
+      shouldIgnoreKeyboardEvent(
+        press('ArrowLeft', document.body, { altKey: true })
+      )
+    ).toBe(true);
+    expect(
+      shouldIgnoreKeyboardEvent(press('Home', document.body, { ctrlKey: true }))
+    ).toBe(true);
+    expect(
+      shouldIgnoreKeyboardEvent(
+        press('ArrowDown', document.body, { metaKey: true })
+      )
+    ).toBe(true);
+    expect(
+      shouldIgnoreKeyboardEvent(
+        press('ArrowRight', document.body, { shiftKey: true })
+      )
+    ).toBe(true);
+  });
+
+  it('leaves text entry and composite widgets alone', () => {
+    expect(shouldIgnoreKeyboardEvent(press('ArrowDown', el('<input>')))).toBe(
+      true
+    );
+    expect(
+      shouldIgnoreKeyboardEvent(press('ArrowDown', el('<select></select>')))
+    ).toBe(true);
+    expect(
+      shouldIgnoreKeyboardEvent(
+        press('ArrowRight', el('<div role="slider" tabindex="0"></div>'))
+      )
+    ).toBe(true);
+    const tab = el('<div role="tablist"><button role="tab">A</button></div>')
+      .firstElementChild as HTMLElement;
+    expect(shouldIgnoreKeyboardEvent(press('ArrowRight', tab))).toBe(true);
+  });
+
+  it('leaves Space to the controls it activates, but pages with arrows there', () => {
+    const button = el('<button type="button">Next</button>');
+    const link = el('<a href="#x">Shop</a>');
+    expect(shouldIgnoreKeyboardEvent(press(' ', button))).toBe(true);
+    expect(shouldIgnoreKeyboardEvent(press(' ', link))).toBe(true);
+    expect(shouldIgnoreKeyboardEvent(press('ArrowDown', button))).toBe(false);
+  });
+
+  it('ignores keys inside a dialog the gallery is not part of', () => {
+    const dialog = el('<dialog open><button>Close</button></dialog>');
+    const inside = dialog.querySelector('button') as HTMLElement;
+    const gallery = el('<section></section>');
+    expect(shouldIgnoreKeyboardEvent(press('ArrowDown', inside), gallery)).toBe(
+      true
+    );
+
+    const hosting = el('<dialog open><section></section></dialog>');
+    const hostedGallery = hosting.querySelector('section') as HTMLElement;
+    expect(
+      shouldIgnoreKeyboardEvent(press('ArrowDown', hosting), hostedGallery)
+    ).toBe(false);
+  });
+
+  it('respects keys another handler already consumed or an IME is composing', () => {
+    const consumed = press('ArrowDown', document.body, { cancelable: true });
+    consumed.preventDefault();
+    expect(shouldIgnoreKeyboardEvent(consumed)).toBe(true);
+    expect(
+      shouldIgnoreKeyboardEvent(
+        press('ArrowDown', document.body, { isComposing: true })
+      )
+    ).toBe(true);
   });
 });
 

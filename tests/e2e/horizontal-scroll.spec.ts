@@ -1,4 +1,10 @@
-import { test, expect, type Page } from '@playwright/test';
+import {
+  test,
+  expect,
+  devices,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import { openPageEditor, publishAndGetUrl, deletePage } from './helpers';
 
 type GalleryOptions = {
@@ -60,6 +66,49 @@ async function buildGallery(
   const { id, url } = await publishAndGetUrl(page);
   createdPageId = id;
   return url;
+}
+
+/** The keyboard-event fields the guard reads (serialisable to the page). */
+type KeyInit = {
+  key: string;
+  altKey?: boolean;
+  shiftKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+};
+
+/** Scroll the document without a gesture — as a scrollbar drag, find-in-page,
+ * or assistive tech would. */
+async function scrollDocumentTo(page: Page, y: number): Promise<void> {
+  await page.evaluate(top => window.scrollTo(0, top), y);
+}
+
+/** The gallery's scroll distance (px of vertical scroll the pin consumes). */
+function scrollDistance(section: Locator): Promise<number> {
+  return section.evaluate(el =>
+    parseFloat(el.style.getPropertyValue('--aa-hscroll-distance'))
+  );
+}
+
+/** Press Tab from the top of the page until focus enters the gallery. */
+async function tabIntoGallery(
+  page: Page,
+  section: Locator
+): Promise<string | null> {
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+    window.scrollTo(0, 0);
+  });
+  for (let i = 0; i < 60; i += 1) {
+    await page.keyboard.press('Tab');
+    const focused = await section.evaluate(el => {
+      const active = document.activeElement;
+      if (!active || !el.contains(active)) return null;
+      return active.className;
+    });
+    if (focused) return focused;
+  }
+  return null;
 }
 
 /** Current horizontal translate (px) of the track, negative = moved left. */
@@ -301,7 +350,10 @@ test.describe('Horizontal Scroll — front end', () => {
 
     const section = page.locator('.aa-hscroll').first();
     await section.waitFor();
-    await expect(section).toHaveAttribute('role', 'region');
+    const stage = section.locator('.aa-hscroll__stage');
+    const viewport = section.locator('.aa-hscroll__viewport');
+    await expect(stage).toHaveAttribute('role', 'region');
+    await expect(stage).toHaveAttribute('aria-roledescription', 'carousel');
 
     const prev = section.locator('.aa-hscroll__control--prev');
     const next = section.locator('.aa-hscroll__control--next');
@@ -317,9 +369,10 @@ test.describe('Horizontal Scroll — front end', () => {
 
     await expect(next).toHaveCSS('opacity', '0');
 
-    // Tab from the region lands on the first enabled control (Next on slide 1).
-    await section.focus();
-    await page.keyboard.press('Tab');
+    // Tabbing in lands on the first enabled control (Next on slide 1).
+    expect(await tabIntoGallery(page, section)).toContain(
+      'aa-hscroll__control--next'
+    );
     await expect(section).toHaveAttribute('data-aa-hscroll-keyboard', '');
     await expect(next).toBeFocused();
     await expect(next).toHaveCSS('opacity', '1');
@@ -334,12 +387,12 @@ test.describe('Horizontal Scroll — front end', () => {
     );
     await expect(prev).toBeEnabled();
 
-    // After advance, Tab order is still Prev before Next.
-    await section.focus();
-    await page.keyboard.press('Tab');
-    await expect(prev).toBeFocused();
-    await page.keyboard.press('Tab');
+    // After advance, Tab order is still Prev before Next, then the viewport.
+    await viewport.focus();
+    await page.keyboard.press('Shift+Tab');
     await expect(next).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(prev).toBeFocused();
 
     await next.click();
     await expect(live).toHaveText(/Slide 3 of 3/, { timeout: 3000 });
@@ -347,5 +400,246 @@ test.describe('Horizontal Scroll — front end', () => {
 
     await prev.click();
     await expect(live).toHaveText(/Slide 2 of 3/, { timeout: 3000 });
+  });
+
+  test('paged mode follows scrolling it did not start instead of trapping it', async ({
+    page,
+  }) => {
+    const url = await buildGallery(page, 'paged', 4);
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    await expect(section).toHaveClass(/is-paged/);
+    const top = await rangeTop(page);
+    const distance = await scrollDistance(section);
+
+    await scrollDocumentTo(page, top);
+    await expect(section).toHaveAttribute(
+      'data-aa-hscroll-step-state',
+      'ready',
+      { timeout: 3000 }
+    );
+
+    // A scrollbar drag through the range: every position must stick. The
+    // controller used to clamp each one back to the settled slide.
+    for (const fraction of [0.2, 0.45, 0.7]) {
+      const y = Math.round(top + distance * fraction);
+      await scrollDocumentTo(page, y);
+      await page.waitForTimeout(150);
+      expect(
+        Math.abs((await page.evaluate(() => window.scrollY)) - y)
+      ).toBeLessThan(3);
+    }
+  });
+
+  test('Space and Shift+Space page slides in paged mode', async ({ page }) => {
+    const url = await buildGallery(page, 'paged', 3);
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    const live = page.locator('.aa-hscroll__live-region');
+    await scrollDocumentTo(page, await rangeTop(page));
+    await expect(section).toHaveAttribute(
+      'data-aa-hscroll-step-state',
+      'ready',
+      { timeout: 3000 }
+    );
+
+    await page.keyboard.press('Space');
+    await expect(live).toHaveText(/Slide 2 of 3/, { timeout: 3000 });
+    await page.keyboard.press('Shift+Space');
+    await expect(live).toHaveText(/Slide 1 of 3/, { timeout: 3000 });
+  });
+
+  test('page-level keys stay with the browser unless they are paging keys', async ({
+    page,
+  }) => {
+    const url = await buildGallery(page, 'paged', 3);
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    await scrollDocumentTo(page, await rangeTop(page));
+    await expect(section).toHaveAttribute(
+      'data-aa-hscroll-step-state',
+      'ready',
+      { timeout: 3000 }
+    );
+
+    // Synthetic events: a real Alt+ArrowLeft would navigate Back mid-test.
+    // What matters is whether the gallery's window listener cancels them.
+    const prevented = (init: KeyInit) =>
+      page.evaluate(options => {
+        const event = new KeyboardEvent('keydown', {
+          ...options,
+          bubbles: true,
+          cancelable: true,
+        });
+        document.body.dispatchEvent(event);
+        return event.defaultPrevented;
+      }, init);
+
+    // Control: a plain paging key inside the range is the gallery's.
+    expect(await prevented({ key: 'ArrowDown' })).toBe(true);
+    await expect(page.locator('.aa-hscroll__live-region')).toHaveText(
+      /Slide 2 of 3/,
+      { timeout: 3000 }
+    );
+    await expect(section).toHaveAttribute(
+      'data-aa-hscroll-step-state',
+      'ready'
+    );
+
+    // Alt+Arrow is browser Back / Forward; Shift+Arrow extends a selection;
+    // Ctrl/Cmd combinations are browser and OS shortcuts.
+    expect(await prevented({ key: 'ArrowLeft', altKey: true })).toBe(false);
+    expect(await prevented({ key: 'ArrowDown', shiftKey: true })).toBe(false);
+    expect(await prevented({ key: 'Home', ctrlKey: true })).toBe(false);
+    expect(await prevented({ key: 'ArrowDown', metaKey: true })).toBe(false);
+
+    // Home / End jump the page unless focus is inside the gallery.
+    expect(await prevented({ key: 'End' })).toBe(false);
+    const before = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press('End');
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(before + 100);
+  });
+
+  test('tabbing in starts at the first slide, not mid-gallery', async ({
+    page,
+  }) => {
+    const url = await buildGallery(page, 'off', 5);
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    await expect(section).toHaveClass(/is-enhanced/);
+    const top = await rangeTop(page);
+
+    const focused = await tabIntoGallery(page, section);
+    expect(focused).not.toBeNull();
+    // Focusing a gallery stop never scrolls the page into the range.
+    expect(
+      Math.abs((await page.evaluate(() => window.scrollY)) - top)
+    ).toBeLessThan(3);
+    await expect(section.locator('.aa-hscroll__progress')).toHaveAttribute(
+      'aria-valuenow',
+      '0'
+    );
+  });
+
+  test('keyboard "next" from between slides goes to the slide ahead', async ({
+    page,
+  }) => {
+    const url = await buildGallery(page, 'off', 5);
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    const live = page.locator('.aa-hscroll__live-region');
+    const top = await rangeTop(page);
+    const distance = await scrollDistance(section);
+
+    // Between slide 1 (0) and slide 2 (~25%), nearer slide 2.
+    await scrollDocumentTo(page, Math.round(top + distance * 0.16));
+    await page.waitForTimeout(150);
+    await page.keyboard.press('ArrowDown');
+    await expect(live).toHaveText(/Slide 2 of 5/, { timeout: 3000 });
+  });
+
+  test('scrubbing leaves the track to the compositor where supported', async ({
+    page,
+  }) => {
+    const url = await buildGallery(page, 'off', 4);
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    await expect(section).toHaveClass(/is-enhanced/);
+    const supported = await page.evaluate(() =>
+      CSS.supports('animation-timeline: scroll()')
+    );
+    test.skip(!supported, 'Browser lacks scroll-driven animations');
+
+    const track = section.locator('.aa-hscroll__track');
+    await expect(track).toHaveCSS('animation-name', 'aa-hscroll-scrub');
+    await expect(section.locator('.aa-hscroll__progress-bar')).toHaveCSS(
+      'animation-name',
+      'aa-hscroll-progress'
+    );
+
+    const top = await rangeTop(page);
+    await scrollDocumentTo(page, top + 600);
+    await page.waitForTimeout(150);
+    expect(await trackTranslateX(page)).toBeLessThan(-10);
+    // No per-frame JS transform on the section; the progress value still moves.
+    expect(
+      await section.evaluate(el => el.style.getPropertyValue('--aa-hscroll-x'))
+    ).toBe('');
+    await expect(section.locator('.aa-hscroll__progress')).not.toHaveAttribute(
+      'aria-valuenow',
+      '0'
+    );
+  });
+
+  test('a mouse in a narrow or zoomed window gets visible, stationary controls', async ({
+    page,
+  }) => {
+    // 200% zoom on a 1280px laptop ≈ 640 CSS px, still a fine pointer.
+    await page.setViewportSize({ width: 640, height: 480 });
+    const url = await buildGallery(page, {
+      snapBehavior: 'off',
+      count: 4,
+      itemWidth: '85vw',
+    });
+    await page.goto(url);
+
+    const section = page.locator('.aa-hscroll').first();
+    await expect(section).toHaveClass(/is-snap/);
+    await section.scrollIntoViewIfNeeded();
+
+    const next = section.locator('.aa-hscroll__control--next');
+    await expect(next).toHaveCSS('opacity', '1');
+    await expect(section.locator('.aa-hscroll__swipe-hint')).not.toBeVisible();
+
+    const nextX = async () => (await next.boundingBox())?.x ?? 0;
+    const before = await nextX();
+    await next.click();
+    await expect(page.locator('.aa-hscroll__live-region')).toHaveText(
+      /Slide 2 of 4/,
+      { timeout: 3000 }
+    );
+    await page.waitForTimeout(600);
+    // The controls overlay the stage, not the scrolling viewport.
+    expect(Math.abs((await nextX()) - before)).toBeLessThan(2);
+  });
+
+  test('the touch carousel announces the slide a swipe settles on', async ({
+    page,
+    browser,
+  }) => {
+    const url = await buildGallery(page, {
+      snapBehavior: 'off',
+      count: 4,
+      itemWidth: '85vw',
+    });
+
+    const context = await browser.newContext({ ...devices['Pixel 7'] });
+    const mobile = await context.newPage();
+    try {
+      await mobile.goto(url);
+      const section = mobile.locator('.aa-hscroll').first();
+      await expect(section).toHaveClass(/is-snap/);
+      await section.scrollIntoViewIfNeeded();
+
+      await section
+        .locator('.aa-hscroll__viewport')
+        .evaluate(viewport =>
+          viewport.scrollBy({ left: viewport.clientWidth, behavior: 'smooth' })
+        );
+      await expect(mobile.locator('.aa-hscroll__live-region')).toHaveText(
+        /Slide 2 of 4/,
+        { timeout: 3000 }
+      );
+    } finally {
+      await context.close();
+    }
   });
 });

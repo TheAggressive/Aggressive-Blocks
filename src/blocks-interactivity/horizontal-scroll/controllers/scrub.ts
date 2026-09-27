@@ -1,11 +1,13 @@
 import {
-  clamp,
   computeProgress,
-  getSlideIndexFromProgress,
-  isEditableTarget,
-  resolveKeyboardTarget,
+  getDirectionalSlideIndex,
+  getStepScrollPosition,
+  isScrollInPinnedRange,
+  resolveAbsoluteIntent,
+  type KeyboardIntent,
 } from '../logic';
 import { paintScrollPosition } from './paint';
+import { RANGE_SLACK_PX, STOP_EPSILON_PX } from './step-constants';
 import type {
   Controller,
   ControllerElements,
@@ -18,10 +20,11 @@ import type {
  * with vertical scroll.
  *
  * The track's horizontal position is a pure function of the document scroll
- * offset, applied once per animation frame via the `--aa-hscroll-x` custom
- * property (a `translate3d` on its own GPU layer). Reads are coalesced to a
- * single rAF per frame, and the presentation layer (progress bar + active-slide
- * announcement) is updated in the same pass.
+ * offset. Where scroll-driven animations exist it runs on the compositor and
+ * this controller only keeps the active slide, progress value, and controls
+ * current; elsewhere it also writes `--aa-hscroll-x` once per frame. Every
+ * scroll source (wheel, scrollbar, Space, find-in-page, assistive tech) is
+ * followed, never fought.
  */
 export class ScrubController implements Controller {
   private geometry: Geometry;
@@ -48,81 +51,73 @@ export class ScrubController implements Controller {
     this.render();
   };
 
-  keydown = (event: KeyboardEvent): boolean => {
-    if (isEditableTarget(event.target)) return false;
+  keydown = (intent: KeyboardIntent): boolean => {
+    // Only page while the reader is inside the pinned range; elsewhere the
+    // keys scroll the page as usual.
+    if (!this.isInRange()) return false;
 
-    const progress = computeProgress(
-      window.scrollY,
-      this.geometry.scrollStart,
-      this.geometry.scrollDistance
-    );
+    const target =
+      resolveAbsoluteIntent(intent, this.geometry.slides.length) ??
+      this.directionalTarget(intent === 'next' ? 1 : -1);
 
-    // Only intercept keys while the reader is inside the pinned range.
-    if (progress <= 0 || progress >= 1) {
-      // Allow keys at the exact ends when still within a tiny band of the range.
-      const y = window.scrollY;
-      const start = this.geometry.scrollStart;
-      const end = start + this.geometry.scrollDistance;
-      if (y < start - 4 || y > end + 4) return false;
-    }
-
-    const target = resolveKeyboardTarget({
-      key: event.key,
-      currentIndex: getSlideIndexFromProgress(
-        progress,
-        this.geometry.slideStops
-      ),
-      slideCount: this.geometry.slides.length,
-      rtl: this.geometry.rtl,
-    });
-    if (target === null) return false;
-
-    // Already on that slide — let the browser keep normal keyboard scrolling.
-    if (
-      target === getSlideIndexFromProgress(progress, this.geometry.slideStops)
-    ) {
-      return false;
-    }
-
-    const targetProgress = this.geometry.slideStops[target] ?? 0;
-    window.scrollTo({
-      top:
-        this.geometry.scrollStart +
-        targetProgress * this.geometry.scrollDistance,
-      behavior: 'smooth',
-    });
-    // Announce immediately; the smooth scroll (and per-frame render) catch up.
-    this.presentation.setActive(target, { announce: true });
-    return true;
+    return this.goTo(target);
   };
 
-  goToIndex = (index: number): boolean => {
-    const target = clamp(index, 0, this.geometry.slides.length - 1);
-    const progress = computeProgress(
-      window.scrollY,
-      this.geometry.scrollStart,
-      this.geometry.scrollDistance
-    );
-    const current = getSlideIndexFromProgress(
-      progress,
-      this.geometry.slideStops
-    );
-    if (target === current) return false;
-
-    const targetProgress = this.geometry.slideStops[target] ?? 0;
-    window.scrollTo({
-      top:
-        this.geometry.scrollStart +
-        targetProgress * this.geometry.scrollDistance,
-      behavior: 'smooth',
-    });
-    this.presentation.setActive(target, { announce: true });
-    return true;
-  };
+  step = (direction: 1 | -1): boolean =>
+    this.goTo(this.directionalTarget(direction));
 
   destroy = (): void => {
     this.abortController.abort();
     window.cancelAnimationFrame(this.frame);
+  };
+
+  private progress = (): number =>
+    computeProgress(
+      window.scrollY,
+      this.geometry.scrollStart,
+      this.geometry.scrollDistance
+    );
+
+  private isInRange = (): boolean =>
+    isScrollInPinnedRange({
+      scrollY: window.scrollY,
+      scrollStart: this.geometry.scrollStart,
+      scrollDistance: this.geometry.scrollDistance,
+      slackPx: RANGE_SLACK_PX,
+    });
+
+  private stopPosition = (index: number): number =>
+    getStepScrollPosition(
+      index,
+      this.geometry.scrollStart,
+      this.geometry.scrollDistance,
+      this.geometry.slideStops
+    );
+
+  private directionalTarget = (direction: 1 | -1): number =>
+    getDirectionalSlideIndex(
+      this.progress(),
+      this.geometry.slideStops,
+      direction,
+      this.geometry.scrollDistance > 0
+        ? STOP_EPSILON_PX / this.geometry.scrollDistance
+        : 0
+    );
+
+  /**
+   * Scroll the document to a slide's stop. Returns false when already there,
+   * so a boundary key falls through to normal page scrolling.
+   */
+  private goTo = (index: number): boolean => {
+    if (this.geometry.slides.length === 0) return false;
+
+    const top = this.stopPosition(index);
+    if (Math.abs(window.scrollY - top) < STOP_EPSILON_PX) return false;
+
+    window.scrollTo({ top, behavior: 'smooth' });
+    // Announce now; the smooth scroll (and per-frame render) catch up.
+    this.presentation.setActive(index, { announce: true });
+    return true;
   };
 
   private scheduleRender = (): void => {

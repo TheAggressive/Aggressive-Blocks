@@ -24,10 +24,15 @@ export function paintScrollPosition(
     geometry.scrollDistance
   );
 
-  ref.style.setProperty(
-    '--aa-hscroll-x',
-    `${toSignedTranslate(progress * geometry.maxTranslate, geometry.rtl)}px`
-  );
+  // On a compositor scroll timeline the browser already moves the track;
+  // writing the custom property would restyle every slide each frame for
+  // nothing. The JS path remains the fallback where timelines are missing.
+  if (!geometry.compositor) {
+    ref.style.setProperty(
+      '--aa-hscroll-x',
+      `${toSignedTranslate(progress * geometry.maxTranslate, geometry.rtl)}px`
+    );
+  }
 
   presentation.setActive(
     getSlideIndexFromProgress(progress, geometry.slideStops)

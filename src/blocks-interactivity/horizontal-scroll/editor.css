@@ -7,10 +7,14 @@
   overflow: hidden;
 }
 
-/* Non-sticky in the editor, but still a positioning context so the
-   absolutely-positioned swipe-hint preview anchors to the viewport. */
-.aa-hscroll .aa-hscroll__viewport {
+/* Non-sticky in the editor, but still the positioning context for the
+   controls and swipe-hint preview. The viewport inside it scrolls; the stage
+   does not, so the overlays stay in place. */
+.aa-hscroll .aa-hscroll__stage {
   position: relative !important;
+}
+
+.aa-hscroll .aa-hscroll__viewport {
   overflow-x: auto;
 }
 

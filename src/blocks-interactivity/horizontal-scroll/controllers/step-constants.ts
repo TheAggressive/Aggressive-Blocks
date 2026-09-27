@@ -1,5 +1,7 @@
 /**
- * Timing and threshold constants for the directional step (paged) controller.
+ * Timing and threshold constants for the pinned controllers. Most belong to
+ * the directional step (paged) controller; the range slack and stop epsilon
+ * are shared with scrub and the native carousel.
  */
 
 /** Same-direction coast stream after a land (gap + max from land). */
@@ -28,5 +30,19 @@ export const CLAMP_DRIFT_PX = 2;
 
 /** Already-on-stop tolerance for "no tween needed". */
 export const STOP_EPSILON_PX = 1;
+
+/**
+ * How far a scroll event may land from our own last scrollTo and still be
+ * its echo (browsers round fractional positions).
+ */
+export const OWN_SCROLL_TOLERANCE_PX = 2;
+
+/**
+ * A scroll within this long of a wheel / touch / key input is that gesture's
+ * doing. Anything later — scrollbar drag, autoscroll, find-in-page, assistive
+ * tech — is foreign scrolling, which the controller follows instead of
+ * clamping back to the settled stop.
+ */
+export const GESTURE_WINDOW_MS = 250;
 
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';

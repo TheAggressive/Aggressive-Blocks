@@ -1,3 +1,5 @@
+import type { KeyboardIntent } from '../logic';
+
 export interface Geometry {
   slides: HTMLElement[];
   slideStops: number[];
@@ -8,16 +10,26 @@ export interface Geometry {
   rtl: boolean;
   /** Directional snap glide duration in milliseconds. */
   stepDurationMs: number;
+  /**
+   * Whether the track (and progress bar) run on a compositor scroll timeline.
+   * When true, painting skips the per-frame transform writes the browser is
+   * already doing; only state that screen readers and controls read updates.
+   */
+  compositor: boolean;
 }
 
 export interface Controller {
   updateGeometry: (geometry: Geometry) => void;
-  keydown: (event: KeyboardEvent) => boolean;
   /**
-   * Jump to a slide by index (prev/next buttons, etc.). Returns false when the
-   * index is unchanged or out of range.
+   * Handle a keyboard paging intent (already filtered and resolved by the
+   * runtime). Returns true when consumed, so the runtime prevents default.
    */
-  goToIndex: (index: number) => boolean;
+  keydown: (intent: KeyboardIntent) => boolean;
+  /**
+   * Move one slide in reading order from the current position (prev/next
+   * controls). Returns false at a boundary.
+   */
+  step: (direction: 1 | -1) => boolean;
   destroy: () => void;
 }
 

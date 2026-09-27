@@ -226,39 +226,170 @@ export function getSlideTarget(
   return clamp(slideStops[target] * maxTranslate, 0, maxTranslate);
 }
 
+/** A keyboard paging request, independent of how a mode fulfils it. */
+export type KeyboardIntent = 'next' | 'prev' | 'first' | 'last';
+
 /**
- * Map a keyboard navigation key to a target slide index, or null when the key
- * is not one we handle. Shared by every controller so keyboard paging behaves
- * identically — Home/End, Page Up/Down, Arrow Left/Right (mirrored for RTL),
- * and Arrow Up/Down (previous/next in reading order, matching vertical wheel).
+ * Map a key to a paging intent, or null when the key is not one we handle.
+ * Shared by every controller so keyboard paging behaves identically:
+ * Home/End, Page Up/Down, Arrow Up/Down (reading order, matching the vertical
+ * wheel), and Arrow Left/Right (mirrored for RTL). Space / Shift+Space page
+ * only where the mode owns vertical scrolling (`allowSpace`); elsewhere Space
+ * keeps scrolling the page and the gallery follows.
  */
-export function resolveKeyboardTarget(params: {
+export function resolveKeyboardIntent(params: {
   key: string;
-  currentIndex: number;
-  slideCount: number;
+  shiftKey?: boolean;
   rtl: boolean;
-}): number | null {
-  const { key, currentIndex, slideCount, rtl } = params;
-  const lastIndex = slideCount - 1;
+  allowSpace?: boolean;
+}): KeyboardIntent | null {
+  const { key, shiftKey = false, rtl, allowSpace = false } = params;
 
   switch (key) {
     case 'Home':
-      return 0;
+      return 'first';
     case 'End':
-      return lastIndex;
+      return 'last';
     case 'PageDown':
     case 'ArrowDown':
-      return clamp(currentIndex + 1, 0, lastIndex);
+      return 'next';
     case 'PageUp':
     case 'ArrowUp':
-      return clamp(currentIndex - 1, 0, lastIndex);
+      return 'prev';
     case 'ArrowRight':
-      return clamp(currentIndex + (rtl ? -1 : 1), 0, lastIndex);
+      return rtl ? 'prev' : 'next';
     case 'ArrowLeft':
-      return clamp(currentIndex + (rtl ? 1 : -1), 0, lastIndex);
+      return rtl ? 'next' : 'prev';
+    case ' ':
+    case 'Spacebar':
+      if (!allowSpace) return null;
+      return shiftKey ? 'prev' : 'next';
     default:
       return null;
   }
+}
+
+/** Slide index for an absolute intent, or null for a relative one. */
+export function resolveAbsoluteIntent(
+  intent: KeyboardIntent,
+  slideCount: number
+): number | null {
+  if (intent === 'first') return 0;
+  if (intent === 'last') return Math.max(0, slideCount - 1);
+  return null;
+}
+
+/**
+ * The next (or previous) slide *ahead of the current position*, not of the
+ * nearest slide. Between slides 1 and 2 (even nearer 2), "next" is slide 2 —
+ * stepping from the nearest slide would skip it. At or past the last stop in
+ * that direction, returns the boundary slide.
+ *
+ * @param epsilon Progress units treated as "already there" (rounding slack).
+ */
+export function getDirectionalSlideIndex(
+  progress: number,
+  slideStops: number[],
+  direction: 1 | -1,
+  epsilon = 0.001
+): number {
+  if (slideStops.length === 0) return 0;
+
+  if (direction > 0) {
+    const ahead = slideStops.findIndex(stop => stop > progress + epsilon);
+    return ahead === -1 ? slideStops.length - 1 : ahead;
+  }
+
+  for (let index = slideStops.length - 1; index >= 0; index -= 1) {
+    if (slideStops[index] < progress - epsilon) return index;
+  }
+  return 0;
+}
+
+/** Controls and elements that own their own Space/Enter activation. */
+const ACTIVATABLE_SELECTOR = [
+  'a[href]',
+  'button',
+  'summary',
+  'label',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="checkbox"]',
+  '[role="switch"]',
+  '[role="menuitem"]',
+].join(',');
+
+/** Composite widgets that use arrow / Home / End keys themselves. */
+const KEYBOARD_WIDGET_SELECTOR = [
+  'select',
+  'video',
+  'audio',
+  '[role="slider"]',
+  '[role="spinbutton"]',
+  '[role="scrollbar"]',
+  '[role="listbox"]',
+  '[role="option"]',
+  '[role="combobox"]',
+  '[role="textbox"]',
+  '[role="searchbox"]',
+  '[role="menu"]',
+  '[role="menubar"]',
+  '[role="menuitem"]',
+  '[role="menuitemcheckbox"]',
+  '[role="menuitemradio"]',
+  '[role="radiogroup"]',
+  '[role="radio"]',
+  '[role="tablist"]',
+  '[role="tab"]',
+  '[role="tree"]',
+  '[role="treeitem"]',
+  '[role="grid"]',
+  '[role="treegrid"]',
+].join(',');
+
+/**
+ * Whether a page-level keydown must be left alone. The gallery listens on the
+ * window (so paging works without focus), which makes it responsible for not
+ * taking keys that belong to something else:
+ *
+ * - browser and OS shortcuts (Alt+Arrow is Back/Forward, Ctrl/Cmd+Home, …);
+ * - Shift+Arrow text selection (Shift+Space stays: it pages back);
+ * - IME composition and keys another handler already consumed;
+ * - text entry and composite widgets that use arrows themselves;
+ * - Space on anything it activates (buttons, links, summaries, …);
+ * - anything inside a modal dialog the gallery is not part of.
+ */
+export function shouldIgnoreKeyboardEvent(
+  event: Pick<
+    KeyboardEvent,
+    | 'key'
+    | 'altKey'
+    | 'ctrlKey'
+    | 'metaKey'
+    | 'shiftKey'
+    | 'defaultPrevented'
+    | 'isComposing'
+    | 'target'
+  >,
+  scope?: Element | null
+): boolean {
+  if (event.defaultPrevented || event.isComposing) return true;
+  if (event.altKey || event.ctrlKey || event.metaKey) return true;
+
+  const isSpace = event.key === ' ' || event.key === 'Spacebar';
+  if (event.shiftKey && !isSpace) return true;
+
+  const target = event.target;
+  if (!(target instanceof Element)) return false;
+
+  if (isEditableTarget(target)) return true;
+  if (target.closest(KEYBOARD_WIDGET_SELECTOR)) return true;
+  if (isSpace && target.closest(ACTIVATABLE_SELECTOR)) return true;
+
+  const dialog = target.closest('dialog, [aria-modal="true"]');
+  if (dialog && !(scope && dialog.contains(scope))) return true;
+
+  return false;
 }
 
 /**

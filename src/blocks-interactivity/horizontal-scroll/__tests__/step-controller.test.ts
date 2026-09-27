@@ -1,6 +1,7 @@
 /**
  * Directional step controller — ownership, entry/exit, coast, pending queue,
- * keyboard without focus, tween generation.
+ * keyboard without focus, tween generation, and following scrolls it did not
+ * start (scrollbar, autoscroll, find-in-page, assistive tech).
  *
  * @jest-environment jsdom
  */
@@ -121,6 +122,7 @@ function createGeometry(slideCount = 3): Geometry {
     scrollStart: 1000,
     rtl: false,
     stepDurationMs: 620,
+    compositor: false,
   };
 }
 
@@ -147,8 +149,10 @@ function dispatchWheel(deltaY: number): WheelEvent {
   return event;
 }
 
-function key(name: string): KeyboardEvent {
-  return new KeyboardEvent('keydown', { key: name });
+/** A scroll event nobody's gesture caused (scrollbar drag, find, AT). */
+function foreignScrollTo(y: number): void {
+  setScrollY(y);
+  window.dispatchEvent(new Event('scroll'));
 }
 
 describe('StepController (enterprise paging)', () => {
@@ -294,11 +298,11 @@ describe('StepController (enterprise paging)', () => {
     setScrollY(1000);
     const { controller, presentation } = mountController();
 
-    expect(controller.keydown(key('ArrowDown'))).toBe(true);
+    expect(controller.keydown('next')).toBe(true);
     advance(700);
-    expect(controller.keydown(key('ArrowDown'))).toBe(true);
+    expect(controller.keydown('next')).toBe(true);
     advance(700);
-    expect(controller.keydown(key('ArrowUp'))).toBe(true);
+    expect(controller.keydown('prev')).toBe(true);
     advance(700);
 
     expect(presentation.announcements).toEqual([1, 2, 1]);
@@ -309,9 +313,9 @@ describe('StepController (enterprise paging)', () => {
     setScrollY(1000);
     const { controller, presentation } = mountController();
 
-    expect(controller.keydown(key('ArrowDown'))).toBe(true);
+    expect(controller.keydown('next')).toBe(true);
     advance(100);
-    expect(controller.keydown(key('ArrowDown'))).toBe(true);
+    expect(controller.keydown('next')).toBe(true);
     advance(1200);
     expect(presentation.announcements).toEqual([1, 2]);
     controller.destroy();
@@ -320,7 +324,7 @@ describe('StepController (enterprise paging)', () => {
   it('does not steal Arrow keys outside the range', () => {
     setScrollY(0);
     const { controller } = mountController();
-    expect(controller.keydown(key('ArrowDown'))).toBe(false);
+    expect(controller.keydown('next')).toBe(false);
     controller.destroy();
   });
 
@@ -328,10 +332,10 @@ describe('StepController (enterprise paging)', () => {
     setScrollY(1000);
     const { controller } = mountController();
 
-    expect(controller.keydown(key('ArrowUp'))).toBe(false);
-    expect(controller.keydown(key('End'))).toBe(true);
+    expect(controller.keydown('prev')).toBe(false);
+    expect(controller.keydown('last')).toBe(true);
     advance(700);
-    expect(controller.keydown(key('ArrowDown'))).toBe(false);
+    expect(controller.keydown('next')).toBe(false);
     controller.destroy();
   });
 
@@ -378,13 +382,78 @@ describe('StepController (enterprise paging)', () => {
     controller.destroy();
   });
 
-  it('settles onto the nearest slide when scrolled into the range', () => {
+  it('follows a scroll it did not start instead of seating it', () => {
     setScrollY(0);
     const { controller, presentation } = mountController();
 
-    setScrollY(1900);
-    window.dispatchEvent(new Event('scroll'));
+    // Scrollbar drag into the range: no wheel / key / touch preceded it.
+    foreignScrollTo(1900);
     advance(700);
+
+    expect(scrollY).toBe(1900);
+    expect(presentation.announcements).toEqual([]);
+    controller.destroy();
+  });
+
+  it('never clamps a foreign scroll back to the settled slide', () => {
+    setScrollY(1000);
+    const { controller } = mountController();
+
+    // Drag through the range in steps; each position must stick.
+    for (const y of [1200, 1500, 1800, 2400]) {
+      foreignScrollTo(y);
+      advance(50);
+      expect(scrollY).toBe(y);
+    }
+    controller.destroy();
+  });
+
+  it('steps to the slide ahead after following, never skipping it', () => {
+    setScrollY(1000);
+    const { controller, presentation } = mountController();
+
+    // Resting between slide 0 (1000) and slide 1 (2000), nearer slide 1.
+    foreignScrollTo(1700);
+    advance(50);
+
+    expect(controller.keydown('next')).toBe(true);
+    advance(700);
+    expect(scrollY).toBeCloseTo(2000, 0);
+    expect(presentation.announcements).toEqual([1]);
+
+    foreignScrollTo(2300);
+    advance(50);
+    dispatchWheel(-120);
+    advance(700);
+    expect(scrollY).toBeCloseTo(2000, 0);
+    expect(presentation.announcements).toEqual([1, 1]);
+    controller.destroy();
+  });
+
+  it('still clamps wheel-driven drift back to the settled stop', () => {
+    setScrollY(1000);
+    const { controller } = mountController();
+
+    // A sub-intent wheel notch is a gesture; the scroll it leaks is clamped.
+    dispatchWheel(4);
+    setScrollY(1010);
+    window.dispatchEvent(new Event('scroll'));
+    advance(32);
+
+    expect(scrollY).toBe(1000);
+    controller.destroy();
+  });
+
+  it('does not mistake its own glide for a foreign scroll', () => {
+    setScrollY(1000);
+    const { controller, presentation } = mountController();
+
+    dispatchWheel(120);
+    // The tween's own scroll events arrive mid-glide and after landing.
+    for (let i = 0; i < 6; i += 1) {
+      advance(120);
+      window.dispatchEvent(new Event('scroll'));
+    }
 
     expect(scrollY).toBeCloseTo(2000, 0);
     expect(presentation.announcements).toEqual([1]);
@@ -399,7 +468,8 @@ describe('StepController (enterprise paging)', () => {
 
     const event = dispatchWheel(120);
     expect(event.defaultPrevented).toBe(false);
-    expect(controller.keydown(key('ArrowRight'))).toBe(false);
+    expect(controller.keydown('next')).toBe(false);
+    expect(controller.step(1)).toBe(false);
 
     advance(700);
     expect(presentation.announcements).toEqual([]);
