@@ -16,7 +16,7 @@
   --aa-hero-motion-pan: 4%;
   --aa-hero-autoplay-ms: 6000ms;
   --aa-hero-arrow-color: var(--aa-color-foreground, currentcolor);
-  --aa-hero-arrow-bg: color-mix(in oklch, var(--aa-color-surface) 65%, transparent);
+  --aa-hero-arrow-bg: color-mix(in oklch, var(--aa-color-surface, Canvas) 65%, transparent);
   --aa-hero-dot-color: color-mix(in oklch, var(--wp--preset--color--white) 55%, transparent);
   --aa-hero-dot-active-color: var(--wp--preset--color--white);
   --aa-hero-chrome-gap: var(--wp--preset--spacing--4, 1rem);

@@ -112,8 +112,12 @@
 }
 
 .aa-hero__dot:focus-visible {
-  outline: none;
-  box-shadow: var(--aa-focus-ring);
+
+  /* Transparent outline: invisible normally, drawn in forced-colors mode,
+     which removes the box-shadow ring. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--aa-focus-ring, 0 0 0 2px Canvas, 0 0 0 4px currentcolor);
   border-radius: var(--aa-radius-full, 9999px);
 }
 
@@ -272,7 +276,7 @@
 }
 
 .aa-hero__thumb--swatch {
-  background: var(--aa-color-surface-elevated);
+  background: var(--aa-color-surface-elevated, Canvas);
 }
 
 /* Fraction — "2 / 5". */
