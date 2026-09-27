@@ -36,7 +36,7 @@
 	align-items: stretch;
 	overflow: hidden;
 	transition: --ticker-control-reserve var(--aa-duration-fast, 150ms)
-		var(--aa-ease-default, ease);
+		var(--aa-ease-default, ease) 120ms;
 }
 
 /* -----------------------------------------------
@@ -556,10 +556,15 @@
  * Transparent control over the ticker pattern. Scrolling copy is cleared via
  * mask-image on `.ticker__scroll` (not a painted pad), so the pattern stays
  * visible under the glyph. Glyph color tracks content via --ticker-control-color.
+ *
+ * Reveal choreography: the copy clears first (--ticker-control-reserve), then
+ * the control settles in from a slight offset and scale. Hiding runs in
+ * reverse — the control leaves, then the copy flows back (wrapper delay).
  */
 .wp-block-aggressive-apparel-ticker > button.ticker__pause {
 	--aa-icon-button-background: transparent;
 	--aa-icon-button-color: var(--ticker-control-color, inherit);
+	--aa-icon-button-hover-color: var(--aa-icon-button-color);
 
 	position: absolute;
 	top: 50%;
@@ -579,17 +584,21 @@
 	-webkit-text-fill-color: currentcolor;
 	background-image: none;
 	opacity: 0;
-	transform: translateY(-50%);
-	transition:
-		opacity var(--aa-duration-fast) var(--aa-ease-default),
-		background-color var(--aa-duration-fast) var(--aa-ease-default),
-		border-color var(--aa-duration-fast) var(--aa-ease-default),
-		color var(--aa-duration-fast) var(--aa-ease-default);
+
+	/*
+	 * One `transform` for centering and motion — separate translate/scale
+	 * properties get folded into it by the minifier, which then can't be reset.
+	 */
+	transform: translateY(-50%) translateX(0.25rem) scale(0.85);
+	transition-property: opacity, transform, background-color, color;
+	transition-duration: var(--aa-duration-fast, 150ms);
+	transition-timing-function: var(--aa-ease-default, ease);
 }
 
 .wp-block-aggressive-apparel-ticker > button.ticker__pause:disabled {
 	cursor: not-allowed;
 	opacity: 1;
+	transform: translateY(-50%);
 }
 
 /*
@@ -601,12 +610,17 @@
 .wp-block-aggressive-apparel-ticker.is-paused > button.ticker__pause,
 .wp-block-aggressive-apparel-ticker > button.ticker__pause:focus-visible {
 	opacity: 1;
+	transform: translateY(-50%);
+
+	/* Enter once the copy has started clearing; state colors stay immediate. */
+	transition-delay: 80ms, 80ms, 0s, 0s;
 }
 
 @media (hover: none), (pointer: coarse) {
 
 	.wp-block-aggressive-apparel-ticker > button.ticker__pause {
 		opacity: 1;
+		transform: translateY(-50%);
 	}
 }
 
@@ -615,6 +629,9 @@
 .wp-block-aggressive-apparel-ticker:focus-within,
 .wp-block-aggressive-apparel-ticker.is-paused {
 	--ticker-control-reserve: 1;
+
+	/* Open the clearance at once; the wrapper default delays it closing. */
+	transition-delay: 0s;
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -624,25 +641,70 @@
 	}
 }
 
-.wp-block-aggressive-apparel-ticker > button.ticker__pause svg,
-.wp-block-aggressive-apparel-ticker > button.ticker__pause .ticker__pause-bar,
-.wp-block-aggressive-apparel-ticker > button.ticker__pause .ticker__play-tri {
-	fill: currentcolor;
-	color: inherit;
-	opacity: 1;
+/* Hover backdrop and press feedback — the transparent control gets none otherwise. */
+@media (hover: hover) {
+
+	.wp-block-aggressive-apparel-ticker > button.ticker__pause:hover:not(:disabled) {
+		background-color: color-mix(in oklch, currentcolor 14%, transparent);
+	}
 }
 
-/* SVG icon states: show pause bars by default, play triangle when paused. */
-.ticker__play-tri {
-	display: none;
+.wp-block-aggressive-apparel-ticker > button.ticker__pause:active:not(:disabled) {
+	transform: translateY(-50%) scale(0.9);
+	transition-delay: 0s;
 }
 
-.is-paused .ticker__play-tri {
+/*
+ * Glyph — two halves sharing one box, each a 4-point clip-path. Pause: a bar
+ * each. Play: each half of the triangle (the end half's two tip points meet).
+ * Same point counts, so the shapes morph. Coordinates follow a 24-unit grid
+ * (bars x 6–10 / 14–18, triangle 8,5 → 19,12 → 8,19), split with a sliver of
+ * overlap so no seam shows mid-triangle.
+ *
+ * State follows `aria-pressed` (manual pause / reduced-motion lock), not the
+ * hover/focus hold: while held, the available action is still "pause".
+ */
+.ticker__glyph {
+	position: relative;
 	display: block;
+	width: 1rem;
+	height: 1rem;
 }
 
-.is-paused .ticker__pause-bar {
-	display: none;
+.ticker__glyph-half {
+	position: absolute;
+	inset: 0;
+	background: currentcolor;
+	transition: clip-path 200ms var(--aa-ease-default, ease);
+}
+
+.ticker__glyph-half--start {
+	clip-path: polygon(25% 20.833%, 41.667% 20.833%, 41.667% 79.167%, 25% 79.167%);
+}
+
+.ticker__glyph-half--end {
+	clip-path: polygon(58.333% 20.833%, 75% 20.833%, 75% 79.167%, 58.333% 79.167%);
+}
+
+.ticker__pause[aria-pressed="true"] .ticker__glyph-half--start {
+	clip-path: polygon(33.333% 20.833%, 57.292% 36.08%, 57.292% 63.92%, 33.333% 79.167%);
+}
+
+.ticker__pause[aria-pressed="true"] .ticker__glyph-half--end {
+	clip-path: polygon(56.25% 35.417%, 79.167% 50%, 79.167% 50%, 56.25% 64.583%);
+}
+
+/* Forced colors drop backgrounds — paint the glyph with a system color. */
+@media (forced-colors: active) {
+
+	.ticker__glyph-half {
+		forced-color-adjust: none;
+		background: ButtonText;
+	}
+
+	.ticker__pause:disabled .ticker__glyph-half {
+		background: GrayText;
+	}
 }
 
 /* -----------------------------------------------
@@ -652,8 +714,13 @@
 @media (prefers-reduced-motion: reduce) {
 
 	.wp-block-aggressive-apparel-ticker,
-	.wp-block-aggressive-apparel-ticker > button.ticker__pause {
+	.wp-block-aggressive-apparel-ticker > button.ticker__pause,
+	.ticker__glyph-half {
 		transition: none;
+	}
+
+	.wp-block-aggressive-apparel-ticker > button.ticker__pause {
+		transform: translateY(-50%);
 	}
 
 	/* A frozen pulse would leave a static half-opacity halo — drop it. */

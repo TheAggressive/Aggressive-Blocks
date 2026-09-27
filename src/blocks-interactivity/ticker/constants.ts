@@ -18,6 +18,12 @@ export const MAX_TICKER_CLONES = 100;
 export const DEFAULT_TICKER_SPEED = 30;
 
 /**
+ * How long the marquee takes to glide from full speed to a stop, or back up,
+ * when paused, held, or resumed.
+ */
+export const TICKER_MOTION_EASE_MS = 400;
+
+/**
  * CSS custom property for the pause/play control color.
  * Synced from `.ticker__content` so adaptive content colors win over the
  * wrapper's `has-*-color` class (e.g. white wrapper + surface-elevated copy).

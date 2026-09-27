@@ -12,13 +12,16 @@ import {
   CONTROL_COLOR_VAR,
   MAX_TICKER_CLONES,
   SELECTORS,
+  TICKER_MOTION_EASE_MS,
 } from './constants';
 import {
+  easeTickerMotion,
   getTickerPxPerMs,
   isTickerReverseDirection,
   parseTickerDataSpeed,
   resolveTickerControlColor,
   shouldAnimateTicker,
+  stepTickerMotion,
 } from './logic';
 
 interface TickerMetrics {
@@ -83,6 +86,9 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
   let isIntersecting = !('IntersectionObserver' in window);
   let isDocumentVisible = !document.hidden;
   let isPaused = ticker.classList.contains('is-paused');
+  // Eased speed progress (0 = stopped, 1 = full speed). Pausing, holding,
+  // and resuming glide this toward the target instead of jumping.
+  let motion = isPaused ? 0 : 1;
   let cloneSyncFrameId = 0;
   const watchedImages = new WeakSet<HTMLImageElement>();
   const reducedMotionMql = window.matchMedia(
@@ -157,6 +163,7 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
       isDocumentVisible,
       reducedMotion: reducedMotionMql.matches,
       isPaused,
+      motion,
       pxPerMs,
     });
 
@@ -166,6 +173,9 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
       frameId = 0;
     }
 
+    // Nobody sees a glide while stopped (offscreen, hidden tab, reduced
+    // motion), so settle at the target and resume from a clean state.
+    motion = isPaused ? 0 : 1;
     previousTime = 0;
     track.style.removeProperty('will-change');
   };
@@ -186,7 +196,13 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
 
     const delta = time - previousTime;
     previousTime = time;
-    offset += (reverse ? -1 : 1) * delta * pxPerMs;
+    motion = stepTickerMotion(
+      motion,
+      isPaused ? 0 : 1,
+      delta,
+      TICKER_MOTION_EASE_MS
+    );
+    offset += (reverse ? -1 : 1) * delta * pxPerMs * easeTickerMotion(motion);
 
     if (reverse) {
       recycleBackward();

@@ -275,12 +275,10 @@ $play_label  = __( 'Play animation', 'aggressive-blocks' );
 		aria-pressed="false"
 		aria-label="<?php echo esc_attr( $pause_label ); ?>"
 	>
-		<span class="ticker__pause-icon" aria-hidden="true">
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" focusable="false">
-				<rect class="ticker__pause-bar" x="6" y="4" width="4" height="16" />
-				<rect class="ticker__pause-bar" x="14" y="4" width="4" height="16" />
-				<polygon class="ticker__play-tri" points="6,4 20,12 6,20" />
-			</svg>
+		<?php // Two clip-path halves that morph between the pause bars and the play triangle. ?>
+		<span class="ticker__glyph" aria-hidden="true">
+			<span class="ticker__glyph-half ticker__glyph-half--start"></span>
+			<span class="ticker__glyph-half ticker__glyph-half--end"></span>
 		</span>
 		<span class="screen-reader-text" data-wp-text="context.controlLabel">
 			<?php echo esc_html( $pause_label ); ?>
