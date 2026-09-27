@@ -154,10 +154,13 @@
   animation-play-state: running;
 }
 
+/* Start at the pill's height, not 0: a fill narrower than it is tall clamps
+   its border-radius to half its width, leaving a flat-sided sliver at the
+   rounded start of the track. */
 @keyframes aa-hero-progress {
 
   from {
-    width: 0;
+    width: var(--aa-hero-progress-from, 0.5rem);
   }
 
   to {
@@ -185,6 +188,7 @@
 
 .aa-hero__pagination--lines.aa-hero__pagination--progress .aa-hero__dot[aria-current='true']::after {
   --aa-hero-progress-w: 2.5rem;
+  --aa-hero-progress-from: 0;
 
   inset-inline-start: calc(50% - 1.25rem);
   height: 0.2rem;
