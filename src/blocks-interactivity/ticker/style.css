@@ -8,18 +8,35 @@
  * Container
  * ----------------------------------------------- */
 
+/*
+ * 0 → 1 while the pause control is visible. Registered so the control
+ * clearance can transition alongside the control's opacity.
+ */
+@property --ticker-control-reserve {
+	syntax: "<number>";
+	inherits: true;
+	initial-value: 0;
+}
+
 .wp-block-aggressive-apparel-ticker {
 	--ticker-gap: 48px;
 	--ticker-fade-width: 64px;
 
-	/* Space reserved so marquee copy fades before the round pause control. */
-	--ticker-control-clearance: 3.25rem;
+	/*
+	 * Marquee copy is fully faded this far from the inline-end, so it never
+	 * runs under the pause glyph (control inset + half the control + glyph
+	 * half-width, with room to spare). The fade ramps in over the width before.
+	 */
+	--ticker-control-clearance: 3rem;
+	--ticker-control-fade: 1.5rem;
+	--ticker-control-reserve: 0;
 
 	position: relative;
 	display: flex;
 	align-items: stretch;
 	overflow: hidden;
-	user-select: none;
+	transition: --ticker-control-reserve var(--aa-duration-fast, 150ms)
+		var(--aa-ease-default, ease);
 }
 
 /* -----------------------------------------------
@@ -73,15 +90,24 @@
  * ----------------------------------------------- */
 
 /*
- * Always fade the inline-end of the scroll under the pause control so copy
- * doesn't run through the round hit target. Composes with optional edge fades.
+ * Fade the inline-end of the scroll under the pause control so copy doesn't
+ * run through the glyph. Scaled by --ticker-control-reserve, so the copy runs
+ * to the edge while the control is hidden. Composes with optional edge fades.
+ *
+ * Masks only read alpha, so the opaque stops are a literal `#000` rather than
+ * a theme token — an undefined token would invalidate the whole gradient.
  */
 .wp-block-aggressive-apparel-ticker:has(> .ticker__pause) .ticker__scroll {
 	mask-image: linear-gradient(
 		to right,
-		var(--aa-color-black) 0,
-		var(--aa-color-black) calc(100% - var(--ticker-control-clearance)),
-		transparent calc(100% - 0.25rem)
+		#000 0,
+		#000
+			calc(
+				100% - (var(--ticker-control-clearance) + var(--ticker-control-fade)) *
+					var(--ticker-control-reserve)
+			),
+		transparent
+			calc(100% - var(--ticker-control-clearance) * var(--ticker-control-reserve))
 	);
 	mask-size: 100% 100%;
 	mask-repeat: no-repeat;
@@ -92,8 +118,8 @@
 	mask-image: linear-gradient(
 		to right,
 		transparent,
-		var(--aa-color-black) var(--ticker-fade-width),
-		var(--aa-color-black) calc(100% - var(--ticker-fade-width)),
+		#000 var(--ticker-fade-width),
+		#000 calc(100% - var(--ticker-fade-width)),
 		transparent
 	);
 	mask-size: 100% 100%;
@@ -106,10 +132,17 @@
 	mask-image: linear-gradient(
 		to right,
 		transparent,
-		var(--aa-color-black) var(--ticker-fade-width),
-		var(--aa-color-black)
-			calc(100% - max(var(--ticker-fade-width), var(--ticker-control-clearance))),
-		transparent calc(100% - 0.25rem)
+		#000 var(--ticker-fade-width),
+		#000
+			calc(
+				100% - var(--ticker-control-clearance) * var(--ticker-control-reserve) -
+					max(
+						var(--ticker-fade-width),
+						var(--ticker-control-fade) * var(--ticker-control-reserve)
+					)
+			),
+		transparent
+			calc(100% - var(--ticker-control-clearance) * var(--ticker-control-reserve))
 	);
 }
 
@@ -176,16 +209,15 @@
 	display: inline-block;
 	width: 0.5rem;
 	height: 0.5rem;
-	background: var(--ti-color, currentcolor);
+	background: currentcolor;
 	position: relative;
-	margin-right: 0.5rem;
 }
 
 .ticker__indicator::after {
 	content: "";
 	position: absolute;
 	inset: -0.25rem;
-	background: var(--ti-color, currentcolor);
+	background: currentcolor;
 	opacity: 0.5;
 	animation: ticker-indicator-pulse 1.4s ease-out infinite;
 }
@@ -533,6 +565,16 @@
 	top: 50%;
 	right: 0.75rem;
 	z-index: 4;
+
+	/*
+	 * Fit inside the wrapper's clip: a slim ticker is shorter than the default
+	 * icon-button size, which would crop the hit target and the 4px focus ring.
+	 */
+	width: auto;
+	height: min(var(--aa-icon-button-size, 2.75rem), 100% - 0.5rem);
+	min-width: 0;
+	min-height: 0;
+	aspect-ratio: 1;
 	appearance: none;
 	-webkit-text-fill-color: currentcolor;
 	background-image: none;
@@ -568,6 +610,20 @@
 	}
 }
 
+/* Clear copy from under the control whenever it is revealed (rules above). */
+.wp-block-aggressive-apparel-ticker:hover,
+.wp-block-aggressive-apparel-ticker:focus-within,
+.wp-block-aggressive-apparel-ticker.is-paused {
+	--ticker-control-reserve: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+
+	.wp-block-aggressive-apparel-ticker {
+		--ticker-control-reserve: 1;
+	}
+}
+
 .wp-block-aggressive-apparel-ticker > button.ticker__pause svg,
 .wp-block-aggressive-apparel-ticker > button.ticker__pause .ticker__pause-bar,
 .wp-block-aggressive-apparel-ticker > button.ticker__pause .ticker__play-tri {
@@ -595,9 +651,13 @@
 
 @media (prefers-reduced-motion: reduce) {
 
-	.ticker__pause,
-	.ticker__indicator::after {
+	.wp-block-aggressive-apparel-ticker,
+	.wp-block-aggressive-apparel-ticker > button.ticker__pause {
 		transition: none;
-		animation: none;
+	}
+
+	/* A frozen pulse would leave a static half-opacity halo — drop it. */
+	.ticker__indicator::after {
+		display: none;
 	}
 }
