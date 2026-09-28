@@ -226,87 +226,95 @@ test.describe('Modal — front end', () => {
     pageIds = [];
   });
 
-  test('opens with correct ARIA, closes via Escape, close button, and backdrop', async ({
-    page,
-  }) => {
-    const { id, url } = await insertModalPage(page, {
-      modalId: 'e2e-modal',
-      triggerLabel: 'Open test modal',
-    });
-    pageIds.push(id);
+  test(
+    'opens with correct ARIA, closes via Escape, close button, and backdrop',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      const { id, url } = await insertModalPage(page, {
+        modalId: 'e2e-modal',
+        triggerLabel: 'Open test modal',
+      });
+      pageIds.push(id);
 
-    await page.goto(url);
+      await page.goto(url);
 
-    const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
-    const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
-    const dialog = page.locator('#e2e-modal');
-    const close = page.locator('.wp-block-aggressive-apparel-modal__close');
+      const trigger = page.locator(
+        '.wp-block-aggressive-apparel-modal__trigger'
+      );
+      const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
+      const dialog = page.locator('#e2e-modal');
+      const close = page.locator('.wp-block-aggressive-apparel-modal__close');
 
-    await expect(shell).toBeHidden();
-    await expect(shell).not.toHaveAttribute('open', '');
-    await expect(
-      page.locator('.wp-block-aggressive-blocks-modal [aria-live]')
-    ).toHaveCount(0);
-    await expect(trigger).not.toHaveAttribute('aria-expanded');
-    await expect(trigger).toHaveAttribute('aria-controls', 'e2e-modal');
-    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+      await expect(shell).toBeHidden();
+      await expect(shell).not.toHaveAttribute('open', '');
+      await expect(
+        page.locator('.wp-block-aggressive-blocks-modal [aria-live]')
+      ).toHaveCount(0);
+      await expect(trigger).not.toHaveAttribute('aria-expanded');
+      await expect(trigger).toHaveAttribute('aria-controls', 'e2e-modal');
+      await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
 
-    await trigger.click();
-    await expect(shell).toBeVisible();
-    await expect(shell).toHaveAttribute('open', '');
-    await expect(shell).toHaveCSS('position', 'fixed');
-    await expectModal(dialog, true);
-    await expect(dialog).toHaveAccessibleName('Open test modal');
-    await expect(dialog).toBeFocused();
-    await expect(page.getByText('Modal body copy')).toBeVisible();
-    await expect
-      .poll(() =>
-        dialog.evaluate(
-          element => getComputedStyle(element, '::backdrop').opacity
+      await trigger.click();
+      await expect(shell).toBeVisible();
+      await expect(shell).toHaveAttribute('open', '');
+      await expect(shell).toHaveCSS('position', 'fixed');
+      await expectModal(dialog, true);
+      await expect(dialog).toHaveAccessibleName('Open test modal');
+      await expect(dialog).toBeFocused();
+      await expect(page.getByText('Modal body copy')).toBeVisible();
+      await expect
+        .poll(() =>
+          dialog.evaluate(
+            element => getComputedStyle(element, '::backdrop').opacity
+          )
         )
-      )
-      .toBe('0.5');
-    await expect(close).toHaveAttribute('aria-label', 'Close modal');
+        .toBe('0.5');
+      await expect(close).toHaveAttribute('aria-label', 'Close modal');
 
-    await page.keyboard.press('Escape');
-    await expect(shell).toBeHidden();
-    await expect(shell).not.toHaveAttribute('open', '');
-    await expect(trigger).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(shell).toBeHidden();
+      await expect(shell).not.toHaveAttribute('open', '');
+      await expect(trigger).toBeFocused();
 
-    await trigger.click();
-    await expect(shell).toBeVisible();
-    await close.click();
-    await expect(shell).toBeHidden();
-    await expect(trigger).toBeFocused();
+      await trigger.click();
+      await expect(shell).toBeVisible();
+      await close.click();
+      await expect(shell).toBeHidden();
+      await expect(trigger).toBeFocused();
 
-    await trigger.click();
-    await expect(shell).toBeVisible();
-    await page.mouse.click(8, 8);
-    await expect(shell).toBeHidden();
-  });
+      await trigger.click();
+      await expect(shell).toBeVisible();
+      await page.mouse.click(8, 8);
+      await expect(shell).toBeHidden();
+    }
+  );
 
-  test('locks body scroll while open and unlocks on close', async ({
-    page,
-  }) => {
-    const { id, url } = await insertModalPage(page, {
-      modalId: 'e2e-scroll-lock',
-      triggerLabel: 'Open scroll-lock modal',
-    });
-    pageIds.push(id);
+  test(
+    'locks body scroll while open and unlocks on close',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      const { id, url } = await insertModalPage(page, {
+        modalId: 'e2e-scroll-lock',
+        triggerLabel: 'Open scroll-lock modal',
+      });
+      pageIds.push(id);
 
-    await page.goto(url);
+      await page.goto(url);
 
-    const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
-    const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
+      const trigger = page.locator(
+        '.wp-block-aggressive-apparel-modal__trigger'
+      );
+      const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
 
-    await trigger.click();
-    await expect(shell).toBeVisible();
-    await expectModal(shell, true);
+      await trigger.click();
+      await expect(shell).toBeVisible();
+      await expectModal(shell, true);
 
-    await page.keyboard.press('Escape');
-    await expect(shell).toBeHidden();
-    await expectModal(shell, false);
-  });
+      await page.keyboard.press('Escape');
+      await expect(shell).toBeHidden();
+      await expectModal(shell, false);
+    }
+  );
 
   test('stays open when reopened during its exit transition', async ({
     page,
@@ -340,66 +348,70 @@ test.describe('Modal — front end', () => {
     await expect(shell).toBeHidden();
   });
 
-  test('keeps Tab and Shift+Tab focus off the inert page behind the modal', async ({
-    page,
-  }) => {
-    const { id, url } = await insertModalPage(
-      page,
-      {
-        modalId: 'e2e-trap',
-        triggerLabel: 'Open trap modal',
-      },
-      {
-        innerHtml: [
-          '<a href="#first">First link</a>',
-          '<a href="#second">Second link</a>',
-        ],
-      }
-    );
-    pageIds.push(id);
+  test(
+    'keeps Tab and Shift+Tab focus off the inert page behind the modal',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      const { id, url } = await insertModalPage(
+        page,
+        {
+          modalId: 'e2e-trap',
+          triggerLabel: 'Open trap modal',
+        },
+        {
+          innerHtml: [
+            '<a href="#first">First link</a>',
+            '<a href="#second">Second link</a>',
+          ],
+        }
+      );
+      pageIds.push(id);
 
-    await page.goto(url);
+      await page.goto(url);
 
-    const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
-    const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
-    const dialog = page.locator('#e2e-trap');
-    const close = page.locator('.wp-block-aggressive-apparel-modal__close');
-    const first = page.getByRole('link', { name: 'First link' });
-    const second = page.getByRole('link', { name: 'Second link' });
+      const trigger = page.locator(
+        '.wp-block-aggressive-apparel-modal__trigger'
+      );
+      const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
+      const dialog = page.locator('#e2e-trap');
+      const close = page.locator('.wp-block-aggressive-apparel-modal__close');
+      const first = page.getByRole('link', { name: 'First link' });
+      const second = page.getByRole('link', { name: 'Second link' });
 
-    await trigger.click();
-    await expect(shell).toBeVisible();
-    // showModal() focuses the dialog. Wait for that before tabbing.
-    await expect(dialog).toBeFocused();
+      await trigger.click();
+      await expect(shell).toBeVisible();
+      // showModal() focuses the dialog. Wait for that before tabbing.
+      await expect(dialog).toBeFocused();
 
-    await close.focus();
-    await page.keyboard.press('Tab');
-    await expect(first).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(second).toBeFocused();
-
-    // A native modal dialog does not wrap Tab: from the last control, focus
-    // may leave the document for browser UI. It must never land on the
-    // inert page behind the dialog.
-    const focusOutsideDialog = (): Promise<boolean> =>
-      page.evaluate(() => {
-        const active = document.activeElement;
-        return (
-          active !== null &&
-          active !== document.body &&
-          active.closest('dialog[open]') === null
-        );
-      });
-    for (let press = 0; press < 3; press++) {
+      await close.focus();
       await page.keyboard.press('Tab');
-      expect(await focusOutsideDialog()).toBe(false);
-    }
+      await expect(first).toBeFocused();
+      await page.keyboard.press('Tab');
+      await expect(second).toBeFocused();
 
-    await second.focus();
-    await page.keyboard.press('Shift+Tab');
-    await expect(first).toBeFocused();
-    await expect(trigger).not.toBeFocused();
-  });
+      // A native modal dialog does not wrap Tab: from the last control, focus
+      // may leave the document for browser UI. It must never land on the
+      // inert page behind the dialog.
+      const focusOutsideDialog = (): Promise<boolean> =>
+        page.evaluate(() => {
+          const active = document.activeElement;
+          return (
+            active !== null &&
+            active !== document.body &&
+            active.closest('dialog[open]') === null
+          );
+        });
+      for (let press = 0; press < 3; press++) {
+        await page.keyboard.press('Tab');
+        expect(await focusOutsideDialog()).toBe(false);
+      }
+
+      await second.focus();
+      await page.keyboard.press('Shift+Tab');
+      await expect(first).toBeFocused();
+      await expect(trigger).not.toBeFocused();
+    }
+  );
 
   test('Escape closes only the top-most stacked modal', async ({ page }) => {
     const { id, url } = await insertModalPage(
@@ -831,47 +843,51 @@ test.describe('Modal — front end', () => {
     await expect(shell).toBeHidden();
   });
 
-  test('drawer position opens and closes under reduced motion', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  test(
+    'drawer position opens and closes under reduced motion',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
 
-    const { id, url } = await insertModalPage(page, {
-      modalId: 'e2e-drawer',
-      triggerLabel: 'Open drawer',
-      position: 'bottom',
-      animationDuration: 300,
-    });
-    pageIds.push(id);
+      const { id, url } = await insertModalPage(page, {
+        modalId: 'e2e-drawer',
+        triggerLabel: 'Open drawer',
+        position: 'bottom',
+        animationDuration: 300,
+      });
+      pageIds.push(id);
 
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(url);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(url);
 
-    const trigger = page.locator('.wp-block-aggressive-apparel-modal__trigger');
-    const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
-    const dialog = page.locator('#e2e-drawer');
+      const trigger = page.locator(
+        '.wp-block-aggressive-apparel-modal__trigger'
+      );
+      const shell = page.locator('.wp-block-aggressive-apparel-modal__shell');
+      const dialog = page.locator('#e2e-drawer');
 
-    await expect(dialog).toHaveClass(/modal-position-bottom/);
-    await expect(dialog).toHaveAttribute('data-exit-animation', 'position');
+      await expect(dialog).toHaveClass(/modal-position-bottom/);
+      await expect(dialog).toHaveAttribute('data-exit-animation', 'position');
 
-    await trigger.click();
-    await expect(shell).toBeVisible();
-    await expectModal(shell, true);
-    await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
+      await trigger.click();
+      await expect(shell).toBeVisible();
+      await expectModal(shell, true);
+      await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
 
-    const dialogBounds = await dialog.boundingBox();
-    expect(dialogBounds).not.toBeNull();
-    expect(dialogBounds?.width).toBeLessThanOrEqual(390);
-    expect(
-      Math.abs((dialogBounds?.y ?? 0) + (dialogBounds?.height ?? 0) - 844)
-    ).toBeLessThanOrEqual(1);
+      const dialogBounds = await dialog.boundingBox();
+      expect(dialogBounds).not.toBeNull();
+      expect(dialogBounds?.width).toBeLessThanOrEqual(390);
+      expect(
+        Math.abs((dialogBounds?.y ?? 0) + (dialogBounds?.height ?? 0) - 844)
+      ).toBeLessThanOrEqual(1);
 
-    await page.keyboard.press('Escape');
-    await expect(shell).toBeHidden();
-    await expect(trigger).toBeFocused();
-    await expectModal(shell, false);
-    await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
-  });
+      await page.keyboard.press('Escape');
+      await expect(shell).toBeHidden();
+      await expect(trigger).toBeFocused();
+      await expectModal(shell, false);
+      await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+    }
+  );
 });
 
 test.describe('Modal — editor', () => {

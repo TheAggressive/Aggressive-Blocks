@@ -25,13 +25,14 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    // Parallax renders with native scroll-driven animations where the
-    // engine supports them; WebKit (Safari) is the other shipping
-    // implementation, so that spec also runs there.
+    // WebKit (Safari) runs only the tests tagged @webkit: behavior engines
+    // implement differently (focus and inert, <dialog>, scroll and
+    // scroll-driven animation, pointer input, reduced motion). Chromium
+    // runs everything.
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-      testMatch: ['**/parallax.spec.ts'],
+      grep: /@webkit/,
     },
   ],
 });

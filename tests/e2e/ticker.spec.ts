@@ -85,24 +85,28 @@ test.describe('Ticker — front end', () => {
     pageId = 0;
   });
 
-  test('renders marquee and pauses on control click', async ({ page }) => {
-    pageId = await createTickerPage(page, {
-      showLabel: true,
-      labelText: 'LIVE',
-    });
+  test(
+    'renders marquee and pauses on control click',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      pageId = await createTickerPage(page, {
+        showLabel: true,
+        labelText: 'LIVE',
+      });
 
-    const ticker = tickerRoot(page);
-    await expect(ticker).toHaveAttribute('role', 'marquee');
-    await expect(ticker.locator('.ticker__label')).toContainText('LIVE');
+      const ticker = tickerRoot(page);
+      await expect(ticker).toHaveAttribute('role', 'marquee');
+      await expect(ticker.locator('.ticker__label')).toContainText('LIVE');
 
-    const pause = ticker.locator('.ticker__pause');
-    await expect(pause).toHaveAttribute('aria-pressed', 'false');
-    await pause.click();
-    await expect(ticker).toHaveClass(/is-paused/);
-    await expect(pause).toHaveAttribute('aria-pressed', 'true');
-    await expect(pause).toHaveAttribute('aria-label', PLAY_LABEL);
-    await expectSettled(ticker);
-  });
+      const pause = ticker.locator('.ticker__pause');
+      await expect(pause).toHaveAttribute('aria-pressed', 'false');
+      await pause.click();
+      await expect(ticker).toHaveClass(/is-paused/);
+      await expect(pause).toHaveAttribute('aria-pressed', 'true');
+      await expect(pause).toHaveAttribute('aria-label', PLAY_LABEL);
+      await expectSettled(ticker);
+    }
+  );
 
   test('a hover hold keeps the control on pause', async ({ page }) => {
     pageId = await createTickerPage(page, { pauseOnHover: true });
@@ -158,17 +162,21 @@ test.describe('Ticker — front end', () => {
     await expect.poll(() => medianStep(tickerRoot(page))).toBeLessThan(0);
   });
 
-  test('reduced motion locks the marquee', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    pageId = await createTickerPage(page, { pxPerSecond: 150 });
+  test(
+    'reduced motion locks the marquee',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      pageId = await createTickerPage(page, { pxPerSecond: 150 });
 
-    const ticker = tickerRoot(page);
-    const pause = ticker.locator('.ticker__pause');
-    await expect(pause).toBeDisabled();
-    await expect(pause).toHaveAttribute('aria-pressed', 'true');
-    await expect(ticker).toHaveClass(/is-paused/);
-    await expectSettled(ticker);
-  });
+      const ticker = tickerRoot(page);
+      const pause = ticker.locator('.ticker__pause');
+      await expect(pause).toBeDisabled();
+      await expect(pause).toHaveAttribute('aria-pressed', 'true');
+      await expect(ticker).toHaveClass(/is-paused/);
+      await expectSettled(ticker);
+    }
+  );
 
   test('scrolls in the configured direction', async ({ page }) => {
     pageId = await createTickerPage(page, {
@@ -223,35 +231,37 @@ test.describe('Ticker — front end', () => {
     expect(layout.hiddenCopies).toBe(true);
   });
 
-  test('keyboard reaches the control before links in the moving copy', async ({
-    page,
-  }) => {
-    pageId = await createTickerPage(
-      page,
-      {},
-      'Ticker item <a href="#shop">Shop now</a>'
-    );
+  test(
+    'keyboard reaches the control before links in the moving copy',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      pageId = await createTickerPage(
+        page,
+        {},
+        'Ticker item <a href="#shop">Shop now</a>'
+      );
 
-    const ticker = tickerRoot(page);
-    const firstFocusInTicker = async (): Promise<string | null> => {
-      for (let i = 0; i < 60; i += 1) {
-        await page.keyboard.press('Tab');
-        const focused = await ticker.evaluate(root => {
-          const active = document.activeElement;
-          if (!active || !root.contains(active)) {
-            return null;
+      const ticker = tickerRoot(page);
+      const firstFocusInTicker = async (): Promise<string | null> => {
+        for (let i = 0; i < 60; i += 1) {
+          await page.keyboard.press('Tab');
+          const focused = await ticker.evaluate(root => {
+            const active = document.activeElement;
+            if (!active || !root.contains(active)) {
+              return null;
+            }
+            return active.classList.contains('ticker__pause')
+              ? 'control'
+              : active.tagName.toLowerCase();
+          });
+          if (focused) {
+            return focused;
           }
-          return active.classList.contains('ticker__pause')
-            ? 'control'
-            : active.tagName.toLowerCase();
-        });
-        if (focused) {
-          return focused;
         }
-      }
-      return null;
-    };
+        return null;
+      };
 
-    expect(await firstFocusInTicker()).toBe('control');
-  });
+      expect(await firstFocusInTicker()).toBe('control');
+    }
+  );
 });

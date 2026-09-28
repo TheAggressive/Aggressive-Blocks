@@ -11,6 +11,7 @@ This document is the contract between local development, GitHub Actions, and the
 | PHP floor | 8.2 | plugin header, `composer.json`, `phpstan.neon`, `bin/ci/.wp-env.json` |
 | WordPress floor | 7.0+ | plugin header, floor lane (`pnpm ci:floor`) on WordPress 7.0 with PHP 8.2 |
 | Primary CI WordPress | 7.1.2 | `bin/ci/.wp-env.json` |
+| Browsers | Chromium: every E2E test. WebKit: tests tagged `@webkit` (focus and `inert`, `<dialog>`, scroll and scroll-driven animation, pointer input, reduced motion) | `playwright.config.ts` |
 | Node | 24.18.0 | `.node-version`, `bin/ci/node.sh`, workflow `NODE_VERSION` |
 | pnpm | 11.21.0 | `packageManager` |
 

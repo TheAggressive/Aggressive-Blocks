@@ -79,27 +79,29 @@ test.describe('Hero Carousel — front end', () => {
     await expect(firstDot).toHaveAttribute('aria-current', 'true');
   });
 
-  test('opens the deep-linked slide in looping slide mode', async ({
-    page,
-  }) => {
-    const { id, url } = await publishCarousel(page, {
-      anchor: 'e2e-hero',
-      deepLink: true,
-      transition: 'slide',
-      loop: true,
-    });
-    pageId = id;
-    await page.goto(`${url}#e2e-hero-slide-3`);
+  test(
+    'opens the deep-linked slide in looping slide mode',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      const { id, url } = await publishCarousel(page, {
+        anchor: 'e2e-hero',
+        deepLink: true,
+        transition: 'slide',
+        loop: true,
+      });
+      pageId = id;
+      await page.goto(`${url}#e2e-hero-slide-3`);
 
-    const slides = page.locator(
-      '#e2e-hero .aa-hero__slide:not([data-aa-hero-clone])'
-    );
-    await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
-    // Past the edge-clone re-align frame and the scroll settle.
-    await page.waitForTimeout(1000);
-    await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
-    await expect(page).toHaveURL(/#e2e-hero-slide-3$/);
-  });
+      const slides = page.locator(
+        '#e2e-hero .aa-hero__slide:not([data-aa-hero-clone])'
+      );
+      await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
+      // Past the edge-clone re-align frame and the scroll settle.
+      await page.waitForTimeout(1000);
+      await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
+      await expect(page).toHaveURL(/#e2e-hero-slide-3$/);
+    }
+  );
 
   test('keeps autoplay paused while hovered after an arrow click', async ({
     page,
@@ -135,41 +137,43 @@ test.describe('Hero Carousel — front end', () => {
     await expect(region).not.toHaveClass(/\bis-playing\b/);
   });
 
-  test('keeps focus on an arrow that reaches the end of a non-looping run', async ({
-    page,
-  }) => {
-    const { id, url } = await publishCarousel(page, {
-      autoplay: false,
-      loop: false,
-      transition: 'fade',
-    });
-    pageId = id;
-    await page.goto(url);
+  test(
+    'keeps focus on an arrow that reaches the end of a non-looping run',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      const { id, url } = await publishCarousel(page, {
+        autoplay: false,
+        loop: false,
+        transition: 'fade',
+      });
+      pageId = id;
+      await page.goto(url);
 
-    const region = page
-      .locator('[data-wp-interactive="aggressive-blocks/hero-carousel"]')
-      .first();
-    const slides = region.locator('.aa-hero__slide');
-    const prev = region.locator('.aa-hero__arrow--prev');
-    const next = region.locator('.aa-hero__arrow--next');
+      const region = page
+        .locator('[data-wp-interactive="aggressive-blocks/hero-carousel"]')
+        .first();
+      const slides = region.locator('.aa-hero__slide');
+      const prev = region.locator('.aa-hero__arrow--prev');
+      const next = region.locator('.aa-hero__arrow--next');
 
-    // Disabled on the first slide, but still reachable by keyboard.
-    await expect(prev).toBeDisabled();
-    await next.focus();
-    await page.keyboard.press('Shift+Tab');
-    await expect(prev).toBeFocused();
+      // Disabled on the first slide, but still reachable by keyboard.
+      await expect(prev).toBeDisabled();
+      await next.focus();
+      await page.keyboard.press('Shift+Tab');
+      await expect(prev).toBeFocused();
 
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Enter');
-    await expect(slides.nth(1)).toHaveClass(/\bis-active\b/);
-    await page.keyboard.press('Enter');
-    await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
-    await expect(next).toBeDisabled();
-    await expect(next).toBeFocused();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Enter');
+      await expect(slides.nth(1)).toHaveClass(/\bis-active\b/);
+      await page.keyboard.press('Enter');
+      await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
+      await expect(next).toBeDisabled();
+      await expect(next).toBeFocused();
 
-    // A press on the disabled arrow does nothing.
-    await page.keyboard.press('Enter');
-    await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
-    await expect(next).toBeFocused();
-  });
+      // A press on the disabled arrow does nothing.
+      await page.keyboard.press('Enter');
+      await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
+      await expect(next).toBeFocused();
+    }
+  );
 });
