@@ -44,6 +44,15 @@
   inset-inline-end: var(--aa-hero-chrome-gap);
 }
 
+/* Edge arrows float over the slide, so keep its content out of their lane:
+   on a narrow screen, left-aligned copy otherwise sits under the arrow. */
+.aa-hero--arrows-edges .aa-hero__slide .wp-block-cover__inner-container {
+  box-sizing: border-box;
+  padding-inline: calc(
+    var(--aa-hero-chrome-gap) + var(--aa-icon-button-size, 2.75rem)
+  );
+}
+
 /* Bottom placement: arrows join the bottom bar cluster. */
 .aa-hero--arrows-bottom .aa-hero__arrows {
   position: absolute;
