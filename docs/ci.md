@@ -63,6 +63,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | ZIP install proof | `pnpm ci:artifact` |
 | Declared WordPress/PHP floor | `pnpm ci:floor` |
 | Aggressive Apparel with the ZIP | `AB_THEME_DIR=<built theme checkout> pnpm ci:integration` |
+| Screenshot regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 
@@ -101,6 +102,16 @@ It reads both values from the header, so there is no second pin to drift. It ins
 * PHP logs no error, warning, notice, or deprecation.
 
 Raising the floor means changing the header (and `readme.txt`); the lane then tests the new branch. Lowering it only works if this lane passes there.
+
+## Visual regression
+
+`tests/visual` holds one screenshot per canonical state: Hero Carousel, Ticker, Card Flip front and back, Split Story, Horizontal Scroll at its first slide, and an open Modal. Hero, Split Story, Horizontal Scroll and the Modal also run at a phone viewport, where their layout changes. Animate On Scroll and Parallax are left out: at rest, and under reduced motion, they are plain content, and their behavior is already covered by E2E.
+
+A screenshot only means something if the environment that made its baseline is the one that checks it. So `pnpm ci:visual` (`bin/ci/visual.sh`) never runs in the Studio or wp-env lanes. It installs the release ZIP on the primary CI WordPress with Twenty Twenty-Five, natively, and captures in Playwright's Chromium with fixed viewports, reduced motion, finished animations, loaded web fonts, and fixed content with no images. The comparison uses Playwright's default per-pixel tolerance and allows no differing pixels. Three fresh runs matched their baselines exactly, and a one-rule CSS change failed only the screenshot it touched.
+
+`.github/workflows/visual-regression.yml` runs it on pull requests that touch `src/` or the suite, and on `main`. It is not a merge gate yet: the baselines were made on Ubuntu 24.04 outside Actions. Once it is green on the runners, move the job into `ci.yml` under the CI Summary. If the runners render differently, dispatch the workflow with `update`, then review and commit the images it uploads.
+
+When a change is meant to look different, run `AB_VISUAL_UPDATE=1 pnpm ci:visual`, look at every rewritten image, and commit them with the change.
 
 ## Aggressive Apparel integration
 
@@ -154,6 +165,7 @@ Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to reb
 | --- | --- | --- |
 | WordPress Beta/RC | Wednesdays | No |
 | Aggressive Apparel integration | Thursdays | No |
+| Visual regression | Pull requests touching `src/` or the suite, and `main` | Not yet (see above) |
 | PHP 8.3 / 8.4 forward | Mondays | No |
 | CodeQL baseline | Mondays | Alerts via code scanning |
 | Workflow security | Mondays | Same Actionlint/Zizmor checks |

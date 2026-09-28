@@ -12,7 +12,9 @@
   "include": [
     "tests/e2e/**/*.ts",
     "tests/integration/**/*.ts",
+    "tests/visual/**/*.ts",
     "playwright.config.ts",
-    "playwright.integration.config.ts"
+    "playwright.integration.config.ts",
+    "playwright.visual.config.ts"
   ]
 }
