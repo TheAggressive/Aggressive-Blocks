@@ -9,7 +9,7 @@ This document is the contract between local development, GitHub Actions, and the
 | Surface | Version | Enforced by |
 | --- | --- | --- |
 | PHP floor | 8.2 | plugin header, `composer.json`, `phpstan.neon`, `bin/ci/.wp-env.json` |
-| WordPress floor | 7.0+ | plugin header |
+| WordPress floor | 7.0+ | plugin header, floor lane (`pnpm ci:floor`) on WordPress 7.0 with PHP 8.2 |
 | Primary CI WordPress | 7.1.2 | `bin/ci/.wp-env.json` |
 | Node | 24.18.0 | `.node-version`, `bin/ci/node.sh`, workflow `NODE_VERSION` |
 | pnpm | 11.21.0 | `packageManager` |
@@ -38,8 +38,9 @@ On production-code changes the pipeline runs these lanes:
 6. Playwright E2E against WordPress + this plugin + Twenty Twenty-Five
 7. Allowlist ZIP (`pnpm ci:package`)
 8. Artifact acceptance: install that ZIP and re-run E2E (`pnpm ci:artifact`)
+9. WordPress floor: install that ZIP on the declared minimum WordPress and PHP (`pnpm ci:floor`)
 
-Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance follows packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
+Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance and the WordPress floor follow packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
 
 The two browser lanes are split into two parallel shards (`AA_E2E_SHARD=1/2`, `2/2`). Each shard starts its own WordPress and runs one worker, so tests never share site state. Playwright keeps each spec file in one shard. Run locally without `AA_E2E_SHARD`, a lane runs the whole suite.
 
@@ -59,6 +60,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | E2E against the Studio site | `pnpm test:e2e:studio` |
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
+| Declared WordPress/PHP floor | `pnpm ci:floor` |
 | Aggressive Apparel with the ZIP | `AB_THEME_DIR=<built theme checkout> pnpm ci:integration` |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
@@ -73,6 +75,19 @@ Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-pu
 
 Artifact acceptance installs the generated ZIP into a second wp-env that does **not** map plugin source. A green artifact lane means the packaged plugin works without the source checkout or the source theme.
 
+## WordPress floor
+
+`Requires at least` and `Requires PHP` in the plugin header are claims. The floor lane (`bin/ci/wp-floor.sh`) proves them on every code change, since the primary environment runs a newer WordPress.
+
+It reads both values from the header, so there is no second pin to drift. It installs the release ZIP on the first release of that WordPress branch (7.0 means 7.0.0) and, in CI, refuses to run on any PHP but the declared one (8.2). Then it checks that:
+
+* the plugin activates on Twenty Twenty-Five, and every block in `build/blocks-manifest.php` registers;
+* `independent-site.spec.ts` and `copyright.spec.ts` pass: the blocks are in the inserter and the server-rendered Copyright block renders;
+* `hero-carousel.spec.ts` passes. Its deep links depend on WordPress 7.0 writing a dynamic block's anchor as its `id`, which is why the floor is 7.0. On 6.9 the deep-link and autoplay tests fail, and WordPress refuses to install the ZIP.
+* PHP logs no error, warning, notice, or deprecation.
+
+Raising the floor means changing the header (and `readme.txt`); the lane then tests the new branch. Lowering it only works if this lane passes there.
+
 ## Aggressive Apparel integration
 
 The independent-site proof shows the plugin needs nothing from the theme. `.github/workflows/aggressive-apparel-integration.yml` checks the other direction: Aggressive Apparel still works with the packaged plugin.
@@ -85,7 +100,7 @@ The independent-site proof shows the plugin needs nothing from the theme. `.gith
 
 Coverage follows the theme: a block the theme starts using is checked on the next run without editing the suite.
 
-The lane runs WordPress natively with PHP's built-in server, the way the theme's own CI does, so it needs no Docker. In Actions the database is a MySQL service; locally it is the disposable MySQL that `bin/phpunit.sh` starts from the theme checkout. `bin/ci/lib/native-wp.sh` holds that setup.
+The lane runs WordPress natively with PHP's built-in server, the way the theme's own CI does, so it needs no Docker. In Actions the database is a MySQL service; locally it is the disposable MySQL that `bin/phpunit.sh` starts from the theme checkout. `bin/ci/lib/native-wp.sh` holds the setup it shares with the WordPress floor lane.
 
 It is not a merge gate. It depends on the theme's default branch and on WordPress.org downloads, and it builds the theme from source, so a theme change can turn it red with no change here. It runs weekly, on manual dispatch (any theme ref), and on pull requests that change the lane itself.
 

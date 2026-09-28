@@ -19,6 +19,7 @@ const successfulPullRequest = {
   E2E_RESULT: 'success',
   PACKAGE_RESULT: 'success',
   ARTIFACT_ACCEPTANCE_RESULT: 'success',
+  WP_FLOOR_RESULT: 'success',
   RELEASE_RESULT: 'skipped',
   VERSION_SYNC_RESULT: 'skipped',
   DOCS_ONLY: 'false',
@@ -48,6 +49,18 @@ describe('release summary gate', () => {
     assert.match(result.markdown, /Required CI gate failed/u);
   });
 
+  it('fails when the declared WordPress floor is not proven', () => {
+    const result = evaluateReleaseSummary({
+      ...successfulPullRequest,
+      WP_FLOOR_RESULT: 'skipped',
+    });
+
+    assert.equal(result.failed, true);
+    assert.deepEqual(result.errors, [
+      'Required WordPress floor job concluded skipped',
+    ]);
+  });
+
   it('requires every artifact and publish stage for a main release', () => {
     const result = evaluateReleaseSummary({
       ...successfulPullRequest,
@@ -60,6 +73,7 @@ describe('release summary gate', () => {
       DEPENDENCY_REVIEW_RESULT: 'skipped',
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
+      WP_FLOOR_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'success',
     });
@@ -85,6 +99,7 @@ describe('release summary gate', () => {
       DEPENDENCY_REVIEW_RESULT: 'skipped',
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
+      WP_FLOOR_RESULT: 'success',
       RELEASE_RESULT: 'skipped',
       VERSION_SYNC_RESULT: 'success',
     });
@@ -195,6 +210,7 @@ describe('release summary gate', () => {
       RELEASE_PLAN_RESULT: 'success',
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
+      WP_FLOOR_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'skipped',
     });
@@ -246,6 +262,7 @@ describe('release summary gate', () => {
       RELEASE_PLAN_RESULT: 'success',
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
+      WP_FLOOR_RESULT: 'success',
       RELEASE_RESULT: 'failure',
     });
 
