@@ -75,14 +75,30 @@ export function createPresentation(
     swipeHint?.toggleAttribute('hidden', !visible);
   };
 
+  /*
+   * aria-disabled, not disabled: a keyboard user who presses Next onto the
+   * last slide is still focused on Next, and disabling a focused button drops
+   * focus to <body>. The controllers already ignore a step past either end.
+   */
+  const setControlDisabled = (
+    button: HTMLButtonElement,
+    disabled: boolean
+  ): void => {
+    if (disabled) {
+      setAttributeIfChanged(button, 'aria-disabled', 'true');
+    } else {
+      button.removeAttribute('aria-disabled');
+    }
+  };
+
   const syncControls = (index: number, slideCount: number): void => {
     const interactive = mode !== 'static' && slideCount > 1;
     if (prevButton) {
-      prevButton.disabled = !interactive || index <= 0;
+      setControlDisabled(prevButton, !interactive || index <= 0);
       prevButton.hidden = mode === 'static';
     }
     if (nextButton) {
-      nextButton.disabled = !interactive || index >= slideCount - 1;
+      setControlDisabled(nextButton, !interactive || index >= slideCount - 1);
       nextButton.hidden = mode === 'static';
     }
   };

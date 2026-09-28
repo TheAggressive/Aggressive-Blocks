@@ -635,7 +635,7 @@ interface HeroStore {
   callbacks: InteractivityCallbacks;
 }
 
-store<HeroStore>('aggressive-blocks/hero-carousel', {
+const { state } = store<HeroStore>('aggressive-blocks/hero-carousel', {
   state: {
     get isActiveSlide(): boolean {
       return slideIsActive(getContext<HeroContext>());
@@ -682,10 +682,14 @@ store<HeroStore>('aggressive-blocks/hero-carousel', {
   },
 
   actions: {
+    // The arrows stay focusable at the ends (aria-disabled), so a press there
+    // must do nothing.
     next(): void {
+      if (state.nextDisabled) return;
       controllerFor(getElement().ref)?.next();
     },
     prev(): void {
+      if (state.prevDisabled) return;
       controllerFor(getElement().ref)?.prev();
     },
     goTo(): void {

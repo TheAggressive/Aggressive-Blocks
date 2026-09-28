@@ -369,14 +369,16 @@ test.describe('Horizontal Scroll — front end', () => {
 
     await expect(next).toHaveCSS('opacity', '0');
 
-    // Tabbing in lands on the first enabled control (Next on slide 1).
+    // Tabbing in lands on Prev. It is disabled on slide 1 but stays a tab
+    // stop (aria-disabled), so the controls never drop out from under focus.
     expect(await tabIntoGallery(page, section)).toContain(
-      'aa-hscroll__control--next'
+      'aa-hscroll__control--prev'
     );
     await expect(section).toHaveAttribute('data-aa-hscroll-keyboard', '');
+    await expect(prev).toBeDisabled();
+    await page.keyboard.press('Tab');
     await expect(next).toBeFocused();
     await expect(next).toHaveCSS('opacity', '1');
-    await expect(prev).toBeDisabled();
     await expect(next).toBeEnabled();
 
     await next.click();
@@ -394,9 +396,21 @@ test.describe('Horizontal Scroll — front end', () => {
     await page.keyboard.press('Shift+Tab');
     await expect(prev).toBeFocused();
 
-    await next.click();
+    // Pressing Next onto the last slide disables it without dropping focus
+    // to the page; pressing it again does nothing.
+    await next.focus();
+    await page.keyboard.press('Enter');
     await expect(live).toHaveText(/Slide 3 of 3/, { timeout: 3000 });
     await expect(next).toBeDisabled();
+    await expect(next).toBeFocused();
+    await expect(section).toHaveAttribute(
+      'data-aa-hscroll-step-state',
+      'ready'
+    );
+    const settledY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press('Enter');
+    await expect(next).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(settledY);
 
     await prev.click();
     await expect(live).toHaveText(/Slide 2 of 3/, { timeout: 3000 });

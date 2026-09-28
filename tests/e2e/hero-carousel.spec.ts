@@ -134,4 +134,42 @@ test.describe('Hero Carousel — front end', () => {
     await expect(target).toHaveClass(/\bis-active\b/);
     await expect(region).not.toHaveClass(/\bis-playing\b/);
   });
+
+  test('keeps focus on an arrow that reaches the end of a non-looping run', async ({
+    page,
+  }) => {
+    const { id, url } = await publishCarousel(page, {
+      autoplay: false,
+      loop: false,
+      transition: 'fade',
+    });
+    pageId = id;
+    await page.goto(url);
+
+    const region = page
+      .locator('[data-wp-interactive="aggressive-blocks/hero-carousel"]')
+      .first();
+    const slides = region.locator('.aa-hero__slide');
+    const prev = region.locator('.aa-hero__arrow--prev');
+    const next = region.locator('.aa-hero__arrow--next');
+
+    // Disabled on the first slide, but still reachable by keyboard.
+    await expect(prev).toBeDisabled();
+    await next.focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(prev).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await expect(slides.nth(1)).toHaveClass(/\bis-active\b/);
+    await page.keyboard.press('Enter');
+    await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
+    await expect(next).toBeDisabled();
+    await expect(next).toBeFocused();
+
+    // A press on the disabled arrow does nothing.
+    await page.keyboard.press('Enter');
+    await expect(slides.nth(2)).toHaveClass(/\bis-active\b/);
+    await expect(next).toBeFocused();
+  });
 });
