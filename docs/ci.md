@@ -40,8 +40,9 @@ On production-code changes the pipeline runs these lanes:
 7. Allowlist ZIP (`pnpm ci:package`)
 8. Artifact acceptance: install that ZIP and re-run E2E (`pnpm ci:artifact`)
 9. WordPress floor: install that ZIP on the declared minimum WordPress and PHP (`pnpm ci:floor`)
+10. Visual regression: screenshot canonical block states from that ZIP (`pnpm ci:visual`)
 
-Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance and the WordPress floor follow packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
+Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance, the WordPress floor and visual regression follow packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
 
 The two browser lanes are split into two parallel shards (`AA_E2E_SHARD=1/2`, `2/2`). Each shard starts its own WordPress and runs one worker, so tests never share site state. Playwright keeps each spec file in one shard. Run locally without `AA_E2E_SHARD`, a lane runs the whole suite.
 
@@ -110,7 +111,7 @@ The floor and visual lanes run WordPress natively (`bin/ci/lib/native-wp.sh`), w
 
 A screenshot only means something if the environment that made its baseline is the one that checks it. So `pnpm ci:visual` (`bin/ci/visual.sh`) never runs in the Studio or wp-env lanes. It installs the release ZIP on the primary CI WordPress with Twenty Twenty-Five, natively, and captures in Playwright's Chromium with fixed viewports, reduced motion, finished animations, loaded web fonts, and fixed content with no images. The comparison uses Playwright's default per-pixel tolerance and allows no differing pixels. Three fresh runs matched their baselines exactly, and a one-rule CSS change failed only the screenshot it touched.
 
-`.github/workflows/visual-regression.yml` runs it on pull requests that touch `src/` or the suite, and on `main`. It is not a merge gate yet: the baselines were made on Ubuntu 24.04 outside Actions. Once it is green on the runners, move the job into `ci.yml` under the CI Summary. If the runners render differently, dispatch the workflow with `update`, then review and commit the images it uploads.
+It is a required lane in `ci.yml`, under the CI Summary. Baselines made locally on Ubuntu 24.04 have matched the runners exactly. If they ever stop matching, dispatch `.github/workflows/update-visual-baselines.yml` to regenerate them on a runner, then review and commit the images it uploads.
 
 When a change is meant to look different, run `AB_VISUAL_UPDATE=1 pnpm ci:visual`, look at every rewritten image, and commit them with the change.
 
@@ -149,7 +150,6 @@ Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to reb
 | Workflow | Cadence | Blocks merge? |
 | --- | --- | --- |
 | WordPress Beta/RC | Wednesdays | No |
-| Visual regression | Pull requests touching `src/` or the suite, and `main` | Not yet (see above) |
 | PHP 8.3 / 8.4 forward | Mondays | No |
 | CodeQL baseline | Mondays | Alerts via code scanning |
 | Workflow security | Mondays | Same Actionlint/Zizmor checks |

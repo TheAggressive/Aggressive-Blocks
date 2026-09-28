@@ -20,6 +20,7 @@ const successfulPullRequest = {
   PACKAGE_RESULT: 'success',
   ARTIFACT_ACCEPTANCE_RESULT: 'success',
   WP_FLOOR_RESULT: 'success',
+  VISUAL_RESULT: 'success',
   RELEASE_RESULT: 'skipped',
   VERSION_SYNC_RESULT: 'skipped',
   DOCS_ONLY: 'false',
@@ -61,6 +62,18 @@ describe('release summary gate', () => {
     ]);
   });
 
+  it('fails when the screenshots do not match their baselines', () => {
+    const result = evaluateReleaseSummary({
+      ...successfulPullRequest,
+      VISUAL_RESULT: 'failure',
+    });
+
+    assert.equal(result.failed, true);
+    assert.deepEqual(result.errors, [
+      'Required visual regression job concluded failure',
+    ]);
+  });
+
   it('requires every artifact and publish stage for a main release', () => {
     const result = evaluateReleaseSummary({
       ...successfulPullRequest,
@@ -74,6 +87,7 @@ describe('release summary gate', () => {
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
       WP_FLOOR_RESULT: 'success',
+      VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'success',
     });
@@ -100,6 +114,7 @@ describe('release summary gate', () => {
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
       WP_FLOOR_RESULT: 'success',
+      VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'skipped',
       VERSION_SYNC_RESULT: 'success',
     });
@@ -211,6 +226,7 @@ describe('release summary gate', () => {
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
       WP_FLOOR_RESULT: 'success',
+      VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'skipped',
     });
@@ -263,6 +279,7 @@ describe('release summary gate', () => {
       PACKAGE_RESULT: 'success',
       ARTIFACT_ACCEPTANCE_RESULT: 'success',
       WP_FLOOR_RESULT: 'success',
+      VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'failure',
     });
 
