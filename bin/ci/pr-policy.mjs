@@ -234,6 +234,18 @@ export function areaLabels(files) {
   return [...labels].sort();
 }
 
+/**
+ * The ecosystem as dependabot.yml and this policy name it.
+ * dependabot/fetch-metadata reports GitHub Actions as `github_actions`, but
+ * the configuration key (and every check here) is `github-actions`.
+ *
+ * @param {string} ecosystem fetch-metadata `package-ecosystem` output.
+ * @return {string} The configured ecosystem name.
+ */
+export function dependabotEcosystem(ecosystem) {
+  return ecosystem === 'github_actions' ? 'github-actions' : ecosystem;
+}
+
 /** @param {string[]} files @param {string} ecosystem */
 export function isExpectedDependencyDiff(files, ecosystem) {
   const allowed = DEPENDENCY_PATHS[ecosystem];

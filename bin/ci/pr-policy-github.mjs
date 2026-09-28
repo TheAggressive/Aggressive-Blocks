@@ -10,6 +10,7 @@ import {
   MANAGED_LABELS,
   classifyPullRequest,
   decideAutomation,
+  dependabotEcosystem,
   isExpectedDependencyDiff,
   isValidTitle,
   trustedDependabotMetadata,
@@ -297,7 +298,7 @@ function classifyCommand() {
     ? (process.env.DEPENDABOT_UPDATE_TYPE ?? '')
     : '';
   const ecosystem = metadataSucceeded
-    ? (process.env.DEPENDABOT_ECOSYSTEM ?? '')
+    ? dependabotEcosystem(process.env.DEPENDABOT_ECOSYSTEM ?? '')
     : '';
   const classification = classifyPullRequest({
     title: pr.title,
