@@ -34,7 +34,7 @@ On production-code changes the pipeline runs these lanes:
 1. Change classification (`bin/ci/classify-changes.mjs`)
 2. Frontend lane (`pnpm ci:frontend`)
 3. i18n lane (`pnpm ci:i18n`): builds first, because script strings are extracted from `build/` so `make-json` catalogs match the enqueued files
-4. Canonical production build (`pnpm ci:build`)
+4. Canonical production build (`pnpm ci:build`), then the frontend asset budgets
 5. PHP lane (`pnpm ci:php`) against the same build artifact
 6. Playwright E2E against WordPress + this plugin + Twenty Twenty-Five
 7. Allowlist ZIP (`pnpm ci:package`)
@@ -75,6 +75,19 @@ Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-pu
 `bin/ci/.wp-env.json` maps only this plugin. E2E activates Twenty Twenty-Five. Aggressive Apparel and WooCommerce are not installed.
 
 Artifact acceptance installs the generated ZIP into a second wp-env that does **not** map plugin source. A green artifact lane means the packaged plugin works without the source checkout or the source theme.
+
+## Frontend assets
+
+`pnpm ci:build` ends with `bin/check-bundle-size.mjs`. Every script module and stylesheet a visitor can download (block view modules, block stylesheets and their RTL copies, the shared `@aggressive-blocks/*` modules, the debug chunks, the debug overlay stylesheet) has a gzip budget in `bin/bundle-budgets.json`. Each budget is the size measured when it was set plus about 15%: room for ordinary changes, but not for a new dependency. The check fails when:
+
+* a file grows past its budget;
+* the build emits a frontend asset with no budget, so a new block has to add one;
+* a budgeted file disappears, so a renamed output cannot escape its budget;
+* a view module imports anything but `@wordpress/interactivity` and the plugin's own modules.
+
+Raise a budget only for a deliberate change, and say why in the commit.
+
+Block assets load through `block.json` and WordPress's on-demand block asset loading; the plugin has no loader of its own. `tests/e2e/asset-loading.spec.ts` checks this as an anonymous visitor. A page of core blocks requests, links, inlines, and import-maps nothing from the plugin, and a page with one Modal loads only the Modal's stylesheet and view module.
 
 ## WordPress floor
 
