@@ -5,8 +5,8 @@
  * budget in bin/bundle-budgets.json, and stay within it. An asset with no
  * budget fails (a new block cannot skip one), and so does a budgeted file the
  * build no longer emits (a rename cannot slip past). View modules may import
- * only the Interactivity API and the plugin's own modules: pulling in React or
- * another @wordpress package costs far more than any byte budget allows.
+ * only the Interactivity API: pulling in React or another @wordpress package
+ * costs far more than any byte budget allows.
  *
  * Usage: node bin/check-bundle-size.mjs [repository root]
  */

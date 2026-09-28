@@ -48,28 +48,4 @@ class Asset_Loading_Test extends TestCase {
 
 		$this->assertSame( array(), $hits, 'Block CSS/JS must load from block.json, not a global enqueue.' );
 	}
-
-	/**
-	 * Shared modules remain single registered files, not copied per block.
-	 *
-	 * @return void
-	 */
-	public function test_shared_script_modules_register_from_build(): void {
-		$this->assertTrue(
-			\Aggressive_Blocks\Assets\Asset_Loader::register_interactivity_module(
-				'@aggressive-blocks/helpers',
-				'build/interactivity/helpers',
-				array(),
-				false
-			)
-		);
-		$this->assertTrue(
-			\Aggressive_Blocks\Assets\Asset_Loader::register_interactivity_module(
-				'@aggressive-blocks/scroll-lock',
-				'build/interactivity/scroll-lock',
-				array(),
-				false
-			)
-		);
-	}
 }

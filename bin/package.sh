@@ -36,8 +36,6 @@ required=(
 	build/blocks-interactivity/ticker/render.php
 	build/styles/debug-overlays.css
 	build/icons/manifest.php
-	build/interactivity/helpers.js
-	build/interactivity/scroll-lock.js
 	build/blocks-manifest.php
 	aggressive-blocks.php
 )
