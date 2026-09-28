@@ -644,6 +644,80 @@ jobs:
           HUSKY: '0'
         run: node bin/release/publish.mjs
 
+  # Release stamps the version into the ZIP only. This writes it back to the
+  # tracked plugin files through a pull request, so main always declares the
+  # version that shipped. It runs after the release is published and cannot
+  # corrupt it, but it fails the run loudly instead of dropping the sync.
+  version-sync:
+    name: 🔖 Sync Plugin Version
+    runs-on: ubuntu-24.04
+    needs: [release-plan, release]
+    if: success()
+    timeout-minutes: 10
+    # The App token below performs the write; the workflow token only reads.
+    permissions:
+      contents: read
+
+    steps:
+      # A pull request opened with GITHUB_TOKEN gets no CI run, and this one
+      # must pass the same required checks as any change to main.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.AA_CI_CLIENT_ID }}
+          private-key: ${{ secrets.AA_CI_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Stamp the released version into the plugin files
+        env:
+          AA_RELEASE_VERSION: ${{ needs.release-plan.outputs.next_version }}
+        run: bash bin/release/sync-version.sh
+
+      - name: Open version sync pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          sign-commits: true
+          add-paths: |
+            aggressive-blocks.php
+            readme.txt
+          branch: chore/version-sync
+          delete-branch: true
+          # chore(release): syncing the version must never itself plan a
+          # release when it merges.
+          commit-message: 'chore(release): sync the plugin version to ${{ needs.release-plan.outputs.next_version }}'
+          title: 'chore(release): sync the plugin version to ${{ needs.release-plan.outputs.next_version }}'
+          body: |
+            Automated follow-up to **v${{ needs.release-plan.outputs.next_version }}**.
+
+            `bin/release/package.sh` stamps the version into the release ZIP and leaves the checkout alone. This writes the same version into the tracked plugin header, the `AGGRESSIVE_BLOCKS_VERSION` constant, and the readme's Stable tag, so `main` declares the release that shipped.
+
+            Reproduce with `bash bin/release/sync-version.sh ${{ needs.release-plan.outputs.next_version }}`.
+
+      # The content is machine-written from the tag this run published, so it
+      # merges itself once every required check passes. Protection is unchanged.
+      - name: Let it merge once its checks pass
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          number="$(gh pr list --head chore/version-sync --state open \
+            --json number --jq '.[0].number // empty')"
+
+          if [[ -z "${number}" ]]; then
+            echo "No sync pull request was opened, so there is nothing to merge."
+            exit 0
+          fi
+
+          gh pr merge "${number}" --auto --squash --delete-branch
+          echo "Version sync #${number} will merge when its checks pass."
+
   summary:
     name: CI Summary
     runs-on: ubuntu-24.04
@@ -662,6 +736,7 @@ jobs:
       - wp-floor
       - visual
       - release
+      - version-sync
     timeout-minutes: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -688,7 +763,7 @@ jobs:
           WP_FLOOR_RESULT: ${{ needs.wp-floor.result }}
           VISUAL_RESULT: ${{ needs.visual.result }}
           RELEASE_RESULT: ${{ needs.release.result }}
-          VERSION_SYNC_RESULT: skipped
+          VERSION_SYNC_RESULT: ${{ needs.version-sync.result }}
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
           VERSION_SYNC: ${{ needs.changes.outputs.version_sync }}
           PUBLISH_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || false }}

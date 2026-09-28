@@ -19,6 +19,7 @@ import {
   phpcsConfiguration,
   phpunitConfiguration,
   playwrightConfiguration,
+  readText,
   releaseWorkflow,
   repositoryRoot,
 } from '../lib/contract-inputs.mjs';
@@ -34,6 +35,43 @@ check(
   ),
   'test:tools must run bin/release/verify-package.test.mjs.'
 );
+
+// The version and floors the plugin declares must agree everywhere they are
+// declared. This is the check a machine version-sync pull request relies on:
+// that pull request skips the build, PHP, and browser lanes.
+const pluginFile = readText('aggressive-blocks.php');
+const readmeFile = readText('readme.txt');
+const declared = (text, pattern) => text.match(pattern)?.[1] ?? '(missing)';
+const headerField = name =>
+  declared(pluginFile, new RegExp(`^ \\* ${name}:\\s*(\\S+)`, 'mu'));
+const readmeField = name =>
+  declared(readmeFile, new RegExp(`^${name}:\\s*(\\S+)`, 'mu'));
+
+const pluginVersion = headerField('Version');
+for (const [source, value] of [
+  [
+    'AGGRESSIVE_BLOCKS_VERSION',
+    declared(
+      pluginFile,
+      /^define\( 'AGGRESSIVE_BLOCKS_VERSION', '([^']*)' \);$/mu
+    ),
+  ],
+  ['readme.txt Stable tag', readmeField('Stable tag')],
+]) {
+  check(
+    value === pluginVersion,
+    `${source} is ${value} but the plugin header declares ${pluginVersion}. ` +
+      'Run bin/release/sync-version.sh with the released version.'
+  );
+}
+
+for (const field of ['Requires at least', 'Requires PHP']) {
+  check(
+    headerField(field) === readmeField(field),
+    `readme.txt ${field} (${readmeField(field)}) must match the plugin ` +
+      `header (${headerField(field)}).`
+  );
+}
 
 const PINNED_TOOLCHAIN = [
   ['package.json packageManager', packageJson.packageManager, 'pnpm@11.21.0'],

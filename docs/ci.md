@@ -143,6 +143,10 @@ Merging to `main` does not publish. A release is an explicit `workflow_dispatch`
 
 The release tags the commit the run tested, attests the ZIP, and publishes the conventional-commit notes that release planning generated (Features, Bug Fixes, and any breaking changes).
 
+The plugin declares its version in three places: the plugin header (what WordPress reads), the `AGGRESSIVE_BLOCKS_VERSION` constant (what the code reads), and the readme's `Stable tag`. Packaging stamps the release version into all three in the ZIP (`aa_stamp_version` in `bin/release/lib.sh`), and package verification fails unless they agree with each other and with the release.
+
+The checkout keeps the version of the last release. After publishing, the `version-sync` job runs `bin/release/sync-version.sh` and opens a signed `chore(release): sync the plugin version to X` pull request from the `aggressive-ci` App. That PR merges itself once its required checks pass. A `chore` commit never plans a release. The PR policy recognizes only that exact shape (branch, bot, title, and the two files). The sync PR skips the build, PHP, and browser lanes, so the CI contracts check that the header, constant, Stable tag, and the header and readme floors all agree. The release fails its CI Summary if the sync job does not succeed.
+
 Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to rebuild. It rebuilds from the tag, re-runs package verification and artifact acceptance, refuses to replace a published asset with different bytes, then re-attaches the ZIP.
 
 ## Scheduled informational workflows

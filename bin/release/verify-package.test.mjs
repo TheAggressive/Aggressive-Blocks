@@ -47,7 +47,19 @@ const PLUGIN_HEADER = `<?php
  * Text Domain:       aggressive-blocks
  * @package Aggressive_Blocks
  */
+
+define( 'AGGRESSIVE_BLOCKS_VERSION', '${FIXTURE_VERSION}' );
 `;
+
+const README = `=== Aggressive Blocks ===
+Requires at least: 7.0
+Stable tag: ${FIXTURE_VERSION}
+`;
+
+const FIXTURE_FILES = {
+  'aggressive-blocks.php': PLUGIN_HEADER,
+  'readme.txt': README,
+};
 
 const workspaces = [];
 
@@ -68,11 +80,7 @@ function buildPackage(mutate = () => {}) {
   workspaces.push(root);
 
   for (const required of REQUIRED) {
-    write(
-      root,
-      required,
-      required === 'aggressive-blocks.php' ? PLUGIN_HEADER : `${required}\n`
-    );
+    write(root, required, FIXTURE_FILES[required] ?? `${required}\n`);
   }
 
   mutate(root);
@@ -147,4 +155,42 @@ test('rejects a package whose text domain drifted', () => {
 
   assert.equal(status, 1);
   assert.match(output, /text domain is not aggressive-blocks/u);
+});
+
+test('rejects a package whose version constant disagrees with its header', () => {
+  const zipPath = buildPackage(root => {
+    write(
+      root,
+      'aggressive-blocks.php',
+      PLUGIN_HEADER.replace(
+        `'AGGRESSIVE_BLOCKS_VERSION', '${FIXTURE_VERSION}'`,
+        "'AGGRESSIVE_BLOCKS_VERSION', '1.0.0'"
+      )
+    );
+  });
+
+  const { status, output } = verify(zipPath);
+
+  assert.equal(status, 1);
+  assert.match(
+    output,
+    /AGGRESSIVE_BLOCKS_VERSION 1\.0\.0 does not match 9\.9\.9/u
+  );
+});
+
+test('rejects a package whose readme Stable tag names another release', () => {
+  const zipPath = buildPackage(root => {
+    write(root, 'readme.txt', README.replace(FIXTURE_VERSION, '1.0.0'));
+  });
+
+  // Also without an expected version: the three declarations must agree.
+  for (const expected of [FIXTURE_VERSION, '']) {
+    const { status, output } = verify(zipPath, expected);
+
+    assert.equal(status, 1);
+    assert.match(
+      output,
+      /readme\.txt Stable tag 1\.0\.0 does not match 9\.9\.9/u
+    );
+  }
 });
