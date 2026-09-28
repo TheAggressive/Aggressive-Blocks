@@ -5,6 +5,7 @@ import {
   REQUIRED_CHECKS,
   classifyPullRequest,
   decideAutomation,
+  dependabotEcosystem,
   evaluateChecks,
   isValidTitle,
   trustedDependabotMetadata,
@@ -149,6 +150,18 @@ describe('classification', () => {
       dependabotEcosystem: 'github-actions',
     });
     assert.equal(result.risk, 'low');
+    assert.equal(result.automationKind, 'dependabot');
+  });
+
+  it('accepts the github_actions ecosystem name fetch-metadata reports', () => {
+    assert.equal(dependabotEcosystem('github_actions'), 'github-actions');
+    assert.equal(dependabotEcosystem('npm'), 'npm');
+    assert.equal(dependabotEcosystem('composer'), 'composer');
+
+    const result = dependabot({
+      files: ['.github/workflows/codeql.yml'],
+      dependabotEcosystem: dependabotEcosystem('github_actions'),
+    });
     assert.equal(result.automationKind, 'dependabot');
   });
 
