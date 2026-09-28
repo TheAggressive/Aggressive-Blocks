@@ -21,7 +21,6 @@ class Plugin {
 	 */
 	public static function init(): void {
 		add_action( 'init', array( self::class, 'load_textdomain' ), 0 );
-		add_action( 'init', array( self::class, 'register_shared_modules' ), 5 );
 
 		Core\Block_Categories::init();
 		Core\Brand_Icons::init();
@@ -44,26 +43,6 @@ class Plugin {
 			'aggressive-blocks',
 			false,
 			dirname( plugin_basename( AGGRESSIVE_BLOCKS_FILE ) ) . '/languages'
-		);
-	}
-
-	/**
-	 * Register shared script modules used by interactivity blocks.
-	 *
-	 * @return void
-	 */
-	public static function register_shared_modules(): void {
-		Assets\Asset_Loader::register_interactivity_module(
-			'@aggressive-blocks/helpers',
-			'build/interactivity/helpers',
-			array(),
-			false
-		);
-		Assets\Asset_Loader::register_interactivity_module(
-			'@aggressive-blocks/scroll-lock',
-			'build/interactivity/scroll-lock',
-			array(),
-			false
 		);
 	}
 }

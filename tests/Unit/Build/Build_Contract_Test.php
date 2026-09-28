@@ -39,10 +39,6 @@ class Build_Contract_Test extends TestCase {
 			'ticker json'         => array( 'build/blocks-interactivity/ticker/block.json' ),
 			'debug css'           => array( 'build/styles/debug-overlays.css' ),
 			'icons'               => array( 'build/icons/manifest.php' ),
-			'helpers module'      => array( 'build/interactivity/helpers.js' ),
-			'scroll lock module'  => array( 'build/interactivity/scroll-lock.js' ),
-			'helpers asset'       => array( 'build/interactivity/helpers.asset.php' ),
-			'scroll lock asset'   => array( 'build/interactivity/scroll-lock.asset.php' ),
 		);
 	}
 

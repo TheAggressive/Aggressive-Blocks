@@ -54,10 +54,6 @@ AA_PACKAGE_REQUIRED=(
 	'build/blocks-interactivity/ticker/render.php'
 	'build/styles/debug-overlays.css'
 	'build/icons/manifest.php'
-	'build/interactivity/helpers.js'
-	'build/interactivity/scroll-lock.js'
-	'build/interactivity/helpers.asset.php'
-	'build/interactivity/scroll-lock.asset.php'
 	'languages/aggressive-blocks.pot'
 )
 
@@ -86,8 +82,6 @@ AA_PACKAGE_FORBIDDEN=(
 	'phpcs.xml.dist'
 	'phpstan.neon'
 	'playwright.config.ts'
-	'webpack.config.mjs'
-	'webpack.modules.config.mjs'
 )
 
 aa_plugin_header_version() {

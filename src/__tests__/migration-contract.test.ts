@@ -74,7 +74,5 @@ describe('migrated block metadata', () => {
       'utf8'
     );
     expect(modal).toContain('showModal()');
-    expect(modal).not.toContain("from '@aggressive-blocks/scroll-lock'");
-    expect(modal).not.toContain("from '@aggressive-blocks/helpers'");
   });
 });
