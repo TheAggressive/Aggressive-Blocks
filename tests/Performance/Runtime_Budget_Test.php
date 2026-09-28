@@ -17,13 +17,25 @@ use PHPUnit\Framework\TestCase;
 class Runtime_Budget_Test extends TestCase {
 
 	/**
-	 * Production PHP must not call wp_remote_* at runtime.
+	 * Remote HTTP happens in exactly two places, both in the updater: its
+	 * bounded client and its package download. Nothing a visitor's request
+	 * runs makes a remote call.
 	 *
 	 * @return void
 	 */
-	public function test_no_runtime_remote_http(): void {
-		$hits = $this->search( '/wp_remote_(get|post|request)\s*\(/' );
-		$this->assertSame( array(), $hits, 'Uncached frontend HTTP is not allowed in this block plugin.' );
+	public function test_remote_http_only_in_the_updater(): void {
+		$hits = $this->search( '/\b(?:wp_(?:safe_)?remote_(?:get|post|head|request)|vip_safe_wp_remote_get|download_url|curl_init|fsockopen|stream_socket_client)\s*\(/' );
+		$root = dirname( __DIR__, 2 ) . '/includes/';
+		sort( $hits );
+
+		$this->assertSame(
+			array(
+				$root . 'Update/class-package-verifier.php',
+				$root . 'Update/class-update-http-client.php',
+			),
+			$hits,
+			'Remote HTTP belongs only in the GitHub updater (see docs/updates.md).'
+		);
 	}
 
 	/**

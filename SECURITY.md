@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-Security fixes land in the latest release. Update to the newest `1.x` release to receive them; older releases are not patched.
+Security fixes land in the latest release; older releases are not patched. From 2.1, sites receive new releases through WordPress's own plugin updates (see [docs/updates.md](docs/updates.md)).
 
 | Version | Supported |
 | --- | --- |
-| Latest `1.x` release | Yes |
+| Latest release | Yes |
 | Anything older | No |
 
 ## Reporting a vulnerability

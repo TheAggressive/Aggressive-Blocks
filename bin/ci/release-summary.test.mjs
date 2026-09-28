@@ -23,6 +23,7 @@ const successfulPullRequest = {
   VISUAL_RESULT: 'success',
   RELEASE_RESULT: 'skipped',
   VERSION_SYNC_RESULT: 'skipped',
+  UPDATE_SMOKE_RESULT: 'skipped',
   DOCS_ONLY: 'false',
   VERSION_SYNC: 'false',
   PUBLISH_REQUESTED: 'false',
@@ -90,6 +91,7 @@ describe('release summary gate', () => {
       VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'success',
+      UPDATE_SMOKE_RESULT: 'success',
     });
 
     assert.equal(result.failed, false);
@@ -117,11 +119,37 @@ describe('release summary gate', () => {
       VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'failure',
+      UPDATE_SMOKE_RESULT: 'success',
     });
 
     assert.equal(result.failed, true);
     assert.deepEqual(result.errors, [
       'Required version sync job concluded failure',
+    ]);
+  });
+
+  it('fails a release that its old installs cannot update to', () => {
+    const result = evaluateReleaseSummary({
+      ...successfulPullRequest,
+      EVENT_NAME: 'workflow_dispatch',
+      EVENT_REF: 'refs/heads/main',
+      PUBLISH_REQUESTED: 'true',
+      SHOULD_RELEASE: 'true',
+      NEXT_VERSION: '2.4.0',
+      RELEASE_PLAN_RESULT: 'success',
+      DEPENDENCY_REVIEW_RESULT: 'skipped',
+      PACKAGE_RESULT: 'success',
+      ARTIFACT_ACCEPTANCE_RESULT: 'success',
+      WP_FLOOR_RESULT: 'success',
+      VISUAL_RESULT: 'success',
+      RELEASE_RESULT: 'success',
+      VERSION_SYNC_RESULT: 'success',
+      UPDATE_SMOKE_RESULT: 'failure',
+    });
+
+    assert.equal(result.failed, true);
+    assert.deepEqual(result.errors, [
+      'Required update smoke job concluded failure',
     ]);
   });
 
@@ -141,6 +169,7 @@ describe('release summary gate', () => {
       VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'skipped',
       VERSION_SYNC_RESULT: 'success',
+      UPDATE_SMOKE_RESULT: 'success',
     });
 
     assert.equal(result.failed, true);
@@ -253,6 +282,7 @@ describe('release summary gate', () => {
       VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'success',
       VERSION_SYNC_RESULT: 'skipped',
+      UPDATE_SMOKE_RESULT: 'success',
     });
 
     assert.equal(result.failed, true);
@@ -310,12 +340,14 @@ describe('release summary gate', () => {
       RELEASE_RESULT: 'failure',
       // The sync needs the release, so it never runs.
       VERSION_SYNC_RESULT: 'skipped',
+      UPDATE_SMOKE_RESULT: 'skipped',
     });
 
     assert.equal(result.failed, true);
     assert.deepEqual(result.errors, [
       'Required release job concluded failure',
       'Required version sync job concluded skipped',
+      'Required update smoke job concluded skipped',
     ]);
   });
 });

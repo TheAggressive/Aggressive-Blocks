@@ -91,6 +91,9 @@ export function evaluateReleaseSummary(environment) {
     versionSync: environment.VERSION_SYNC_RESULT
       ? jobResult(environment, 'VERSION_SYNC_RESULT')
       : 'skipped',
+    updateSmoke: environment.UPDATE_SMOKE_RESULT
+      ? jobResult(environment, 'UPDATE_SMOKE_RESULT')
+      : 'skipped',
   };
 
   if (results.changes === 'success' && codeChangedOutput.length === 0) {
@@ -152,7 +155,8 @@ export function evaluateReleaseSummary(environment) {
       `| WordPress floor | ${results.wpFloor} |`,
       `| Visual regression | ${results.visual} |`,
       `| Release (publish + assets + provenance) | ${results.release} |`,
-      `| Version sync | ${results.versionSync} |`
+      `| Version sync | ${results.versionSync} |`,
+      `| Update smoke | ${results.updateSmoke} |`
     );
   } else {
     lines.push(
@@ -213,6 +217,7 @@ export function evaluateReleaseSummary(environment) {
     if (shouldRelease) {
       requireSuccess('release', results.release);
       requireSuccess('version sync', results.versionSync);
+      requireSuccess('update smoke', results.updateSmoke);
     }
   }
 

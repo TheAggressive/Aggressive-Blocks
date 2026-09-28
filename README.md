@@ -39,6 +39,10 @@ wp aggressive-blocks migrate-blocks
 
 The command rewrites posts and block widgets. It renames only the blocks this plugin owns, leaves every other byte as saved, and is safe to rerun. [docs/migration.md](docs/migration.md) states the contract and how it is tested.
 
+## Updates
+
+The plugin updates from this repository's GitHub releases through WordPress's own plugin updates, with every package checked against its release's SHA-256 checksum. It stays off on git checkouts, `local`/`development` environments, and sites with `DISALLOW_FILE_MODS`. See [docs/updates.md](docs/updates.md).
+
 ## Build
 
 ```bash

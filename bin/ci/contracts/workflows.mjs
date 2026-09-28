@@ -83,6 +83,7 @@ const EXPECTED_RELEASE_JOBS = [
   'visual',
   'release',
   'version-sync',
+  'update-smoke',
   'summary',
 ];
 
