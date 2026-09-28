@@ -145,7 +145,6 @@
     "ci:package": "pnpm ci:doctor && bash bin/ci/package.sh",
     "ci:artifact": "pnpm ci:doctor && bash bin/ci/artifact.sh",
     "ci:floor": "pnpm ci:doctor && bash bin/ci/wp-floor.sh",
-    "ci:integration": "pnpm ci:doctor && bash bin/ci/integration.sh",
     "ci:visual": "pnpm ci:doctor && bash bin/ci/visual.sh",
     "ci:browser:install": "playwright install chromium webkit",
     "ci:e2e": "pnpm ci:doctor && bash bin/ci/e2e.sh",

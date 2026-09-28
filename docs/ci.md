@@ -62,7 +62,6 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
 | Declared WordPress/PHP floor | `pnpm ci:floor` |
-| Aggressive Apparel with the ZIP | `AB_THEME_DIR=<built theme checkout> pnpm ci:integration` |
 | Screenshot regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
@@ -103,6 +102,8 @@ It reads both values from the header, so there is no second pin to drift. It ins
 
 Raising the floor means changing the header (and `readme.txt`); the lane then tests the new branch. Lowering it only works if this lane passes there.
 
+The floor and visual lanes run WordPress natively (`bin/ci/lib/native-wp.sh`), with PHP's built-in server instead of wp-env, so they also run without Docker. In Actions the database is a MySQL service; locally it is the disposable MySQL that `bin/phpunit.sh` starts from the theme checkout.
+
 ## Visual regression
 
 `tests/visual` holds one screenshot per canonical state: Hero Carousel, Ticker, Card Flip front and back, Split Story, Horizontal Scroll at its first slide, and an open Modal. Hero, Split Story, Horizontal Scroll and the Modal also run at a phone viewport, where their layout changes. Animate On Scroll and Parallax are left out: at rest, and under reduced motion, they are plain content, and their behavior is already covered by E2E.
@@ -112,22 +113,6 @@ A screenshot only means something if the environment that made its baseline is t
 `.github/workflows/visual-regression.yml` runs it on pull requests that touch `src/` or the suite, and on `main`. It is not a merge gate yet: the baselines were made on Ubuntu 24.04 outside Actions. Once it is green on the runners, move the job into `ci.yml` under the CI Summary. If the runners render differently, dispatch the workflow with `update`, then review and commit the images it uploads.
 
 When a change is meant to look different, run `AB_VISUAL_UPDATE=1 pnpm ci:visual`, look at every rewritten image, and commit them with the change.
-
-## Aggressive Apparel integration
-
-The independent-site proof shows the plugin needs nothing from the theme. `.github/workflows/aggressive-apparel-integration.yml` checks the other direction: Aggressive Apparel still works with the packaged plugin.
-
-`pnpm ci:integration` (`bin/ci/integration.sh`) takes the ZIP that `pnpm ci:package` builds and a built checkout of the theme's repository (`AB_THEME_DIR`, default `.cache/ci/aggressive-apparel`). It installs WordPress at the primary CI version, then the ZIP, then the WooCommerce release the theme pins in its own `bin/ci/.wp-env.json`, and activates the theme. `tests/integration/` then reads the theme's templates, template parts, and patterns from the running site:
-
-* Every plugin block they use is registered, none uses a removed `aggressive-apparel/*` name, and each one loads valid in the block editor.
-* The header and footer parts, the single-product template, and every theme pattern that uses a plugin block render those blocks on the front end, with no script errors. Horizontal Scroll, Animate On Scroll, and Ticker also show that their view scripts ran.
-* PHP logs no error, warning, notice, or deprecation from the plugin or the theme.
-
-Coverage follows the theme: a block the theme starts using is checked on the next run without editing the suite.
-
-The lane runs WordPress natively with PHP's built-in server, the way the theme's own CI does, so it needs no Docker. In Actions the database is a MySQL service; locally it is the disposable MySQL that `bin/phpunit.sh` starts from the theme checkout. `bin/ci/lib/native-wp.sh` holds the setup it shares with the WordPress floor lane.
-
-It is not a merge gate. It depends on the theme's default branch and on WordPress.org downloads, and it builds the theme from source, so a theme change can turn it red with no change here. It runs weekly, on manual dispatch (any theme ref), and on pull requests that change the lane itself.
 
 ## WordPress VIP standards that CI enforces
 
@@ -164,7 +149,6 @@ Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to reb
 | Workflow | Cadence | Blocks merge? |
 | --- | --- | --- |
 | WordPress Beta/RC | Wednesdays | No |
-| Aggressive Apparel integration | Thursdays | No |
 | Visual regression | Pull requests touching `src/` or the suite, and `main` | Not yet (see above) |
 | PHP 8.3 / 8.4 forward | Mondays | No |
 | CodeQL baseline | Mondays | Alerts via code scanning |

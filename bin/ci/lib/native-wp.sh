@@ -1,9 +1,9 @@
 # shellcheck shell=bash
 #
 # A disposable WordPress, served by PHP's built-in server, that installs the
-# packaged plugin ZIP. Lanes that need a WordPress other than the wp-env pin
-# (the declared floor) or another repository's theme (Aggressive Apparel) use
-# it. It needs no Docker, so the same lane runs in Actions and locally.
+# packaged plugin ZIP. The lanes that need an environment the wp-env pin does
+# not give them (the declared floor, screenshot baselines) use it. It needs no
+# Docker, so the same lane runs in Actions and locally.
 #
 # Database: AB_WP_DB_HOST/USER/PASSWORD name a server the caller provides (the
 # Actions MySQL service). Without them, the lane uses the disposable local
