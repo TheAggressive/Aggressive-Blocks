@@ -176,4 +176,39 @@ test.describe('Hero Carousel — front end', () => {
       await expect(next).toBeFocused();
     }
   );
+
+  test('keeps slide copy out from under the edge arrows on a phone', async ({
+    page,
+  }) => {
+    const { id, url } = await publishCarousel(page, {
+      autoplay: false,
+      transition: 'fade',
+    });
+    pageId = id;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(url);
+
+    const region = page
+      .locator('[data-wp-interactive="aggressive-blocks/hero-carousel"]')
+      .first();
+    const copy = region
+      .locator('.aa-hero__slide.is-active .wp-block-cover__inner-container > *')
+      .first();
+    await expect(copy).toBeVisible();
+
+    const text = await copy.boundingBox();
+    for (const arrow of ['prev', 'next']) {
+      const box = await region
+        .locator(`.aa-hero__arrow--${arrow}`)
+        .boundingBox();
+      expect(text && box, `${arrow} arrow and copy are laid out`).toBeTruthy();
+      if (!text || !box) continue;
+      const overlaps =
+        text.x < box.x + box.width &&
+        box.x < text.x + text.width &&
+        text.y < box.y + box.height &&
+        box.y < text.y + text.height;
+      expect(overlaps, `copy overlaps the ${arrow} arrow`).toBe(false);
+    }
+  });
 });
