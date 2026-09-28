@@ -1,36 +1,17 @@
-name: Visual Regression
+name: Update Visual Baselines
 
-# Screenshots of canonical block states against committed baselines
-# (tests/visual). Not yet a merge gate: the baselines were made on Ubuntu
-# 24.04 outside Actions. Once this runs green on the runners, move the job
-# into ci.yml under the CI Summary. If the runners render differently, run
-# this workflow with "update" to regenerate the baselines on a runner, then
-# review and commit the uploaded images. See docs/ci.md.
+# Regenerates the screenshot baselines (tests/visual) on a GitHub runner and
+# uploads them. The comparison itself is the visual job in ci.yml. Use this
+# when a change is meant to look different and the local baselines do not
+# match the runners, then review every image and commit it with the change.
 on:
-  pull_request:
-    paths:
-      - .github/workflows/visual-regression.yml
-      - bin/ci/visual.sh
-      - bin/ci/lib/native-wp.sh
-      - playwright.visual.config.ts
-      - tests/visual/**
-      - src/**
-      - package.json
-      - pnpm-lock.yaml
-  push:
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      update:
-        description: Regenerate the baselines on the runner and upload them
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: visual-regression-${{ github.ref }}
+  group: update-visual-baselines-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -38,8 +19,8 @@ env:
   PHP_VERSION: '8.2.32'
 
 jobs:
-  visual:
-    name: 🖼️ Visual Regression
+  update:
+    name: 🖼️ Update visual baselines
     runs-on: ubuntu-24.04
     timeout-minutes: 25
 
@@ -95,25 +76,14 @@ jobs:
       - name: Install Playwright browser
         run: pnpm test:e2e:install
 
-      - name: Compare screenshots
+      - name: Regenerate screenshots
         env:
-          AB_VISUAL_UPDATE: ${{ inputs.update && '1' || '' }}
+          AB_VISUAL_UPDATE: '1'
         run: pnpm ci:visual
 
       - name: Upload regenerated baselines
-        if: ${{ inputs.update }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: visual-baselines
           path: tests/visual/blocks.spec.ts-snapshots/
-          retention-days: 7
-
-      - name: Upload screenshot diffs
-        if: ${{ failure() || cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: visual-regression-report
-          path: |
-            playwright-report/
-            test-results/
           retention-days: 7

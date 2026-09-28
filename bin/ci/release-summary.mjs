@@ -86,6 +86,7 @@ export function evaluateReleaseSummary(environment) {
     package: jobResult(environment, 'PACKAGE_RESULT'),
     artifactAcceptance: jobResult(environment, 'ARTIFACT_ACCEPTANCE_RESULT'),
     wpFloor: jobResult(environment, 'WP_FLOOR_RESULT'),
+    visual: jobResult(environment, 'VISUAL_RESULT'),
     release: jobResult(environment, 'RELEASE_RESULT'),
     versionSync: environment.VERSION_SYNC_RESULT
       ? jobResult(environment, 'VERSION_SYNC_RESULT')
@@ -149,6 +150,7 @@ export function evaluateReleaseSummary(environment) {
       `| Package | ${results.package} |`,
       `| Artifact acceptance | ${results.artifactAcceptance} |`,
       `| WordPress floor | ${results.wpFloor} |`,
+      `| Visual regression | ${results.visual} |`,
       `| Release (publish + assets + provenance) | ${results.release} |`,
       `| Version sync | ${results.versionSync} |`
     );
@@ -157,6 +159,7 @@ export function evaluateReleaseSummary(environment) {
       `| Package | ${results.package} |`,
       `| Artifact acceptance | ${results.artifactAcceptance} |`,
       `| WordPress floor | ${results.wpFloor} |`,
+      `| Visual regression | ${results.visual} |`,
       '| Release | skipped (non-release) |'
     );
   }
@@ -196,6 +199,7 @@ export function evaluateReleaseSummary(environment) {
       requireSuccess('package', results.package);
       requireSuccess('artifact acceptance', results.artifactAcceptance);
       requireSuccess('WordPress floor', results.wpFloor);
+      requireSuccess('visual regression', results.visual);
     }
 
     if (

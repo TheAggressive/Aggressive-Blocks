@@ -12,14 +12,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd -P)"
-PACKAGE_PATH="${REPO_ROOT}/aggressive-blocks.zip"
+release_version="${AA_RELEASE_VERSION:-}"
+PACKAGE_PATH="${REPO_ROOT}/aggressive-blocks${release_version:+-${release_version}}.zip"
 cd "${REPO_ROOT}"
 
 # shellcheck source=bin/ci/lib/native-wp.sh
 source "${SCRIPT_DIR}/lib/native-wp.sh"
 
 if [[ ! -f "${PACKAGE_PATH}" ]]; then
-	echo "Expected aggressive-blocks.zip in the repository root (pnpm ci:package)." >&2
+	echo "Expected $(basename "${PACKAGE_PATH}") in the repository root (pnpm ci:package)." >&2
 	exit 1
 fi
 
