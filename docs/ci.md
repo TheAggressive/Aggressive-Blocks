@@ -59,6 +59,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | E2E against the Studio site | `pnpm test:e2e:studio` |
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
+| Aggressive Apparel with the ZIP | `AB_THEME_DIR=<built theme checkout> pnpm ci:integration` |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 
@@ -71,6 +72,22 @@ Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-pu
 `bin/ci/.wp-env.json` maps only this plugin. E2E activates Twenty Twenty-Five. Aggressive Apparel and WooCommerce are not installed.
 
 Artifact acceptance installs the generated ZIP into a second wp-env that does **not** map plugin source. A green artifact lane means the packaged plugin works without the source checkout or the source theme.
+
+## Aggressive Apparel integration
+
+The independent-site proof shows the plugin needs nothing from the theme. `.github/workflows/aggressive-apparel-integration.yml` checks the other direction: Aggressive Apparel still works with the packaged plugin.
+
+`pnpm ci:integration` (`bin/ci/integration.sh`) takes the ZIP that `pnpm ci:package` builds and a built checkout of the theme's repository (`AB_THEME_DIR`, default `.cache/ci/aggressive-apparel`). It installs WordPress at the primary CI version, then the ZIP, then the WooCommerce release the theme pins in its own `bin/ci/.wp-env.json`, and activates the theme. `tests/integration/` then reads the theme's templates, template parts, and patterns from the running site:
+
+* Every plugin block they use is registered, none uses a removed `aggressive-apparel/*` name, and each one loads valid in the block editor.
+* The header and footer parts, the single-product template, and every theme pattern that uses a plugin block render those blocks on the front end, with no script errors. Horizontal Scroll, Animate On Scroll, and Ticker also show that their view scripts ran.
+* PHP logs no error, warning, notice, or deprecation from the plugin or the theme.
+
+Coverage follows the theme: a block the theme starts using is checked on the next run without editing the suite.
+
+The lane runs WordPress natively with PHP's built-in server, the way the theme's own CI does, so it needs no Docker. In Actions the database is a MySQL service; locally it is the disposable MySQL that `bin/phpunit.sh` starts from the theme checkout. `bin/ci/lib/native-wp.sh` holds that setup.
+
+It is not a merge gate. It depends on the theme's default branch and on WordPress.org downloads, and it builds the theme from source, so a theme change can turn it red with no change here. It runs weekly, on manual dispatch (any theme ref), and on pull requests that change the lane itself.
 
 ## WordPress VIP standards that CI enforces
 
@@ -107,6 +124,7 @@ Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to reb
 | Workflow | Cadence | Blocks merge? |
 | --- | --- | --- |
 | WordPress Beta/RC | Wednesdays | No |
+| Aggressive Apparel integration | Thursdays | No |
 | PHP 8.3 / 8.4 forward | Mondays | No |
 | CodeQL baseline | Mondays | Alerts via code scanning |
 | Workflow security | Mondays | Same Actionlint/Zizmor checks |

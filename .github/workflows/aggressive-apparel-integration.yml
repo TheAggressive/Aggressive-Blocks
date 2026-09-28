@@ -1,0 +1,122 @@
+name: Aggressive Apparel Integration
+
+# Aggressive Apparel must keep working with a packaged Aggressive Blocks. This
+# builds the release ZIP, installs it next to the theme's own repository and
+# WooCommerce pin, and checks every plugin block the theme uses.
+#
+# Not a merge gate: it depends on another repository's default branch and on
+# WordPress.org downloads, and it builds the theme from source. A theme change
+# can turn it red without any change here. The plugin's own lanes prove it
+# works without the theme; see docs/ci.md.
+on:
+  schedule:
+    - cron: '41 7 * * 4'
+  workflow_dispatch:
+    inputs:
+      theme_ref:
+        description: Aggressive Apparel branch, tag, or SHA
+        required: false
+        default: master
+  pull_request:
+    paths:
+      - .github/workflows/aggressive-apparel-integration.yml
+      - bin/ci/integration.sh
+      - bin/ci/lib/native-wp.sh
+      - playwright.integration.config.ts
+      - tests/integration/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aggressive-apparel-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24.18.0'
+  PHP_VERSION: '8.2.32'
+
+jobs:
+  integration:
+    name: 🤝 Aggressive Apparel with the packaged plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 127.0.0.1:3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      AB_WP_DB_HOST: 127.0.0.1:3306
+      AB_WP_DB_USER: root
+      AB_WP_DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check out Aggressive Apparel
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: TheAggressive/Aggressive-Apparel
+          ref: ${{ inputs.theme_ref || 'master' }}
+          path: .cache/ci/aggressive-apparel
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+
+      - name: Cache Playwright browser
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and package the plugin
+        run: |
+          pnpm ci:build
+          pnpm ci:package
+
+      - name: Build Aggressive Apparel
+        run: |
+          pnpm --dir .cache/ci/aggressive-apparel install --frozen-lockfile
+          pnpm --dir .cache/ci/aggressive-apparel build
+
+      - name: Install Playwright browser
+        run: pnpm test:e2e:install
+
+      - name: Run the integration suite
+        run: pnpm ci:integration
+
+      - name: Upload Playwright diagnostics
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: aggressive-apparel-integration-report
+          path: |
+            playwright-report/
+            test-results/
+            .cache/ci/native-integration/wordpress/wp-content/debug.log
+          retention-days: 7
