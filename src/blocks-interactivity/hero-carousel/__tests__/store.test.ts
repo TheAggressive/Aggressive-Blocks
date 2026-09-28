@@ -242,6 +242,34 @@ describe('state getters', () => {
     expect(state.prevDisabled).toBe(false);
     expect(state.nextDisabled).toBe(false);
   });
+
+  it('ignores a press on an arrow disabled at the end', () => {
+    // The arrows stay focusable when disabled, so their actions still fire.
+    stubElementScrollTo();
+    const scrollTo = jest.spyOn(HTMLElement.prototype, 'scrollTo');
+    const ctx = makeContext({
+      loop: false,
+      transition: 'slide',
+      activeIndex: 2,
+    });
+    const { destroy } = initCarousel(ctx);
+    scrollTo.mockClear();
+
+    actions.next();
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    ctx.activeIndex = 0;
+    ctx.displayIndex = 0;
+    actions.prev();
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    actions.next();
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+    expect(ctx.activeIndex).toBe(1);
+    destroy();
+    scrollTo.mockRestore();
+    restoreElementScrollTo();
+  });
 });
 
 describe('navigation actions', () => {

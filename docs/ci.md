@@ -9,8 +9,9 @@ This document is the contract between local development, GitHub Actions, and the
 | Surface | Version | Enforced by |
 | --- | --- | --- |
 | PHP floor | 8.2 | plugin header, `composer.json`, `phpstan.neon`, `bin/ci/.wp-env.json` |
-| WordPress floor | 7.0+ | plugin header |
+| WordPress floor | 7.0+ | plugin header, floor lane (`pnpm ci:floor`) on WordPress 7.0 with PHP 8.2 |
 | Primary CI WordPress | 7.1.2 | `bin/ci/.wp-env.json` |
+| Browsers | Chromium: every E2E test. WebKit: tests tagged `@webkit` (focus and `inert`, `<dialog>`, scroll and scroll-driven animation, pointer input, reduced motion) | `playwright.config.ts` |
 | Node | 24.18.0 | `.node-version`, `bin/ci/node.sh`, workflow `NODE_VERSION` |
 | pnpm | 11.21.0 | `packageManager` |
 
@@ -33,13 +34,14 @@ On production-code changes the pipeline runs these lanes:
 1. Change classification (`bin/ci/classify-changes.mjs`)
 2. Frontend lane (`pnpm ci:frontend`)
 3. i18n lane (`pnpm ci:i18n`): builds first, because script strings are extracted from `build/` so `make-json` catalogs match the enqueued files
-4. Canonical production build (`pnpm ci:build`)
+4. Canonical production build (`pnpm ci:build`), then the frontend asset budgets
 5. PHP lane (`pnpm ci:php`) against the same build artifact
 6. Playwright E2E against WordPress + this plugin + Twenty Twenty-Five
 7. Allowlist ZIP (`pnpm ci:package`)
 8. Artifact acceptance: install that ZIP and re-run E2E (`pnpm ci:artifact`)
+9. WordPress floor: install that ZIP on the declared minimum WordPress and PHP (`pnpm ci:floor`)
 
-Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance follows packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
+Lanes wait only for the inputs they use. After classification, the frontend, i18n and build lanes start together. Once the build is uploaded, PHP, E2E and packaging start together, and artifact acceptance and the WordPress floor follow packaging. Nothing is dropped by running in parallel: the summary job and the release job each require every lane to pass.
 
 The two browser lanes are split into two parallel shards (`AA_E2E_SHARD=1/2`, `2/2`). Each shard starts its own WordPress and runs one worker, so tests never share site state. Playwright keeps each spec file in one shard. Run locally without `AA_E2E_SHARD`, a lane runs the whole suite.
 
@@ -59,6 +61,8 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | E2E against the Studio site | `pnpm test:e2e:studio` |
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
+| Declared WordPress/PHP floor | `pnpm ci:floor` |
+| Screenshot regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 
@@ -71,6 +75,44 @@ Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-pu
 `bin/ci/.wp-env.json` maps only this plugin. E2E activates Twenty Twenty-Five. Aggressive Apparel and WooCommerce are not installed.
 
 Artifact acceptance installs the generated ZIP into a second wp-env that does **not** map plugin source. A green artifact lane means the packaged plugin works without the source checkout or the source theme.
+
+## Frontend assets
+
+`pnpm ci:build` ends with `bin/check-bundle-size.mjs`. Every script module and stylesheet a visitor can download (block view modules, block stylesheets and their RTL copies, the shared `@aggressive-blocks/*` modules, the debug chunks, the debug overlay stylesheet) has a gzip budget in `bin/bundle-budgets.json`. Each budget is the size measured when it was set plus about 15%: room for ordinary changes, but not for a new dependency. The check fails when:
+
+* a file grows past its budget;
+* the build emits a frontend asset with no budget, so a new block has to add one;
+* a budgeted file disappears, so a renamed output cannot escape its budget;
+* a view module imports anything but `@wordpress/interactivity` and the plugin's own modules.
+
+Raise a budget only for a deliberate change, and say why in the commit.
+
+Block assets load through `block.json` and WordPress's on-demand block asset loading; the plugin has no loader of its own. `tests/e2e/asset-loading.spec.ts` checks this as an anonymous visitor. A page of core blocks requests, links, inlines, and import-maps nothing from the plugin, and a page with one Modal loads only the Modal's stylesheet and view module.
+
+## WordPress floor
+
+`Requires at least` and `Requires PHP` in the plugin header are claims. The floor lane (`bin/ci/wp-floor.sh`) proves them on every code change, since the primary environment runs a newer WordPress.
+
+It reads both values from the header, so there is no second pin to drift. It installs the release ZIP on the first release of that WordPress branch (7.0 means 7.0.0) and, in CI, refuses to run on any PHP but the declared one (8.2). Then it checks that:
+
+* the plugin activates on Twenty Twenty-Five, and every block in `build/blocks-manifest.php` registers;
+* `independent-site.spec.ts` and `copyright.spec.ts` pass: the blocks are in the inserter and the server-rendered Copyright block renders;
+* `hero-carousel.spec.ts` passes. Its deep links depend on WordPress 7.0 writing a dynamic block's anchor as its `id`, which is why the floor is 7.0. On 6.9 the deep-link and autoplay tests fail, and WordPress refuses to install the ZIP.
+* PHP logs no error, warning, notice, or deprecation.
+
+Raising the floor means changing the header (and `readme.txt`); the lane then tests the new branch. Lowering it only works if this lane passes there.
+
+The floor and visual lanes run WordPress natively (`bin/ci/lib/native-wp.sh`), with PHP's built-in server instead of wp-env, so they also run without Docker. In Actions the database is a MySQL service; locally it is the disposable MySQL that `bin/phpunit.sh` starts from the theme checkout.
+
+## Visual regression
+
+`tests/visual` holds one screenshot per canonical state: Hero Carousel, Ticker, Card Flip front and back, Split Story, Horizontal Scroll at its first slide, and an open Modal. Hero, Split Story, Horizontal Scroll and the Modal also run at a phone viewport, where their layout changes. Animate On Scroll and Parallax are left out: at rest, and under reduced motion, they are plain content, and their behavior is already covered by E2E.
+
+A screenshot only means something if the environment that made its baseline is the one that checks it. So `pnpm ci:visual` (`bin/ci/visual.sh`) never runs in the Studio or wp-env lanes. It installs the release ZIP on the primary CI WordPress with Twenty Twenty-Five, natively, and captures in Playwright's Chromium with fixed viewports, reduced motion, finished animations, loaded web fonts, and fixed content with no images. The comparison uses Playwright's default per-pixel tolerance and allows no differing pixels. Three fresh runs matched their baselines exactly, and a one-rule CSS change failed only the screenshot it touched.
+
+`.github/workflows/visual-regression.yml` runs it on pull requests that touch `src/` or the suite, and on `main`. It is not a merge gate yet: the baselines were made on Ubuntu 24.04 outside Actions. Once it is green on the runners, move the job into `ci.yml` under the CI Summary. If the runners render differently, dispatch the workflow with `update`, then review and commit the images it uploads.
+
+When a change is meant to look different, run `AB_VISUAL_UPDATE=1 pnpm ci:visual`, look at every rewritten image, and commit them with the change.
 
 ## WordPress VIP standards that CI enforces
 
@@ -107,6 +149,7 @@ Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to reb
 | Workflow | Cadence | Blocks merge? |
 | --- | --- | --- |
 | WordPress Beta/RC | Wednesdays | No |
+| Visual regression | Pull requests touching `src/` or the suite, and `main` | Not yet (see above) |
 | PHP 8.3 / 8.4 forward | Mondays | No |
 | CodeQL baseline | Mondays | Alerts via code scanning |
 | Workflow security | Mondays | Same Actionlint/Zizmor checks |

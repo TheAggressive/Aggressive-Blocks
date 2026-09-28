@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace Aggressive_Blocks\Migration;
 
 use WP_CLI;
-use WP_Query;
 
 /**
  * `wp aggressive-blocks migrate-blocks`.
@@ -52,27 +51,12 @@ class Cli {
 
 		$dry_run = isset( $assoc_args['dry-run'] );
 
-		WP_CLI::warning( 'Back up the database before mutating content. This command walks parse_blocks() and is safe to rerun.' );
+		WP_CLI::warning( 'Back up the database before mutating content. It renames only the blocks this plugin owns and is safe to rerun.' );
 
 		$report = array(
 			'posts'   => 0,
 			'blocks'  => 0,
 			'widgets' => 0,
-		);
-
-		$post_types = get_post_types( array(), 'names' );
-		$query      = new WP_Query(
-			array(
-				'post_type'              => array_values( $post_types ),
-				'post_status'            => 'any',
-				'posts_per_page'         => 100,
-				'paged'                  => 1,
-				's'                      => '',
-				'ignore_sticky_posts'    => true,
-				'no_found_rows'          => false,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-			)
 		);
 
 		global $wpdb;
@@ -112,13 +96,27 @@ class Cli {
 			);
 
 			if ( ! $dry_run ) {
-				wp_update_post(
-					array(
-						'ID'           => $post->ID,
-						'post_content' => $result['content'],
-					),
-					true
-				);
+				// wp_update_post() unslashes its input. Without wp_slash() it
+				// strips the backslash from every JSON escape in block
+				// attributes, so an escaped ampersand is stored as "u0026".
+				//
+				// WP-CLI runs without a user, so kses would also filter the
+				// post and re-serialize every block in it. The rewrite adds no
+				// markup, so the stored content goes back exactly as rewritten.
+				kses_remove_filters();
+				try {
+					wp_update_post(
+						wp_slash(
+							array(
+								'ID'           => $post->ID,
+								'post_content' => $result['content'],
+							)
+						),
+						true
+					);
+				} finally {
+					kses_init();
+				}
 			}
 		}
 
@@ -145,8 +143,6 @@ class Cli {
 				update_option( 'widget_block', $widget_block );
 			}
 		}
-
-		unset( $query );
 
 		WP_CLI::success(
 			sprintf(

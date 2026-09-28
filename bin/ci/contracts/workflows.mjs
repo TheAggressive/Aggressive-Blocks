@@ -79,6 +79,7 @@ const EXPECTED_RELEASE_JOBS = [
   'e2e',
   'package',
   'artifact-acceptance',
+  'wp-floor',
   'release',
   'summary',
 ];
@@ -115,6 +116,10 @@ const PARITY_JOBS = {
   'artifact-acceptance': {
     setup: ['pnpm install --frozen-lockfile', 'pnpm test:e2e:install'],
     lanes: ['pnpm ci:artifact'],
+  },
+  'wp-floor': {
+    setup: ['pnpm install --frozen-lockfile', 'pnpm test:e2e:install'],
+    lanes: ['pnpm ci:floor'],
   },
 };
 
@@ -460,6 +465,7 @@ const summaryDependencies = [
   'e2e',
   'package',
   'artifact-acceptance',
+  'wp-floor',
 ];
 
 check(
@@ -505,6 +511,7 @@ const releaseDependencies = [
   'e2e',
   'package',
   'artifact-acceptance',
+  'wp-floor',
 ];
 for (const job of releaseDependencies) {
   check(

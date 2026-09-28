@@ -463,7 +463,7 @@ $hero_slide_thumb = static function ( array $cover_attrs ) use ( $hero_css_color
 					class="aa-hero__arrow aa-hero__arrow--prev aa-icon-button aa-icon-button--only"
 					aria-label="<?php esc_attr_e( 'Previous slide', 'aggressive-blocks' ); ?>"
 					data-wp-on--click="actions.prev"
-					data-wp-bind--disabled="state.prevDisabled"
+					data-wp-bind--aria-disabled="state.prevDisabled"
 				>
 					<?php
 					aggressive_blocks_render_icon(
@@ -480,7 +480,7 @@ $hero_slide_thumb = static function ( array $cover_attrs ) use ( $hero_css_color
 					class="aa-hero__arrow aa-hero__arrow--next aa-icon-button aa-icon-button--only"
 					aria-label="<?php esc_attr_e( 'Next slide', 'aggressive-blocks' ); ?>"
 					data-wp-on--click="actions.next"
-					data-wp-bind--disabled="state.nextDisabled"
+					data-wp-bind--aria-disabled="state.nextDisabled"
 				>
 					<?php
 					aggressive_blocks_render_icon(

@@ -1,0 +1,30 @@
+{
+  "$comment": "Gzip bytes each production frontend asset may reach: the size measured when the budget was set, plus about 15%, rounded up to 256 bytes (1 KB minimum). A -rtl.css file shares its stylesheet's budget. Raise a number only for a deliberate change, and say why in the commit. See docs/ci.md.",
+  "files": {
+    "build/blocks-interactivity/animate-on-scroll/style-index.css": 1792,
+    "build/blocks-interactivity/animate-on-scroll/view.js": 4096,
+    "build/blocks-interactivity/card-flip/style-index.css": 1536,
+    "build/blocks-interactivity/card-flip/view.js": 1024,
+    "build/blocks-interactivity/hero-carousel/style-index.css": 6656,
+    "build/blocks-interactivity/hero-carousel/view.js": 5888,
+    "build/blocks-interactivity/horizontal-scroll/style-index.css": 3328,
+    "build/blocks-interactivity/horizontal-scroll/view.js": 8704,
+    "build/blocks-interactivity/modal/style-index.css": 3584,
+    "build/blocks-interactivity/modal/view.js": 3328,
+    "build/blocks-interactivity/parallax/style-index.css": 1024,
+    "build/blocks-interactivity/parallax/view.js": 12800,
+    "build/blocks-interactivity/ticker/style-index.css": 3840,
+    "build/blocks-interactivity/ticker/view.js": 3584,
+    "build/blocks/copyright/style-index.css": 1024,
+    "build/blocks/split-story/style-index.css": 1024,
+    "build/interactivity/helpers.js": 1024,
+    "build/interactivity/scroll-lock.js": 1024,
+    "build/styles/debug-overlays.css": 4096
+  },
+  "lazyChunks": {
+    "$comment": "Numbered chunks a view script loads on demand (the debug overlays).",
+    "pattern": "build/blocks-interactivity/*.js",
+    "budget": 6400
+  },
+  "moduleDependencies": ["@wordpress/interactivity", "@aggressive-blocks/*"]
+}

@@ -347,10 +347,10 @@
 }
 
 /* When keyboard-revealed, disabled controls stay visible but dimmed. */
-.aa-hscroll.is-enhanced:has(:focus-visible) .aa-hscroll__control:disabled,
-.aa-hscroll.is-snap:has(:focus-visible) .aa-hscroll__control:disabled,
-.aa-hscroll.is-enhanced[data-aa-hscroll-keyboard] .aa-hscroll__control:disabled,
-.aa-hscroll.is-snap[data-aa-hscroll-keyboard] .aa-hscroll__control:disabled {
+.aa-hscroll.is-enhanced:has(:focus-visible) .aa-hscroll__control[aria-disabled='true'],
+.aa-hscroll.is-snap:has(:focus-visible) .aa-hscroll__control[aria-disabled='true'],
+.aa-hscroll.is-enhanced[data-aa-hscroll-keyboard] .aa-hscroll__control[aria-disabled='true'],
+.aa-hscroll.is-snap[data-aa-hscroll-keyboard] .aa-hscroll__control[aria-disabled='true'] {
   opacity: 0.35;
   pointer-events: none;
 }
@@ -372,7 +372,7 @@
     pointer-events: auto;
   }
 
-  .aa-hscroll.is-snap .aa-hscroll__control:disabled {
+  .aa-hscroll.is-snap .aa-hscroll__control[aria-disabled='true'] {
     opacity: 0.35;
     pointer-events: none;
   }

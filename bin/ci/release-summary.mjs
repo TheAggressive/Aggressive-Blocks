@@ -85,6 +85,7 @@ export function evaluateReleaseSummary(environment) {
     e2e: jobResult(environment, 'E2E_RESULT'),
     package: jobResult(environment, 'PACKAGE_RESULT'),
     artifactAcceptance: jobResult(environment, 'ARTIFACT_ACCEPTANCE_RESULT'),
+    wpFloor: jobResult(environment, 'WP_FLOOR_RESULT'),
     release: jobResult(environment, 'RELEASE_RESULT'),
     versionSync: environment.VERSION_SYNC_RESULT
       ? jobResult(environment, 'VERSION_SYNC_RESULT')
@@ -147,6 +148,7 @@ export function evaluateReleaseSummary(environment) {
     lines.push(
       `| Package | ${results.package} |`,
       `| Artifact acceptance | ${results.artifactAcceptance} |`,
+      `| WordPress floor | ${results.wpFloor} |`,
       `| Release (publish + assets + provenance) | ${results.release} |`,
       `| Version sync | ${results.versionSync} |`
     );
@@ -154,6 +156,7 @@ export function evaluateReleaseSummary(environment) {
     lines.push(
       `| Package | ${results.package} |`,
       `| Artifact acceptance | ${results.artifactAcceptance} |`,
+      `| WordPress floor | ${results.wpFloor} |`,
       '| Release | skipped (non-release) |'
     );
   }
@@ -192,6 +195,7 @@ export function evaluateReleaseSummary(environment) {
       requireSuccess('browser E2E', results.e2e);
       requireSuccess('package', results.package);
       requireSuccess('artifact acceptance', results.artifactAcceptance);
+      requireSuccess('WordPress floor', results.wpFloor);
     }
 
     if (

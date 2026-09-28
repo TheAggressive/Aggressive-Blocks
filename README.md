@@ -37,7 +37,7 @@ wp aggressive-blocks migrate-blocks --dry-run
 wp aggressive-blocks migrate-blocks
 ```
 
-The command walks posts and widgets with `parse_blocks()`, only renames the blocks this plugin owns, and is safe to rerun.
+The command rewrites posts and block widgets. It renames only the blocks this plugin owns, leaves every other byte as saved, and is safe to rerun. [docs/migration.md](docs/migration.md) states the contract and how it is tested.
 
 ## Build
 

@@ -131,7 +131,7 @@ async function readLayerTranslate(page: Page): Promise<[number, number]> {
   });
 }
 
-test.describe('Parallax — front end', () => {
+test.describe('Parallax — front end', { tag: '@webkit' }, () => {
   let pageId = 0;
 
   test.afterEach(async ({ page }) => {

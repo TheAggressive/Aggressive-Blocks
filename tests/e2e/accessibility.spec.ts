@@ -173,17 +173,18 @@ test.describe('Accessibility (axe)', () => {
 
     // Horizontal-scroll controls revealed for keyboard users (opacity 0 at
     // rest, so contrast is only meaningful once shown).
-    // Back above the gallery so it sits on slide 1 (Next enabled). Shift+Tab
-    // from the viewport is then real keyboard navigation onto Next.
+    // Back above the gallery so it returns to slide 1. The controls follow
+    // scroll on the next frame, so wait for that state before Shift+Tab from
+    // the viewport, which is then real keyboard navigation onto Next.
     await page.evaluate(() => window.scrollTo(0, 0));
     const gallery = page.locator('.aa-hscroll').first();
+    const next = gallery.locator('.aa-hscroll__control--next');
+    await expect(gallery.locator('.aa-hscroll__control--prev')).toBeDisabled();
+    await expect(next).toBeEnabled();
     await gallery.locator('.aa-hscroll__viewport').focus();
     await page.keyboard.press('Shift+Tab');
-    await expect(gallery.locator('.aa-hscroll__control--next')).toBeFocused();
-    await expect(gallery.locator('.aa-hscroll__control--next')).toHaveCSS(
-      'opacity',
-      '1'
-    );
+    await expect(next).toBeFocused();
+    await expect(next).toHaveCSS('opacity', '1');
     expect(await scan(page, ['.aa-hscroll'])).toEqual([]);
   });
 });

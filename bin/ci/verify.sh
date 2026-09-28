@@ -21,5 +21,6 @@ pnpm ci:e2e
 
 pnpm ci:package
 pnpm ci:artifact
+pnpm ci:floor
 
 echo "Full local CI parity verification passed."

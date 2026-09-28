@@ -1,0 +1,40 @@
+<p>Classic content that mentions wp:aggressive-apparel/hero-carousel outside any block.</p>
+
+<!-- wp:paragraph -->
+<p>Run the migration before updating: it rewrites &lt;!-- wp:aggressive-apparel/modal --&gt; comments.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>&lt;!-- wp:aggressive-apparel/ticker {"speed":2} /--&gt;</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:core/paragraph {"metadata":{"name":"Before \u003c!\u002d\u002d wp:aggressive-apparel/parallax \u002d\u002d\u003e"}} -->
+<p class="legacy-aggressive-apparel/parallax">An explicit core namespace, and a legacy name inside an attribute.</p>
+<!-- /wp:core/paragraph -->
+
+<!-- wp:html -->
+<!-- note: aggressive-apparel/card-flip moved to the plugin -->
+<div data-block="wp:aggressive-apparel/modal">Raw HTML</div>
+<!-- /wp:html -->
+
+<!-- wp:aggressive-apparel/product-rating {"textAlign":"center"} /-->
+
+<!-- wp:aggressive-apparel/wishlist-button {"style":{"spacing":{"margin":{"top":"0"}}}} /-->
+
+<!-- wp:woocommerce/product-price {"isDescendentOfSingleProductTemplate":true} /-->
+
+<!-- wp:aggressive-blocks/ticker {"showLabel":true,"labelText":"NEW"} -->
+<!-- wp:paragraph -->
+<p>Already migrated</p>
+<!-- /wp:paragraph -->
+<!-- /wp:aggressive-blocks/ticker -->
+
+<!-- wp:aggressive-apparel/parallax {"intensity":30,"parallaxDirection":"down","metadata":{"name":"FW26 \/ https:\/\/cdn.example.com\/drops","bindings":{}}} -->
+<!-- wp:group {"layout":{"type":"constrained"}} -->
+<div class="wp-block-group"><!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Ren&eacute;e &amp; the crew</h3>
+<!-- /wp:heading --></div>
+<!-- /wp:group -->
+<!-- /wp:aggressive-apparel/parallax -->
+
+<!-- wp:aggressive-apparel/copyright {"ownerSource":"custom","ownerName":"Ren\u00e9e \u0026 Co"} /-->
