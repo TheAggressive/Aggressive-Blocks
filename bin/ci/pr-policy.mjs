@@ -113,10 +113,21 @@ export function trustedDependabotMetadata(status) {
 }
 
 /**
+ * Identities whose signed update-branch merges may follow a bot's commits:
+ * the Actions token, and the aggressive-ci App the policy writes with so that
+ * GitHub fires events for its pushes and merges. GitHub records the author
+ * name as the login and the email as `<id>+<login>@users.noreply.github.com`.
+ */
+export const BRANCH_UPDATERS = [
+  { login: 'github-actions[bot]', id: 41898282 },
+  { login: 'aggressive-ci[bot]', id: 318146305 },
+];
+
+/**
  * Verify the complete commit history of a machine-authored pull request.
  *
- * A GitHub update-branch call adds a signed merge commit authored by
- * github-actions[bot], so requiring the originating bot on every commit would
+ * A GitHub update-branch call adds a signed merge commit authored by the
+ * identity that made it (see BRANCH_UPDATERS), so requiring the originating bot on every commit would
  * reject the stale-branch update that this policy created. The exception here
  * is deliberately narrower than "any verified GitHub commit": identity,
  * author/committer metadata, message, parent chain, and protected-base
@@ -167,17 +178,20 @@ export function verifiedBotCommits(
     }
 
     const parents = commit.parents ?? [];
+    const updater = BRANCH_UPDATERS.find(
+      candidate =>
+        candidate.login === authorLogin && candidate.id === commit.author?.id
+    );
     const trustedBranchUpdate =
       foundOriginatingBot &&
-      authorLogin === 'github-actions[bot]' &&
+      Boolean(updater) &&
       commit.author?.type === 'Bot' &&
-      commit.author?.id === 41898282 &&
       commit.committer?.login === 'web-flow' &&
       commit.committer?.type === 'User' &&
       commit.committer?.id === 19864447 &&
-      commit.commit?.author?.name === 'github-actions[bot]' &&
+      commit.commit?.author?.name === updater?.login &&
       commit.commit?.author?.email ===
-        '41898282+github-actions[bot]@users.noreply.github.com' &&
+        `${updater?.id}+${updater?.login}@users.noreply.github.com` &&
       commit.commit?.committer?.name === 'GitHub' &&
       commit.commit?.committer?.email === 'noreply@github.com' &&
       commit.commit?.message === expectedMergeMessage &&

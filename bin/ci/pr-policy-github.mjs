@@ -25,15 +25,37 @@ if (!/^[\w.-]+\/[\w.-]+$/u.test(repository)) {
 
 const repositoryOwner = repository.split('/')[0];
 
-/** @param {string[]} args @param {string | undefined} input */
-function gh(args, input) {
+/**
+ * @param {string[]} args
+ * @param {string | undefined} [input]
+ * @param {string} [token] Overrides GH_TOKEN for this call only.
+ */
+function gh(args, input, token) {
   return execFileSync('gh', args, {
     encoding: 'utf8',
     input,
+    env: token ? { ...process.env, GH_TOKEN: token } : process.env,
     maxBuffer: 20 * 1024 * 1024,
     stdio: ['pipe', 'pipe', 'inherit'],
   }).trim();
 }
+
+// GitHub starts no workflow for a push or merge made with the Actions token.
+// Branch updates and auto-merge therefore use the aggressive-ci App when the
+// workflow could mint its token, so the update gets a policy decision and the
+// merge runs CI on main and sweeps the PRs it leaves behind. Runs Dependabot
+// starts cannot read the App's secrets; they fall back to the Actions token,
+// and the scheduled sweep picks up what those writes cannot trigger.
+const automationToken = process.env.AUTOMATION_TOKEN ?? '';
+
+/** @param {string[]} args */
+function ghAutomation(args) {
+  return gh(args, undefined, automationToken || undefined);
+}
+
+const automationIdentity = automationToken
+  ? 'the aggressive-ci App'
+  : 'the Actions token (no workflow will follow)';
 
 /** @param {string[]} args @param {string | undefined} input */
 function ghJson(args, input) {
@@ -417,7 +439,7 @@ function automatePullRequest(number) {
   }
   if (decision.action === 'update') {
     disableAutoMerge(number, autoMergeEnabled);
-    gh([
+    ghAutomation([
       'api',
       '--method',
       'PUT',
@@ -426,12 +448,12 @@ function automatePullRequest(number) {
       `expected_head_sha=${pr.head.sha}`,
     ]);
     console.log(
-      `Updated #${number}; fresh checks will make the next decision.`
+      `Updated #${number} as ${automationIdentity}; fresh checks will make the next decision.`
     );
     return;
   }
   if (!autoMergeEnabled) {
-    gh([
+    ghAutomation([
       'pr',
       'merge',
       String(number),
@@ -441,7 +463,9 @@ function automatePullRequest(number) {
       '--squash',
       '--delete-branch',
     ]);
-    console.log(`Enabled native squash auto-merge for #${number}.`);
+    console.log(
+      `Enabled native squash auto-merge for #${number} as ${automationIdentity}.`
+    );
   }
 }
 

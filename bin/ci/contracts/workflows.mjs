@@ -262,6 +262,14 @@ const AUTO_MERGE_GUARDS = [
     're-decide every open PR on a schedule, because a branch update pushed with the Actions token starts no workflow_run',
   ],
   [
+    'ghAutomation([',
+    'make branch updates and auto-merge with the App, so GitHub starts workflows for them',
+  ],
+  [
+    'BRANCH_UPDATERS',
+    'trust update-branch merges only from the pinned Actions and App identities',
+  ],
+  [
     'dependabotMetadataCommit',
     "read Dependabot metadata from Dependabot's own commit once a branch update moves the head",
   ],
@@ -285,6 +293,47 @@ check(
     ),
   'pr-policy.yml must sweep open PRs on a schedule, from trusted code on main.'
 );
+
+check(
+  (prPolicy.on?.push?.branches ?? []).includes('main') &&
+    String(sweepJob?.if ?? '').includes("github.event_name == 'push'"),
+  'pr-policy.yml must sweep open PRs after every push to main, so one merge updates the PRs it leaves behind.'
+);
+
+// Only the jobs that update branches or register auto-merge may mint the App
+// token, with exactly the write access those calls need. A failed mint (runs
+// Dependabot starts cannot read the secrets) must fall back, not fail the job.
+const APP_TOKEN_JOBS = ['automate-after-checks', 'automate-pr', 'sweep'];
+const appTokenJobs = Object.entries(prPolicy.jobs ?? {})
+  .filter(([, job]) =>
+    (job.steps ?? []).some(step =>
+      String(step.uses ?? '').startsWith('actions/create-github-app-token@')
+    )
+  )
+  .map(([name]) => name)
+  .sort();
+check(
+  JSON.stringify(appTokenJobs) === JSON.stringify(APP_TOKEN_JOBS),
+  `Only ${APP_TOKEN_JOBS.join(', ')} may mint the App token in pr-policy.yml, found ${JSON.stringify(appTokenJobs)}.`
+);
+for (const name of APP_TOKEN_JOBS) {
+  const tokenStep = (prPolicy.jobs?.[name]?.steps ?? []).find(step =>
+    String(step.uses ?? '').startsWith('actions/create-github-app-token@')
+  );
+  const permissions = Object.keys(tokenStep?.with ?? {})
+    .filter(key => key.startsWith('permission-'))
+    .map(key => `${key}=${tokenStep.with[key]}`)
+    .sort();
+  check(
+    tokenStep?.['continue-on-error'] === true &&
+      JSON.stringify(permissions) ===
+        JSON.stringify([
+          'permission-contents=write',
+          'permission-pull-requests=write',
+        ]),
+    `${name} must mint the App token with only contents and pull-requests write, and fall back when it cannot.`
+  );
+}
 
 check(
   !prPolicyWorkflow.includes('github.event.pull_request.head.sha'),

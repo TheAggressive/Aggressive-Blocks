@@ -23,8 +23,11 @@ on: # zizmor: ignore[dangerous-triggers] pull_request_target runs trusted base c
   workflow_run:
     workflows: ['CI/CD Pipeline', 'CodeQL', 'Workflow Security']
     types: [completed]
-  # The events above never fire for a branch update pushed with the Actions
-  # token, so the sweep re-decides every open PR on a timer as well.
+  # A merge can leave other PRs behind, and a merge made by the App fires this
+  # push. The timer backs up every write the Actions token made, since GitHub
+  # starts no workflow for those, and any event GitHub fails to deliver.
+  push:
+    branches: [main]
   schedule:
     - cron: '7,37 * * * *'
   workflow_dispatch:
@@ -125,9 +128,22 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
 
+      # Writes whose push or merge must start workflows use the App. Runs
+      # Dependabot starts cannot read these secrets; the controller then
+      # falls back to the Actions token and the sweep follows up.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: automation-token
+        continue-on-error: true
+        with:
+          client-id: ${{ secrets.AA_CI_CLIENT_ID }}
+          private-key: ${{ secrets.AA_CI_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Update or merge when policy is already satisfied
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTOMATION_TOKEN: ${{ steps.automation-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node bin/ci/pr-policy-github.mjs automate
 
@@ -151,16 +167,32 @@ jobs:
           ref: main
           persist-credentials: false
 
+      # Writes whose push or merge must start workflows use the App. Runs
+      # Dependabot starts cannot read these secrets; the controller then
+      # falls back to the Actions token and the sweep follows up.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: automation-token
+        continue-on-error: true
+        with:
+          client-id: ${{ secrets.AA_CI_CLIENT_ID }}
+          private-key: ${{ secrets.AA_CI_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Let current policy and checks decide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTOMATION_TOKEN: ${{ steps.automation-token.outputs.token }}
           RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: node bin/ci/pr-policy-github.mjs automate
 
   sweep:
     name: Sweep open pull requests
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -175,7 +207,20 @@ jobs:
           ref: main
           persist-credentials: false
 
+      # Writes whose push or merge must start workflows use the App. Runs
+      # Dependabot starts cannot read these secrets; the controller then
+      # falls back to the Actions token and the sweep follows up.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: automation-token
+        continue-on-error: true
+        with:
+          client-id: ${{ secrets.AA_CI_CLIENT_ID }}
+          private-key: ${{ secrets.AA_CI_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Let current policy and checks decide every open PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTOMATION_TOKEN: ${{ steps.automation-token.outputs.token }}
         run: node bin/ci/pr-policy-github.mjs sweep

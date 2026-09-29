@@ -103,11 +103,23 @@ branches after merge. `pr-policy.yml` registers squash auto-merge only after
 every check is green. It does this automatically for verified Dependabot
 patch/minor updates; owner PRs require the explicit `automerge` label. If
 another PR reaches `main` first, the workflow updates an eligible stale branch
-and waits for fresh checks. GitHub starts no `workflow_run` for checks on a
-commit pushed with the Actions token, so a sweep also re-decides every open PR
-every 30 minutes (or on demand with `gh workflow run pr-policy.yml`).
-High-risk, major, conflicting, failed, or uncertain PRs get `needs-attention`
-and remain open.
+and waits for fresh checks. High-risk, major, conflicting, failed, or uncertain
+PRs get `needs-attention` and remain open.
+
+GitHub starts no workflow for a push or merge made with the Actions token, so
+branch updates and auto-merge use the `aggressive-ci` App (`AA_CI_CLIENT_ID`,
+`AA_CI_PRIVATE_KEY`) whenever the run can read its secrets. An App merge is a
+push to `main`: it runs CI there and sweeps every open PR, so a PR it left
+behind is updated at once. The sweep also runs every 30 minutes (and on demand
+with `gh workflow run pr-policy.yml`) to follow up on writes the Actions token
+made and on events GitHub failed to deliver.
+
+Runs Dependabot starts read only Dependabot secrets, so Dependabot merges fall
+back to the Actions token and rely on the timer. To make them immediate too,
+add the same two secrets for Dependabot (**Settings → Secrets and variables →
+Dependabot**, or `gh secret set NAME --app dependabot`). Workflows expose a
+secret only to the steps that reference it. Outside the base-branch policy jobs,
+only `ci.yml`'s version-sync job references these, and it runs only on a release.
 
 Dependabot security updates must remain enabled in **Settings → Advanced
 Security**. Scheduled version PRs are limited to patch/minor with `allow`, which
