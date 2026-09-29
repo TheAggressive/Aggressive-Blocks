@@ -3,7 +3,7 @@
  * Plugin Name:       Aggressive Blocks
  * Plugin URI:        https://github.com/TheAggressive/Aggressive-Blocks
  * Description:       Reusable Gutenberg blocks extracted from Aggressive Apparel.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Requires at least: 7.0
  * Requires PHP:      8.2
  * Author:            The Aggressive Network, LLC
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'AGGRESSIVE_BLOCKS_VERSION', '2.0.0' );
+define( 'AGGRESSIVE_BLOCKS_VERSION', '2.1.0' );
 define( 'AGGRESSIVE_BLOCKS_FILE', __FILE__ );
 define( 'AGGRESSIVE_BLOCKS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AGGRESSIVE_BLOCKS_URI', plugin_dir_url( __FILE__ ) );
