@@ -109,4 +109,8 @@ PRs get `needs-attention` and remain open.
 Dependabot security updates must remain enabled in **Settings → Advanced
 Security**. Scheduled version PRs are limited to patch/minor with `allow`, which
 does not suppress a security update that needs a major version. Do not replace
-that separation with a broad `ignore` rule.
+that separation with a broad `ignore` rule. The one scheduled-major exception is
+`@wordpress/scripts` and `@wordpress/env`, grouped, because they pin most of the
+development tree; those PRs still need a person. Advisories that automation
+cannot fix surface in the self-closing `dependency-advisories` issue (see
+`docs/ci.md#dependency-advisories`).

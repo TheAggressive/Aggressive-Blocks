@@ -52,6 +52,9 @@ export const rulesetDriftScript = readText('bin/ci/ruleset-drift.mjs');
 export const prPolicyScript = readText('bin/ci/pr-policy.mjs');
 export const prPolicyGithubScript = readText('bin/ci/pr-policy-github.mjs');
 export const dependabotConfiguration = readText('.github/dependabot.yml');
+export const dependencyAuditWorkflow = readText(
+  '.github/workflows/dependency-audit.yml'
+);
 export const rulesetConfiguration = readJson(
   '.github/rulesets/default-branch.json'
 );

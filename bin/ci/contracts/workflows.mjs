@@ -5,6 +5,8 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
+import { parse as parseYaml } from 'yaml';
+
 import {
   actionReferences,
   flowSequence,
@@ -18,6 +20,7 @@ import {
   check,
   composerJson,
   dependabotConfiguration,
+  dependencyAuditWorkflow,
   packageJson,
   packageLane,
   phpForwardLane,
@@ -302,6 +305,60 @@ check(
   dependabotConfiguration.includes('allow:') &&
     !dependabotConfiguration.includes('ignore:'),
   'Dependabot scheduled majors must be limited with allow.update-types.'
+);
+
+// Scheduled majors are proposed only for the WordPress tooling that pins most
+// of the development tree; every other package stays on minor and patch.
+const MAJOR_VERSION_UPDATES = ['@wordpress/env', '@wordpress/scripts'];
+const scheduledMajors = (parseYaml(dependabotConfiguration).updates ?? [])
+  .flatMap(update =>
+    (update.allow ?? []).map(rule => ({
+      ...rule,
+      ecosystem: update['package-ecosystem'],
+    }))
+  )
+  .filter(rule =>
+    (rule['update-types'] ?? []).includes('version-update:semver-major')
+  )
+  .map(rule => `${rule.ecosystem}:${rule['dependency-name']}`)
+  .sort();
+
+check(
+  JSON.stringify(scheduledMajors) ===
+    JSON.stringify(MAJOR_VERSION_UPDATES.map(name => `npm:${name}`)),
+  `Dependabot may schedule majors only for ${MAJOR_VERSION_UPDATES.join(' and ')}, found ${JSON.stringify(scheduledMajors)}.`
+);
+
+const dependencyAudit = parseYaml(dependencyAuditWorkflow);
+const dependencyAuditJob = dependencyAudit.jobs?.audit ?? {};
+const dependencyAuditRuns = (dependencyAuditJob.steps ?? [])
+  .map(step => step.run ?? '')
+  .join('\n');
+
+check(
+  Array.isArray(dependencyAudit.on?.schedule) &&
+    dependencyAudit.on.schedule.length > 0,
+  'dependency-audit.yml must stay on a schedule.'
+);
+
+check(
+  JSON.stringify(dependencyAudit.permissions) ===
+    JSON.stringify({ contents: 'read' }) &&
+    JSON.stringify(dependencyAuditJob.permissions) ===
+      JSON.stringify({ contents: 'read', issues: 'write' }),
+  'dependency-audit.yml may write issues only, from its audit job.'
+);
+
+check(
+  dependencyAuditRuns.includes(
+    'node bin/ci/dependency-audit.mjs --sync-issue'
+  ) && dependencyAuditRuns.includes('bash bin/ci/install-composer.sh'),
+  'dependency-audit.yml must audit with the pinned Composer and sync the tracking issue.'
+);
+
+check(
+  !/\b(?:pnpm|npm|composer)\s+(?:install|ci)\b/u.test(dependencyAuditRuns),
+  'dependency-audit.yml must not install dependencies: no dependency code may run with its issue-writing token.'
 );
 
 /**

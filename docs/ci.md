@@ -66,6 +66,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | Screenshot regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
+| Full dependency advisory audit | `pnpm ci:audit` |
 
 Day-to-day development uses WordPress Studio. `pnpm qa:fast` is the local pre-push check and does not start containers. `pnpm qa` rehearses the containerized CI lanes: it routes through the same pinned Node as Actions (`bin/ci/node.sh`) and then `bin/ci/verify.sh`.
 
@@ -132,10 +133,20 @@ VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`t
 * CodeQL scans authored JS/TS on pull requests, `main`, and a weekly schedule. It does not replace PHP analysis.
 * `pnpm audit --prod --audit-level high` is part of `ci:frontend`.
 * `composer audit` runs in the PHP lane. Composer has no runtime PHP dependencies; advisories in development tools are informational.
-* Dependabot opens grouped minor/patch updates. Majors are not scheduled; security updates still open.
+* Dependabot opens grouped minor/patch updates and security updates, and the PR policy merges the minor and patch ones once CI is green. Scheduled majors are limited to `@wordpress/scripts` and `@wordpress/env`, grouped, and never merge themselves.
 * Workflows pin third-party Actions to commit SHAs. Every checkout uses `persist-credentials: false`; `bin/ci/contracts.mjs` enforces it for every job, including the release job.
 * Release ZIPs carry a signed build-provenance attestation. See [SECURITY.md](../SECURITY.md) for how to verify a download.
 * Write-capable `pull_request_target` jobs check out the protected base SHA only.
+
+## Dependency advisories
+
+Pull requests audit production npm dependencies only, and the PHP lane's `composer audit` is informational, so a newly published advisory never blocks unrelated work. Development-tool advisories are handled by automation instead:
+
+1. Dependabot security updates open as soon as an advisory is published. Patch and minor fixes merge themselves once CI passes.
+2. Most of the development tree comes through `@wordpress/scripts` and `@wordpress/env`, which pin it. Their fixes ship in new majors, so Dependabot proposes those majors as one PR. A major needs a person: read the upstream changelog, and merge once CI is green.
+3. Every Tuesday, `.github/workflows/dependency-audit.yml` runs `pnpm audit` and `composer audit` over the full lockfiles. Whatever is left goes into one issue labelled `dependency-advisories`, with each advisory's installed version, fixed version and the packages that pull it in. The issue is edited in place and gets a comment, which notifies, only when an advisory is new. It closes itself once the audit is clean. If an audit cannot run, the workflow fails and leaves the issue as it was. It installs nothing, so no dependency code runs with its issue-writing token.
+
+To clear an advisory from the issue, update the package that pulls it in. If that package still pins a vulnerable version, add a floor to `overrides` in `pnpm-workspace.yaml` (for example `'qs@<6.16.0': ^6.16.0`), after checking that the patched version keeps the API its callers use, and record why beside it. `pnpm ci:audit` runs the same audit locally and exits 1 while anything is open.
 
 ## Release
 
@@ -161,6 +172,7 @@ Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to reb
 | Workflow security | Mondays | Same Actionlint/Zizmor checks |
 | Ruleset drift | Mondays | No; fails if live rules diverge |
 | Release recovery rehearsal | Tuesdays | No; fails if the latest release no longer rebuilds byte for byte |
+| Dependency audit | Tuesdays | No; keeps the `dependency-advisories` issue current |
 
 ## Single-maintainer controls
 

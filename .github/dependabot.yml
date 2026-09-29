@@ -64,12 +64,31 @@ updates:
     # only to version updates; security updates still open even when the minimum
     # patched version crosses a major. Broad `ignore` rules cannot provide that
     # separation because GitHub also applies them to security updates.
+    #
+    # The exception is the WordPress build and environment tooling. It bundles
+    # most of the development dependency tree and pins it, so its advisory
+    # fixes ship in new majors that no security update can reach. Proposing
+    # those majors, grouped because scripts peers on env, keeps that tree
+    # current. PR policy still never auto-merges a major.
     allow:
       - dependency-name: '*'
         update-types:
           - version-update:semver-minor
           - version-update:semver-patch
+      - dependency-name: '@wordpress/scripts'
+        update-types:
+          - version-update:semver-major
+      - dependency-name: '@wordpress/env'
+        update-types:
+          - version-update:semver-major
     groups:
+      wordpress-tooling-majors:
+        applies-to: version-updates
+        patterns:
+          - '@wordpress/scripts'
+          - '@wordpress/env'
+        update-types:
+          - major
       wordpress:
         applies-to: version-updates
         patterns:
