@@ -216,7 +216,7 @@ for (const [source, contents, exclusion] of GENERATED_TREE_EXCLUSIONS) {
 const resolvedJestConfig = JSON.parse(
   execFileSync(
     path.join(repositoryRoot, 'node_modules/.bin/wp-scripts'),
-    ['test-unit-js', '--showConfig'],
+    ['test-unit-jest', '--showConfig'],
     {
       cwd: repositoryRoot,
       encoding: 'utf8',

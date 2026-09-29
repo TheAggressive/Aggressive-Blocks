@@ -1,7 +1,14 @@
-import jestConfig from '@wordpress/scripts/config/jest-unit.config.js';
-
+// @wordpress/scripts 36 no longer bundles Jest; `test-unit-jest` runs this
+// project-installed Jest with the defaults scripts 33 used to supply.
+// See node_modules/@wordpress/scripts/docs/vitest-migration.md.
 export default {
-  ...jestConfig,
+  preset: '@wordpress/jest-preset-default',
+  transform: {
+    '\\.[jt]sx?$': [
+      'babel-jest',
+      { presets: ['@wordpress/babel-preset-default'] },
+    ],
+  },
   roots: ['<rootDir>/src'],
   reporters: ['default', '<rootDir>/bin/ci/jest-no-skips-reporter.cjs'],
   collectCoverageFrom: [
