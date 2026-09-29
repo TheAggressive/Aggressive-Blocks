@@ -21,10 +21,10 @@ export default {
   // Editor UI and the modal store are covered by Playwright, not Jest.
   coverageThreshold: {
     global: {
-      statements: 32,
-      branches: 29,
-      functions: 29,
-      lines: 32,
+      statements: 43,
+      branches: 39,
+      functions: 39,
+      lines: 44,
     },
   },
 };
