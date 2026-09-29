@@ -718,6 +718,63 @@ jobs:
           gh pr merge "${number}" --auto --squash --delete-branch
           echo "Version sync #${number} will merge when its checks pass."
 
+  # After publishing: the released code, installed as an old version on a
+  # clean site, must update itself to this release from GitHub, and must
+  # refuse a wrong checksum and a poisoned download cache. See docs/updates.md.
+  update-smoke:
+    name: 🔄 Update Smoke
+    runs-on: ubuntu-24.04
+    needs: [release-plan, release]
+    if: success()
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.4@sha256:b3b90af2a6552ae30c266fdb7d5dd55f3afb72404bb78d37fe8a23eb857fd3fb
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 127.0.0.1:3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      PHP_VERSION: '8.2.32'
+      AB_WP_DB_HOST: 127.0.0.1:3306
+      AB_WP_DB_USER: root
+      AB_WP_DB_PASSWORD: root
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: none
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the released code
+        run: pnpm ci:build
+
+      - name: Update an old install to the release
+        env:
+          AA_RELEASE_VERSION: ${{ needs.release-plan.outputs.next_version }}
+        run: pnpm ci:update-smoke
+
   summary:
     name: CI Summary
     runs-on: ubuntu-24.04
@@ -737,6 +794,7 @@ jobs:
       - visual
       - release
       - version-sync
+      - update-smoke
     timeout-minutes: 2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -764,6 +822,7 @@ jobs:
           VISUAL_RESULT: ${{ needs.visual.result }}
           RELEASE_RESULT: ${{ needs.release.result }}
           VERSION_SYNC_RESULT: ${{ needs.version-sync.result }}
+          UPDATE_SMOKE_RESULT: ${{ needs.update-smoke.result }}
           DOCS_ONLY: ${{ needs.changes.outputs.docs_only }}
           VERSION_SYNC: ${{ needs.changes.outputs.version_sync }}
           PUBLISH_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.publish || false }}

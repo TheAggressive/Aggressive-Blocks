@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Aggressive Blocks
- * Plugin URI:        https://github.com/TheAggressive/Aggressive-Apparel
+ * Plugin URI:        https://github.com/TheAggressive/Aggressive-Blocks
  * Description:       Reusable Gutenberg blocks extracted from Aggressive Apparel.
  * Version:           2.0.0
  * Requires at least: 7.0
@@ -11,6 +11,7 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       aggressive-blocks
  * Domain Path:       /languages
+ * Update URI:        https://github.com/TheAggressive/Aggressive-Blocks
  *
  * @package Aggressive_Blocks
  */

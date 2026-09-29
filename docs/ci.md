@@ -125,7 +125,7 @@ PHPStan runs at level 8 on `aggressive-blocks.php`, `includes/`, and `src/`. The
 
 `composer.json` has no `version` field so `composer validate --strict` stays clean. CI sets `COMPOSER_ROOT_VERSION` from the plugin header.
 
-VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`tests/Security`, `tests/Performance`, `tests/Unit/Vip`) plus VIPCS. Production PHP must not write generated files into the plugin directory, call `eval`/`unserialize`, or issue runtime remote HTTP.
+VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`tests/Security`, `tests/Performance`, `tests/Unit/Vip`) plus VIPCS. Production PHP must not write generated files into the plugin directory or call `eval`/`unserialize`. Its only remote HTTP is the GitHub updater (see [docs/updates.md](updates.md)): admin and cron update checks, cached, bounded, and off wherever `DISALLOW_FILE_MODS` is set, as on VIP. A visitor's request never makes one.
 
 ## Security
 
@@ -146,6 +146,8 @@ The release tags the commit the run tested, attests the ZIP, and publishes the c
 The plugin declares its version in three places: the plugin header (what WordPress reads), the `AGGRESSIVE_BLOCKS_VERSION` constant (what the code reads), and the readme's `Stable tag`. Packaging stamps the release version into all three in the ZIP (`aa_stamp_version` in `bin/release/lib.sh`), and package verification fails unless they agree with each other and with the release.
 
 The checkout keeps the version of the last release. After publishing, the `version-sync` job runs `bin/release/sync-version.sh` and opens a signed `chore(release): sync the plugin version to X` pull request from the `aggressive-ci` App. That PR merges itself once its required checks pass. A `chore` commit never plans a release. The PR policy recognizes only that exact shape (branch, bot, title, and the two files). The sync PR skips the build, PHP, and browser lanes, so the CI contracts check that the header, constant, Stable tag, and the header and readme floors all agree. The release fails its CI Summary if the sync job does not succeed.
+
+The `update-smoke` job (`pnpm ci:update-smoke`) also runs after publishing. It installs the released code as an old version on a clean site and requires it to update itself to the new release from GitHub, and to refuse a wrong checksum and a poisoned download cache. The CI Summary requires it on a release. See [docs/updates.md](updates.md).
 
 Recovery procedure: `.github/workflows/release-recovery.yml` with the tag to rebuild. It rebuilds from the tag, re-runs package verification and artifact acceptance, refuses to replace a published asset with different bytes, then re-attaches the ZIP.
 
