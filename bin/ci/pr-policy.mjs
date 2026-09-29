@@ -193,6 +193,32 @@ export function verifiedBotCommits(
   return foundOriginatingBot;
 }
 
+/**
+ * The commit whose Dependabot metadata status authorizes automation.
+ *
+ * Classification writes that status on the head Dependabot pushed. A policy
+ * stale-branch update then moves the head to a GitHub merge commit, and a push
+ * made with the Actions token starts no pull_request_target run to classify it,
+ * so the status stays on Dependabot's own commit. Reading it there is safe only
+ * because decideAutomation also requires verifiedBotCommits: every later commit
+ * must be a signed update-branch merge from the protected branch.
+ *
+ * @param {Parameters<typeof verifiedBotCommits>[0]} commits
+ * @return {string} The newest verified Dependabot commit SHA, or ''.
+ */
+export function dependabotMetadataCommit(commits) {
+  return (
+    commits
+      .filter(
+        commit =>
+          commit.author?.login?.toLowerCase() === 'dependabot[bot]' &&
+          commit.author?.type === 'Bot' &&
+          commit.commit?.verification?.verified === true
+      )
+      .at(-1)?.sha ?? ''
+  );
+}
+
 /** @param {string} title */
 export function typeLabel(title) {
   const type = /^([a-z]+)(?:\(|!|:)/u.exec(title)?.[1];

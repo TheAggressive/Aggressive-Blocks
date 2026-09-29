@@ -11,6 +11,7 @@ import {
   classifyPullRequest,
   decideAutomation,
   dependabotEcosystem,
+  dependabotMetadataCommit,
   isExpectedDependencyDiff,
   isValidTitle,
   trustedDependabotMetadata,
@@ -199,6 +200,7 @@ function setDependabotMetadataStatus(sha, state, description) {
 
 /** @param {string} sha */
 function dependabotMetadataFor(sha) {
+  if (!sha) return null;
   const status = paginated(
     `repos/${repository}/commits/${sha}/statuses?per_page=100`
   ).find(candidate => candidate.context === DEPENDABOT_METADATA_CONTEXT);
@@ -217,7 +219,13 @@ function inferEcosystem(files) {
 function classificationForAutomation(files, pr) {
   const metadata =
     pr.user.login === 'dependabot[bot]'
-      ? dependabotMetadataFor(pr.head.sha)
+      ? dependabotMetadataFor(
+          dependabotMetadataCommit(
+            paginated(
+              `repos/${repository}/pulls/${pr.number}/commits?per_page=100`
+            )
+          )
+        )
       : null;
   const inferredEcosystem = inferEcosystem(files);
 
@@ -340,7 +348,35 @@ function automateCommand() {
     );
   }
   if (!number) return;
+  automatePullRequest(number);
+}
 
+/**
+ * Re-evaluate every open pull request against the protected branch.
+ *
+ * Events are the fast path, but GitHub starts no workflow_run or
+ * pull_request_target run for a push made with the Actions token, which is
+ * how the policy updates a stale branch. Without this sweep, a PR it updated
+ * would pass its fresh checks and then wait forever for a decision. The sweep
+ * also recovers from any event GitHub fails to deliver.
+ */
+function sweepCommand() {
+  const open = paginated(
+    `repos/${repository}/pulls?state=open&base=${PROTECTED_BRANCH}&per_page=100`
+  );
+  for (const pr of open) {
+    try {
+      automatePullRequest(pr.number);
+    } catch (error) {
+      console.error(`#${pr.number}: ${error.message}`);
+      process.exitCode = 1;
+    }
+  }
+  console.log(`Swept ${open.length} open pull request(s).`);
+}
+
+/** @param {number} number */
+function automatePullRequest(number) {
   const pr = pullRequest(number);
   if (pr.state !== 'open') return;
   const files = changedFiles(number);
@@ -414,8 +450,9 @@ if (command === 'title') validateTitleCommand();
 else if (command === 'quarantine') quarantineCommand();
 else if (command === 'classify') classifyCommand();
 else if (command === 'automate') automateCommand();
+else if (command === 'sweep') sweepCommand();
 else if (command === 'labels') ensureLabels();
 else
   throw new Error(
-    'Expected one command: title, quarantine, classify, automate, or labels.'
+    'Expected one command: title, quarantine, classify, automate, sweep, or labels.'
   );

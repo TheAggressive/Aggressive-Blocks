@@ -257,6 +257,14 @@ const AUTO_MERGE_GUARDS = [
     'update an eligible stale branch and require a fresh pipeline before merging',
   ],
   ['--squash', 'squash-merge rather than adding merge commits to main'],
+  [
+    'pr-policy-github.mjs sweep',
+    're-decide every open PR on a schedule, because a branch update pushed with the Actions token starts no workflow_run',
+  ],
+  [
+    'dependabotMetadataCommit',
+    "read Dependabot metadata from Dependabot's own commit once a branch update moves the head",
+  ],
 ];
 
 for (const [needle, purpose] of AUTO_MERGE_GUARDS) {
@@ -265,6 +273,18 @@ for (const [needle, purpose] of AUTO_MERGE_GUARDS) {
     `The PR policy must ${purpose}. Missing guard: "${needle}".`
   );
 }
+
+const prPolicy = parseYaml(prPolicyWorkflow);
+const sweepJob = prPolicy.jobs?.sweep;
+check(
+  Array.isArray(prPolicy.on?.schedule) &&
+    prPolicy.on.schedule.length > 0 &&
+    sweepJob?.steps?.some(step => step.with?.ref === 'main') &&
+    sweepJob.steps.some(
+      step => step.run === 'node bin/ci/pr-policy-github.mjs sweep'
+    ),
+  'pr-policy.yml must sweep open PRs on a schedule, from trusted code on main.'
+);
 
 check(
   !prPolicyWorkflow.includes('github.event.pull_request.head.sha'),
