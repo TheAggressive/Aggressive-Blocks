@@ -9,6 +9,7 @@ import {
   evaluateChecks,
   isValidTitle,
   trustedDependabotMetadata,
+  dependabotMetadataCommit,
   verifiedBotCommits,
 } from './pr-policy.mjs';
 
@@ -351,6 +352,35 @@ describe('bot commit provenance', () => {
         false
       );
     }
+  });
+
+  it('reads Dependabot metadata from its own commit after branch updates', () => {
+    assert.equal(dependabotMetadataCommit([botCommit()]), 'bot-commit');
+    assert.equal(
+      dependabotMetadataCommit([
+        botCommit('first'),
+        branchUpdate('first', 'base-one', 'update-one'),
+        botCommit('rebased'),
+        branchUpdate('rebased', 'base-two', 'update-two'),
+      ]),
+      'rebased'
+    );
+  });
+
+  it('finds no metadata commit without a verified Dependabot commit', () => {
+    assert.equal(dependabotMetadataCommit([branchUpdate('anything')]), '');
+    assert.equal(
+      dependabotMetadataCommit([
+        { ...botCommit(), commit: { verification: { verified: false } } },
+      ]),
+      ''
+    );
+    assert.equal(
+      dependabotMetadataCommit([
+        { ...botCommit(), author: { login: 'dependabot[bot]', type: 'User' } },
+      ]),
+      ''
+    );
   });
 
   it('requires a verified originating bot commit before any update commit', () => {

@@ -103,8 +103,11 @@ branches after merge. `pr-policy.yml` registers squash auto-merge only after
 every check is green. It does this automatically for verified Dependabot
 patch/minor updates; owner PRs require the explicit `automerge` label. If
 another PR reaches `main` first, the workflow updates an eligible stale branch
-and waits for fresh checks. High-risk, major, conflicting, failed, or uncertain
-PRs get `needs-attention` and remain open.
+and waits for fresh checks. GitHub starts no `workflow_run` for checks on a
+commit pushed with the Actions token, so a sweep also re-decides every open PR
+every 30 minutes (or on demand with `gh workflow run pr-policy.yml`).
+High-risk, major, conflicting, failed, or uncertain PRs get `needs-attention`
+and remain open.
 
 Dependabot security updates must remain enabled in **Settings → Advanced
 Security**. Scheduled version PRs are limited to patch/minor with `allow`, which
