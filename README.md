@@ -20,7 +20,7 @@ composer install
 pnpm qa:fast
 ```
 
-`pnpm qa:fast` is the pre-push check. It does not start containers. `pnpm qa` rehearses the same wp-env lanes CI runs.
+`pnpm qa:fast` is the pre-push check. It does not start containers. `pnpm qa` rehearses the same wp-env lanes CI runs. The WordPress floor and screenshot lanes (`pnpm ci:floor`, `pnpm ci:visual`) run WordPress natively, so they also work without Docker once `pnpm build && bash bin/release/package.sh` has built `aggressive-blocks.zip`.
 
 For browser tests without Docker, `pnpm test:e2e:studio` runs Playwright against your Studio site. Opt the site in once with `touch <site>/.aggressive-blocks-e2e-site`; the script restores everything it changes. Pass Playwright arguments through, e.g. `pnpm test:e2e:studio tests/e2e/modal.spec.ts`.
 
@@ -54,3 +54,5 @@ The production build emits block assets, Interactivity API modules, PHP render f
 ## Package
 
 CI builds an allowlisted ZIP and installs that ZIP, not the source checkout, before a release is published. Merging to `main` does not publish. A release is a manual CI run on `main` with publish enabled.
+
+Packaging stamps the release version into the plugin header, the `AGGRESSIVE_BLOCKS_VERSION` constant, and the readme's Stable tag. After publishing, CI opens a pull request that writes the same version back to `main`, and proves the release installs through the plugin's own updater from an older install. See [docs/ci.md](docs/ci.md#release).
