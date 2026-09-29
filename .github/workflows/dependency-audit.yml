@@ -1,0 +1,58 @@
+name: Dependency Audit
+
+# Audits every locked npm and Composer dependency, development tools included,
+# and keeps one tracking issue in step with the result. Pull requests audit
+# production dependencies only, so a newly published advisory never blocks
+# unrelated work; this is where the rest surface. It runs the day after
+# Dependabot's Monday updates, so the issue lists only what automation could
+# not fix. A failed audit fails the run and leaves the issue as it was.
+
+on:
+  schedule:
+    - cron: '23 6 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Dependency Audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    env:
+      NODE_VERSION: '24.18.0'
+      PHP_VERSION: '8.2.32'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: none
+          coverage: none
+
+      - name: Install the pinned, checksum-verified Composer
+        run: bash bin/ci/install-composer.sh
+
+      # Both audits read only the lockfiles, so no dependency is installed and
+      # no dependency code runs with the issue-writing token.
+      - name: Audit and sync the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: PATH="${GITHUB_WORKSPACE}/bin/ci:${PATH}" node bin/ci/dependency-audit.mjs --sync-issue
