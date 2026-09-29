@@ -354,6 +354,47 @@ describe('bot commit provenance', () => {
     }
   });
 
+  it('accepts the same update shape made by the aggressive-ci App', () => {
+    const appUpdate = {
+      ...branchUpdate('bot-commit'),
+      author: { login: 'aggressive-ci[bot]', type: 'Bot', id: 318146305 },
+      commit: {
+        ...branchUpdate('bot-commit').commit,
+        author: {
+          name: 'aggressive-ci[bot]',
+          email: '318146305+aggressive-ci[bot]@users.noreply.github.com',
+        },
+      },
+    };
+    assert.equal(
+      verify([botCommit(), appUpdate], new Set(['trusted-base'])),
+      true
+    );
+
+    for (const lookalike of [
+      { ...appUpdate, author: { ...appUpdate.author, id: 1 } },
+      {
+        ...appUpdate,
+        author: { login: 'other-app[bot]', type: 'Bot', id: 318146305 },
+      },
+      {
+        ...appUpdate,
+        commit: {
+          ...appUpdate.commit,
+          author: {
+            name: 'aggressive-ci[bot]',
+            email: '41898282+github-actions[bot]@users.noreply.github.com',
+          },
+        },
+      },
+    ]) {
+      assert.equal(
+        verify([botCommit(), lookalike], new Set(['trusted-base'])),
+        false
+      );
+    }
+  });
+
   it('reads Dependabot metadata from its own commit after branch updates', () => {
     assert.equal(dependabotMetadataCommit([botCommit()]), 'bot-commit');
     assert.equal(
