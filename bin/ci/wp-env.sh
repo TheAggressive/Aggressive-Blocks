@@ -33,6 +33,18 @@ export CI=true
 
 cd "${SCRIPT_DIR}"
 
+# wp-env 11 replaced `install-path` with `status`, which throws on a work
+# directory left by an older wp-env and queries Docker once one is running.
+# The reset and stop scripts need only the path, so resolve it the way
+# `status` does, from wp-env's public config loader.
+if [[ "${1:-}" == "install-path" ]]; then
+	exec node -e '
+		require("@wordpress/env/lib/config")
+			.loadConfig(process.cwd())
+			.then((config) => console.log(config.workDirectoryPath));
+	'
+fi
+
 # wp-env decides whether to pass docker's -T (disable TTY) from
 # `process.stdout.isTTY` — not stdin. A git hook inherits the terminal on stdout
 # but receives git's ref list on stdin, so wp-env asks docker for a TTY it

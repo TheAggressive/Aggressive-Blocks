@@ -6,3 +6,15 @@ allowBuilds:
   core-js-pure: false
   fs-ext-extra-prebuilt: false
   unrs-resolver: false
+
+# Security floors for development tooling that pins vulnerable versions:
+# copy-webpack-plugin 10 (via @wordpress/scripts) wants serialize-javascript ^6
+# (GHSA-5c6j-r48x-rmvq, GHSA-qj8w-gfj5-8c6v); sockjs and @wordpress/components
+# want uuid 8 and 9 (GHSA-w5hq-g745-h8pq); and express 4.22.2 (via
+# @wordpress/env's Playground CLI) caps qs at ~6.15 (GHSA-4mjr-xmp4-gh2g,
+# GHSA-x5fp-wj9c-mxmx). Each patched version keeps the CommonJS entry and API
+# those callers use. Remove an entry once no dependency resolves below it.
+overrides:
+  'serialize-javascript@<7.0.5': ^7.0.5
+  'uuid@<11.1.1': ^11.1.1
+  'qs@<6.16.0': ^6.16.0
