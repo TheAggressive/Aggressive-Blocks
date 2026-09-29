@@ -101,6 +101,30 @@ describe('release summary gate', () => {
     );
   });
 
+  it('fails a release whose version sync did not complete', () => {
+    const result = evaluateReleaseSummary({
+      ...successfulPullRequest,
+      EVENT_NAME: 'workflow_dispatch',
+      EVENT_REF: 'refs/heads/main',
+      PUBLISH_REQUESTED: 'true',
+      SHOULD_RELEASE: 'true',
+      NEXT_VERSION: '2.4.0',
+      RELEASE_PLAN_RESULT: 'success',
+      DEPENDENCY_REVIEW_RESULT: 'skipped',
+      PACKAGE_RESULT: 'success',
+      ARTIFACT_ACCEPTANCE_RESULT: 'success',
+      WP_FLOOR_RESULT: 'success',
+      VISUAL_RESULT: 'success',
+      RELEASE_RESULT: 'success',
+      VERSION_SYNC_RESULT: 'failure',
+    });
+
+    assert.equal(result.failed, true);
+    assert.deepEqual(result.errors, [
+      'Required version sync job concluded failure',
+    ]);
+  });
+
   it('fails when a planned main release is skipped', () => {
     const result = evaluateReleaseSummary({
       ...successfulPullRequest,
@@ -213,7 +237,7 @@ describe('release summary gate', () => {
     ]);
   });
 
-  it('does not require a theme-style version-sync job on a plugin release', () => {
+  it('requires the version sync on a plugin release', () => {
     const result = evaluateReleaseSummary({
       ...successfulPullRequest,
       EVENT_NAME: 'workflow_dispatch',
@@ -231,7 +255,10 @@ describe('release summary gate', () => {
       VERSION_SYNC_RESULT: 'skipped',
     });
 
-    assert.equal(result.failed, false);
+    assert.equal(result.failed, true);
+    assert.deepEqual(result.errors, [
+      'Required version sync job concluded skipped',
+    ]);
   });
 
   it('does not require build, PHP or E2E for the machine version sync', () => {
@@ -281,9 +308,14 @@ describe('release summary gate', () => {
       WP_FLOOR_RESULT: 'success',
       VISUAL_RESULT: 'success',
       RELEASE_RESULT: 'failure',
+      // The sync needs the release, so it never runs.
+      VERSION_SYNC_RESULT: 'skipped',
     });
 
     assert.equal(result.failed, true);
-    assert.deepEqual(result.errors, ['Required release job concluded failure']);
+    assert.deepEqual(result.errors, [
+      'Required release job concluded failure',
+      'Required version sync job concluded skipped',
+    ]);
   });
 });

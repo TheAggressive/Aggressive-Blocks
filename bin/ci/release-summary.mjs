@@ -212,6 +212,7 @@ export function evaluateReleaseSummary(environment) {
 
     if (shouldRelease) {
       requireSuccess('release', results.release);
+      requireSuccess('version sync', results.versionSync);
     }
   }
 

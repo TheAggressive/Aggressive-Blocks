@@ -52,6 +52,23 @@ else
 		echo "Packaged version ${packaged_version} does not match ${VERSION}." >&2
 		fail=1
 	fi
+
+	# WordPress reads the header, the code reads the constant, and readers (and
+	# WordPress.org) read the Stable tag: all three must name the same release.
+	expected="${VERSION:-${packaged_version}}"
+	constant_version="$(aa_plugin_constant_version <(printf '%s\n' "${header}"))"
+	if [[ "${constant_version}" != "${expected}" ]]; then
+		echo "AGGRESSIVE_BLOCKS_VERSION ${constant_version:-(missing)} does not match ${expected}." >&2
+		fail=1
+	fi
+
+	if readme="$(unzip -p "${PACKAGE}" "${AA_PLUGIN_SLUG}/readme.txt" 2>/dev/null)"; then
+		stable_tag="$(aa_readme_stable_tag <(printf '%s\n' "${readme}"))"
+		if [[ "${stable_tag}" != "${expected}" ]]; then
+			echo "readme.txt Stable tag ${stable_tag:-(missing)} does not match ${expected}." >&2
+			fail=1
+		fi
+	fi
 fi
 
 if [[ "${fail}" -ne 0 ]]; then

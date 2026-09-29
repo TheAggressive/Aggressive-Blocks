@@ -68,14 +68,7 @@ find "${PLUGIN_DIR}" \
 		-o -name 'Thumbs.db' -o -name '*.map' \) -delete
 
 if [[ -n "${VERSION}" ]]; then
-	STAGED_PLUGIN="${PLUGIN_DIR}/aggressive-blocks.php"
-	sed -i "s/^ \* Version:[[:space:]].*$/ * Version:           ${VERSION}/" "${STAGED_PLUGIN}"
-	sed -i "s/define( 'AGGRESSIVE_BLOCKS_VERSION', '[^']*' );/define( 'AGGRESSIVE_BLOCKS_VERSION', '${VERSION}' );/" "${STAGED_PLUGIN}"
-	staged_version="$(aa_plugin_header_version "${STAGED_PLUGIN}")"
-	if [[ "${staged_version}" != "${VERSION}" ]]; then
-		echo "Version stamp did not apply to staged plugin header." >&2
-		exit 1
-	fi
+	aa_stamp_version "${PLUGIN_DIR}" "${VERSION}"
 fi
 
 SOURCE_EPOCH="${SOURCE_DATE_EPOCH:-}"

@@ -88,3 +88,36 @@ aa_plugin_header_version() {
 	local file="${1:?}"
 	sed -n 's/^ \* Version:[[:space:]]*\([^[:space:]]*\).*$/\1/p' "${file}" | head -n 1
 }
+
+# The AGGRESSIVE_BLOCKS_VERSION constant in the plugin's main file.
+aa_plugin_constant_version() {
+	local file="${1:?}"
+	sed -n "s/^define( 'AGGRESSIVE_BLOCKS_VERSION', '\([^']*\)' );\$/\1/p" "${file}" | head -n 1
+}
+
+# The Stable tag in readme.txt.
+aa_readme_stable_tag() {
+	local file="${1:?}"
+	sed -n 's/^Stable tag:[[:space:]]*\([^[:space:]]*\).*$/\1/p' "${file}" | head -n 1
+}
+
+# Write a version everywhere the plugin declares one, under a plugin root: the
+# header WordPress reads, the constant the code reads, and the readme's Stable
+# tag. Fails unless all three read back as the version afterwards.
+aa_stamp_version() {
+	local root="${1:?}"
+	local version="${2:?}"
+	local plugin="${root}/aggressive-blocks.php"
+	local readme="${root}/readme.txt"
+
+	sed -i "s/^ \* Version:[[:space:]].*\$/ * Version:           ${version}/" "${plugin}"
+	sed -i "s/^define( 'AGGRESSIVE_BLOCKS_VERSION', '[^']*' );\$/define( 'AGGRESSIVE_BLOCKS_VERSION', '${version}' );/" "${plugin}"
+	sed -i "s/^Stable tag:[[:space:]].*\$/Stable tag: ${version}/" "${readme}"
+
+	if [[ "$(aa_plugin_header_version "${plugin}")" != "${version}" ||
+		"$(aa_plugin_constant_version "${plugin}")" != "${version}" ||
+		"$(aa_readme_stable_tag "${readme}")" != "${version}" ]]; then
+		echo "Version ${version} did not apply to the header, constant, and Stable tag under ${root}." >&2
+		return 1
+	fi
+}

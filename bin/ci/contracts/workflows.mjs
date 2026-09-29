@@ -82,6 +82,7 @@ const EXPECTED_RELEASE_JOBS = [
   'wp-floor',
   'visual',
   'release',
+  'version-sync',
   'summary',
 ];
 

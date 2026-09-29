@@ -185,15 +185,37 @@ describe('classification', () => {
   });
 
   it('recognises only the exact machine version-sync shape', () => {
-    const result = owner({
-      title: 'chore(release): sync plugin header to 2.4.1',
-      files: ['aggressive-blocks.php'],
-      authorLogin: 'aggressive-ci[bot]',
-      authorType: 'Bot',
-      headRef: 'chore/version-sync',
-    });
-    assert.equal(result.risk, 'low');
-    assert.equal(result.automationKind, 'version-sync');
+    const sync = overrides =>
+      owner({
+        title: 'chore(release): sync the plugin version to 2.4.1',
+        files: ['aggressive-blocks.php', 'readme.txt'],
+        authorLogin: 'aggressive-ci[bot]',
+        authorType: 'Bot',
+        headRef: 'chore/version-sync',
+        ...overrides,
+      });
+
+    assert.equal(sync().risk, 'low');
+    assert.equal(sync().automationKind, 'version-sync');
+    assert.equal(
+      sync({ files: ['readme.txt'] }).automationKind,
+      'version-sync'
+    );
+
+    for (const overrides of [
+      { files: ['aggressive-blocks.php', 'includes/class-plugin.php'] },
+      { files: [] },
+      { title: 'chore(release): sync the plugin version to 2.4.1-rc.1' },
+      { title: 'chore(release): sync plugin header to 2.4.1' },
+      { headRef: 'chore/other' },
+      { authorLogin: 'someone-else[bot]' },
+    ]) {
+      assert.equal(
+        sync(overrides).automationKind,
+        'none',
+        JSON.stringify(overrides)
+      );
+    }
   });
 
   it('fails closed for an unknown or unclassifiable bot PR', () => {

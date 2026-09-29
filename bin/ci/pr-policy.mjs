@@ -15,6 +15,9 @@ export const REQUIRED_CHECKS = [
 
 export const DEPENDABOT_METADATA_CONTEXT = 'PR Automation Metadata';
 
+/** The only files bin/release/sync-version.sh writes. */
+const VERSION_SYNC_FILES = ['aggressive-blocks.php', 'readme.txt'];
+
 /** Protected branch for this repository. Aggressive Apparel uses `master`. */
 export const PROTECTED_BRANCH = 'main';
 
@@ -310,9 +313,9 @@ export function classifyPullRequest(input) {
     login === 'aggressive-ci[bot]' &&
     input.authorType.toLowerCase() === 'bot' &&
     input.headRef === 'chore/version-sync' &&
-    input.files.length === 1 &&
-    input.files[0] === 'aggressive-blocks.php' &&
-    /^chore\(release\): sync plugin header to \d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(
+    input.files.length > 0 &&
+    input.files.every(file => VERSION_SYNC_FILES.includes(file)) &&
+    /^chore\(release\): sync the plugin version to \d+\.\d+\.\d+$/u.test(
       input.title
     );
 

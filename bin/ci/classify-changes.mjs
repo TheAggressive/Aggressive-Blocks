@@ -111,8 +111,9 @@ if (
   if (versionSync) {
     console.log(
       'Machine version sync: build, PHP and browser lanes are skipped. Linting ' +
-        'still runs, because check-version-sync is what proves this pull ' +
-        'request does what it claims.'
+        'still runs, because its version agreement contract ' +
+        '(bin/ci/contracts/toolchain.mjs) is what proves this pull request ' +
+        'does what it claims.'
     );
   }
 }
