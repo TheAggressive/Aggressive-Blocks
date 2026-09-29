@@ -80,7 +80,24 @@ type KeyInit = {
 /** Scroll the document without a gesture — as a scrollbar drag, find-in-page,
  * or assistive tech would. */
 async function scrollDocumentTo(page: Page, y: number): Promise<void> {
-  await page.evaluate(top => window.scrollTo(0, top), y);
+  // Scroll events arrive on the next frame, not with scrollTo(). A gesture
+  // sent before then lands first, and the late event from this scroll is
+  // then followed as someone else's scroll, cancelling the gesture's step.
+  await page.evaluate(
+    top =>
+      new Promise<void>(resolve => {
+        const settle = () => requestAnimationFrame(() => resolve());
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        // Past the end the browser clamps, so compare with where it will land.
+        if (Math.abs(window.scrollY - Math.min(Math.max(top, 0), max)) < 1) {
+          settle();
+          return;
+        }
+        window.addEventListener('scroll', settle, { once: true });
+        window.scrollTo(0, top);
+      }),
+    y
+  );
 }
 
 /** The gallery's scroll distance (px of vertical scroll the pin consumes). */
@@ -181,7 +198,7 @@ test.describe('Horizontal Scroll — front end', () => {
       const top = await rangeTop(page);
 
       // At the top of the range the track sits at its start.
-      await page.evaluate(y => window.scrollTo(0, y), top);
+      await scrollDocumentTo(page, top);
       await page.waitForTimeout(120);
       const atStart = await trackTranslateX(page);
       expect(Math.abs(atStart)).toBeLessThan(2);
@@ -193,7 +210,7 @@ test.describe('Horizontal Scroll — front end', () => {
       expect(scrolledIn).toBeLessThan(-10);
 
       // Scrolling back up returns it toward the start — the map is reversible.
-      await page.evaluate(y => window.scrollTo(0, y), top);
+      await scrollDocumentTo(page, top);
       await page.waitForTimeout(120);
       const backAtStart = await trackTranslateX(page);
       expect(Math.abs(backAtStart)).toBeLessThan(Math.abs(scrolledIn));
@@ -213,7 +230,7 @@ test.describe('Horizontal Scroll — front end', () => {
 
     const live = page.locator('.aa-hscroll__live-region');
     const top = await rangeTop(page);
-    await page.evaluate(y => window.scrollTo(0, y), top);
+    await scrollDocumentTo(page, top);
     // Entry seats quietly (no live-region spam); readiness is the signal.
     await expect(section).toHaveAttribute(
       'data-aa-hscroll-step-state',
@@ -245,7 +262,7 @@ test.describe('Horizontal Scroll — front end', () => {
     const next = section.locator('.aa-hscroll__control--next');
     const top = await rangeTop(page);
 
-    await page.evaluate(y => window.scrollTo(0, y), top);
+    await scrollDocumentTo(page, top);
     await expect(section).toHaveAttribute(
       'data-aa-hscroll-step-state',
       'ready',
@@ -273,7 +290,7 @@ test.describe('Horizontal Scroll — front end', () => {
     const live = page.locator('.aa-hscroll__live-region');
     const top = await rangeTop(page);
 
-    await page.evaluate(y => window.scrollTo(0, y), top);
+    await scrollDocumentTo(page, top);
     await expect(section).toHaveAttribute(
       'data-aa-hscroll-step-state',
       'ready',
@@ -365,7 +382,7 @@ test.describe('Horizontal Scroll — front end', () => {
       const live = page.locator('.aa-hscroll__live-region');
 
       const top = await rangeTop(page);
-      await page.evaluate(y => window.scrollTo(0, y), top);
+      await scrollDocumentTo(page, top);
       await expect(section).toHaveAttribute(
         'data-aa-hscroll-step-state',
         'ready',
