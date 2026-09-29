@@ -152,6 +152,8 @@ To clear an advisory from the issue, update the package that pulls it in. If tha
 
 Merging to `main` does not publish. A release is an explicit `workflow_dispatch` with `publish: true` on `main`. The release job runs only after every lane (frontend, i18n, build, PHP, E2E, package verification and artifact acceptance) succeeds.
 
+Release planning is semantic-release's commit analyzer: `feat` plans a minor, `fix` and `perf` a patch, and a breaking change a major. A commit scoped `(ci)` never plans a release, whatever its type, because it changes nothing in the ZIP; `bin/release/release-rules.test.mjs` runs `.releaserc.json` through the analyzer to hold that. Other maintenance uses `chore`, `ci`, `test`, or `docs`, which never release.
+
 The release tags the commit the run tested, attests the ZIP, and publishes the conventional-commit notes that release planning generated (Features, Bug Fixes, and any breaking changes).
 
 The plugin declares its version in three places: the plugin header (what WordPress reads), the `AGGRESSIVE_BLOCKS_VERSION` constant (what the code reads), and the readme's `Stable tag`. Packaging stamps the release version into all three in the ZIP (`aa_stamp_version` in `bin/release/lib.sh`), and package verification fails unless they agree with each other and with the release.
