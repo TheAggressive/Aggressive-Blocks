@@ -138,6 +138,10 @@ PHPStan runs at level 8 on `aggressive-blocks.php`, `includes/`, and `src/`. The
 
 VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`tests/Security`, `tests/Performance`, `tests/Unit/Vip`) plus VIPCS. Production PHP must not write generated files into the plugin directory or call `eval`/`unserialize`. Its only remote HTTP is the GitHub updater (see [docs/updates.md](updates.md)): admin and cron update checks, cached, bounded, and off wherever `DISALLOW_FILE_MODS` is set, as on VIP. A visitor's request never makes one.
 
+## Manual accessibility review
+
+Automated checks cannot judge what a screen reader announces or whether reading order makes sense. [docs/accessibility-review.md](accessibility-review.md) is the 30-minute VoiceOver and NVDA pass to run before a major release, with its results recorded in the release PR.
+
 ## Security
 
 * CodeQL scans authored JS/TS on pull requests, `main`, and a weekly schedule. It does not replace PHP analysis.
