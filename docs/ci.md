@@ -63,7 +63,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
 | Declared WordPress/PHP floor | `pnpm ci:floor` |
-| Screenshot regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
+| Screenshot and page-speed regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 | Full dependency advisory audit | `pnpm ci:audit` |
@@ -116,6 +116,16 @@ It is a required lane in `ci.yml`, under the CI Summary. Baselines made locally 
 
 When a change is meant to look different, run `AB_VISUAL_UPDATE=1 pnpm ci:visual`, look at every rewritten image, and commit them with the change.
 
+## Page speed
+
+The same lane runs `tests/visual/performance.spec.ts` on a page that uses every block, from the release ZIP, with motion on (desktop Chromium). It reads the browser's own layout-shift, long-task and event-timing observers, and fails when:
+
+* loading and scrolling the page shifts layout by more than 0.01 CLS. The Core Web Vitals "good" limit is 0.1, but blocks should shift nothing;
+* load blocks the main thread for more than 200 ms (Total Blocking Time) with the CPU slowed 4x, as Lighthouse's mobile run does;
+* any block control (hero pause and next, card flip, modal open and close) takes more than 200 ms to respond, the Interaction to Next Paint "good" limit, at full CPU speed.
+
+Measured when set: 0-17 ms blocking, 0.0001 CLS, and 40-88 ms for the slowest interaction. Interactions are not throttled because closing the Modal takes 150-184 ms at 4x, too close to the limit to decide reliably on a runner of unknown speed. Each run logs its measurements (`[budget]`), so a trend is visible before a budget breaks.
+
 ## WordPress VIP standards that CI enforces
 
 PHPCS runs WordPress, WordPress-Core, WordPress-Docs, WordPress-Extra, and WordPress-VIP-Go. Warnings are failures. The plugin text domain is `aggressive-blocks`.
@@ -127,6 +137,10 @@ PHPStan runs at level 8 on `aggressive-blocks.php`, `includes/`, and `src/`. The
 `composer.json` has no `version` field so `composer validate --strict` stays clean. CI sets `COMPOSER_ROOT_VERSION` from the plugin header.
 
 VIP-oriented security, filesystem, and performance contracts live in PHPUnit (`tests/Security`, `tests/Performance`, `tests/Unit/Vip`) plus VIPCS. Production PHP must not write generated files into the plugin directory or call `eval`/`unserialize`. Its only remote HTTP is the GitHub updater (see [docs/updates.md](updates.md)): admin and cron update checks, cached, bounded, and off wherever `DISALLOW_FILE_MODS` is set, as on VIP. A visitor's request never makes one.
+
+## Manual accessibility review
+
+Automated checks cannot judge what a screen reader announces or whether reading order makes sense. [docs/accessibility-review.md](accessibility-review.md) is the 30-minute VoiceOver and NVDA pass to run before a major release, with its results recorded in the release PR.
 
 ## Security
 
