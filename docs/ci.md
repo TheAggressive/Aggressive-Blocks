@@ -63,7 +63,7 @@ Documentation-only and translation-only diffs skip expensive lanes. The summary 
 | ZIP + verify | `pnpm ci:package` |
 | ZIP install proof | `pnpm ci:artifact` |
 | Declared WordPress/PHP floor | `pnpm ci:floor` |
-| Screenshot regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
+| Screenshot and page-speed regression | `pnpm ci:visual` (`AB_VISUAL_UPDATE=1` rewrites the baselines) |
 | PHPUnit only | `pnpm test:php` |
 | Tool/contract tests | `pnpm test:tools` |
 | Full dependency advisory audit | `pnpm ci:audit` |
@@ -115,6 +115,16 @@ A screenshot only means something if the environment that made its baseline is t
 It is a required lane in `ci.yml`, under the CI Summary. Baselines made locally on Ubuntu 24.04 have matched the runners exactly. If they ever stop matching, dispatch `.github/workflows/update-visual-baselines.yml` to regenerate them on a runner, then review and commit the images it uploads.
 
 When a change is meant to look different, run `AB_VISUAL_UPDATE=1 pnpm ci:visual`, look at every rewritten image, and commit them with the change.
+
+## Page speed
+
+The same lane runs `tests/visual/performance.spec.ts` on a page that uses every block, from the release ZIP, with motion on (desktop Chromium). It reads the browser's own layout-shift, long-task and event-timing observers, and fails when:
+
+* loading and scrolling the page shifts layout by more than 0.01 CLS. The Core Web Vitals "good" limit is 0.1, but blocks should shift nothing;
+* load blocks the main thread for more than 200 ms (Total Blocking Time) with the CPU slowed 4x, as Lighthouse's mobile run does;
+* any block control (hero pause and next, card flip, modal open and close) takes more than 200 ms to respond, the Interaction to Next Paint "good" limit, at full CPU speed.
+
+Measured when set: 0-17 ms blocking, 0.0001 CLS, and 40-88 ms for the slowest interaction. Interactions are not throttled because closing the Modal takes 150-184 ms at 4x, too close to the limit to decide reliably on a runner of unknown speed. Each run logs its measurements (`[budget]`), so a trend is visible before a budget breaks.
 
 ## WordPress VIP standards that CI enforces
 
