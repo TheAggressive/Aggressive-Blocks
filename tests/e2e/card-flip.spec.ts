@@ -135,6 +135,51 @@ test.describe('Card Flip — front end', () => {
   );
 });
 
+test.describe('Card Flip — reduced motion', () => {
+  let pageId = 0;
+
+  test.afterEach(async ({ page }) => {
+    await deletePage(page, pageId);
+    pageId = 0;
+  });
+
+  /** Computed transition durations of the rotating stage and the control. */
+  function durations(page: Page) {
+    const { inner, toggle } = cardParts(page);
+    return Promise.all([
+      inner.evaluate(el => getComputedStyle(el).transitionDuration),
+      toggle.evaluate(el => getComputedStyle(el).transitionDuration),
+    ]);
+  }
+
+  test('animates the flip by default', async ({ page }) => {
+    pageId = await publishCard(page, 'click');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+    expect(await durations(page)).toEqual(['0.6s', '0.3s']);
+  });
+
+  test(
+    'flips instantly, with the same a11y states, when motion is reduced',
+    { tag: '@webkit' },
+    async ({ page }) => {
+      pageId = await publishCard(page, 'click');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      const { card, inner, back, toggle } = cardParts(page);
+
+      expect(await durations(page)).toEqual(['0s', '0s']);
+
+      await toggle.click();
+      await expect(card).toHaveClass(/is-flipped/);
+      await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      await expect(back).not.toHaveAttribute('inert', /.*/);
+      // No transition was started: the face swap is a jump, not a rotation.
+      expect(await inner.evaluate(el => el.getAnimations().length)).toBe(0);
+      await expect(back.getByRole('link', { name: 'BACK LINK' })).toBeVisible();
+    }
+  );
+});
+
 test.describe('Card Flip — touch', () => {
   test.use({ hasTouch: true });
 
