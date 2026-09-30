@@ -143,12 +143,18 @@ test.describe('Card Flip — reduced motion', () => {
     pageId = 0;
   });
 
-  /** Computed transition durations of the rotating stage and the control. */
+  /**
+   * Computed transition durations of what the block itself animates: the
+   * rotating stage and the control's arrow. The control button's own
+   * transitions come from the theme, so they are not measured.
+   */
   function durations(page: Page) {
     const { inner, toggle } = cardParts(page);
     return Promise.all([
       inner.evaluate(el => getComputedStyle(el).transitionDuration),
-      toggle.evaluate(el => getComputedStyle(el).transitionDuration),
+      toggle
+        .locator('svg')
+        .evaluate(el => getComputedStyle(el).transitionDuration),
     ]);
   }
 
