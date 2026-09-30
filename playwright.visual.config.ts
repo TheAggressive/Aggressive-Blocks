@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Screenshot regression (bin/ci/visual.sh). Motion is reduced and animations
-// are finished before every capture, so a screenshot shows a settled state.
+// Screenshot and page-speed regression (bin/ci/visual.sh). Motion is reduced
+// and animations are finished before every capture, so a screenshot shows a
+// settled state; performance.spec.ts turns motion back on to measure it.
 // Mobile runs only the tests tagged @mobile, whose layout differs there.
 export default defineConfig({
   testDir: './tests/visual',
