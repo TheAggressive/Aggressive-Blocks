@@ -30,9 +30,11 @@
   min-width: 0;
 }
 
-/* Viewport mode crops its media to a fixed box at every width; only the box
-   height is breakpoint-specific (see each media query below). */
-.aa-split-story--viewport .aa-split-story__media {
+/* Viewport sizing applies only to standalone images/videos/covers. Nested blocks
+   such as WooCommerce galleries keep their natural height: stretching their
+   wrapper centers the gallery in an empty viewport and removes sticky travel
+   when the content column is shorter than that viewport. */
+.aa-split-story--viewport .aa-split-story__media:has(> img, > video, > figure, > .wp-block-cover) {
   overflow: hidden;
 }
 
@@ -72,11 +74,11 @@
   }
 
   /* Full-viewport media fills its column. */
-  .aa-split-story--viewport .aa-split-story__media {
+  .aa-split-story--viewport .aa-split-story__media:has(> img, > video, > figure, > .wp-block-cover) {
     height: calc(100svh - var(--aa-split-sticky-top, 0px));
   }
 
-  .aa-split-story--viewport .aa-split-story__media > * {
+  .aa-split-story--viewport .aa-split-story__media > :is(img, video, figure, .wp-block-cover) {
     height: 100%;
   }
 
@@ -105,7 +107,7 @@
 
   /* Viewport media is capped — never a full 100svh on a phone. Content media
      keeps its natural height. */
-  .aa-split-story--viewport .aa-split-story__media {
+  .aa-split-story--viewport .aa-split-story__media:has(> img, > video, > figure, > .wp-block-cover) {
     height: min(60vh, 30rem);
   }
 
