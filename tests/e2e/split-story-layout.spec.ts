@@ -1,11 +1,23 @@
 import { readFileSync } from 'node:fs';
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
-const styles = readFileSync('build/blocks/split-story/style-index.css', 'utf8');
+async function loadStyles(page: Page): Promise<string> {
+  const path = 'build/blocks/split-story/style-index.css';
+  if (process.env.WP_BASE_URL) {
+    // Artifact acceptance has only the installed ZIP, with no local build.
+    const response = await page.request.get(
+      `${process.env.WP_BASE_URL}/wp-content/plugins/aggressive-blocks/${path}`
+    );
+    expect(response.ok()).toBe(true);
+    return response.text();
+  }
+  return readFileSync(path, 'utf8');
+}
 
 test('nested gallery keeps its height and sticks within the split @webkit', async ({
   page,
 }) => {
+  const styles = await loadStyles(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.setContent(`
     <style>
@@ -47,6 +59,7 @@ test('nested gallery keeps its height and sticks within the split @webkit', asyn
 test('standalone image and cover retain viewport sizing @webkit', async ({
   page,
 }) => {
+  const styles = await loadStyles(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   for (const child of [
     '<img alt="Story" />',
