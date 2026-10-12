@@ -6,9 +6,10 @@
  * The PR gate audits production npm dependencies only, and the PHP lane's
  * `composer audit` is informational, so a newly published advisory never
  * blocks unrelated work. Dependabot fixes what it can on its own. This audit
- * surfaces the rest — advisories that need a parent major, an override, or
- * have no fix yet — as one tracking issue that updates itself and closes when
- * the audit is clean.
+ * surfaces the rest — advisories that need a parent major, an override, or a
+ * fix that is not published yet — as one tracking issue that updates itself and
+ * closes when the audit is clean. Advisories listed in ACCEPTED_ADVISORIES are
+ * held out only while no published version fixes them.
  *
  * `node bin/ci/dependency-audit.mjs` prints the report and exits 1 when there
  * is anything to fix. `--sync-issue` (the scheduled workflow) manages the issue
@@ -27,6 +28,69 @@ export const ISSUE_TITLE = 'Dependency advisories need attention';
 const ISSUE_AUTHOR = 'app/github-actions';
 const MARKER = /<!-- dependency-audit: ([^>]*) -->/u;
 const SEVERITY_RANK = ['critical', 'high', 'moderate', 'medium', 'low', 'info'];
+
+/**
+ * npm advisories that no published version fixes, each accepted for the reason
+ * beside it. One stays out of the report only while that is still true, so it
+ * comes back the week a fix ships. (pnpm's `auditConfig.ignoreGhsas` would hide
+ * it for good.)
+ */
+export const ACCEPTED_ADVISORIES = {
+  'GHSA-vfj7-8cjw-p6xm':
+    'braces expands only the glob patterns this repository gives its build, lint and test tools.',
+  'GHSA-hp3w-g68c-fv3c':
+    'sprintf-js comes only through argparse 1, which js-yaml 3 loads for its own command line; the tools here use js-yaml as a library.',
+};
+
+/** @param {RegExpExecArray} left @param {RegExpExecArray} right */
+function compareVersions(left, right) {
+  for (const index of [1, 2, 3]) {
+    const difference = Number(left[index]) - Number(right[index]);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+}
+
+/**
+ * Whether a published release satisfies a patched range. Ranges other than
+ * `>=x.y.z` alternatives count as published, so the advisory stays reported.
+ *
+ * @param {string} range Patched range from the audit, such as `>=3.0.4`.
+ * @param {string[]} versions Every published version of the package.
+ */
+export function fixPublished(range, versions) {
+  if (range.trim() === '<0.0.0') return false;
+  const floors = range
+    .split('||')
+    .map(part => /^\s*>=\s*(\d+)\.(\d+)\.(\d+)\s*$/u.exec(part));
+  if (floors.some(floor => !floor)) return true;
+  return versions.some(version => {
+    const release = /^(\d+)\.(\d+)\.(\d+)$/u.exec(version);
+    return (
+      release && floors.some(floor => compareVersions(release, floor) >= 0)
+    );
+  });
+}
+
+/**
+ * Split out accepted advisories that still have no published fix.
+ *
+ * @param {Finding[]} findings
+ * @param {Record<string, string>} accepted Advisory id to reason.
+ * @param {(name: string) => string[]} publishedVersions
+ * @return {{open: Finding[], accepted: Finding[]}}
+ */
+export function partitionAccepted(findings, accepted, publishedVersions) {
+  const result = { open: [], accepted: [] };
+  for (const finding of findings) {
+    const held =
+      finding.ecosystem === 'npm' &&
+      Object.hasOwn(accepted, finding.advisory) &&
+      !fixPublished(finding.fixed, publishedVersions(finding.package));
+    result[held ? 'accepted' : 'open'].push(finding);
+  }
+  return result;
+}
 
 /**
  * @typedef {object} Finding
@@ -138,11 +202,22 @@ function cell(value) {
   return value.replace(/\r?\n/gu, ' ').replace(/\|/gu, '\\|').trim() || '—';
 }
 
+/** @param {Finding[]} accepted */
+export function renderAccepted(accepted) {
+  if (accepted.length === 0) return '';
+  const lines = sortFindings(accepted).map(
+    finding =>
+      `- ${finding.package} ${finding.installed.join(', ')}: [${finding.advisory}](${finding.url}). ${ACCEPTED_ADVISORIES[finding.advisory] ?? ''}`
+  );
+  return `\nAccepted while no published version fixes them; each is reported again once one does (\`ACCEPTED_ADVISORIES\` in \`bin/ci/dependency-audit.mjs\`):\n\n${lines.join('\n')}\n`;
+}
+
 /**
  * @param {Finding[]} findings
  * @param {string} runUrl
+ * @param {Finding[]} [accepted]
  */
-export function renderIssue(findings, runUrl) {
+export function renderIssue(findings, runUrl, accepted = []) {
   const sorted = sortFindings(findings);
   const keys = sorted.map(findingKey).join(',');
   const rows = sorted.map(finding => {
@@ -165,6 +240,7 @@ ${rows.join('\n')}
 
 To resolve one, update the package that pulls it in; Dependabot opens those PRs for \`@wordpress/scripts\` and \`@wordpress/env\` majors. Where the parent still pins a vulnerable version, add a floor to \`overrides\` in \`pnpm-workspace.yaml\`. See [docs/ci.md](../blob/main/docs/ci.md#dependency-advisories).
 
+${renderAccepted(accepted)}
 This issue is managed by the Dependency Audit workflow. It updates weekly and closes itself when the audit is clean. Last run: ${runUrl}
 `;
 }
@@ -225,6 +301,21 @@ function gh(args) {
   });
 }
 
+/** @param {string} name */
+function publishedVersions(name) {
+  const versions = JSON.parse(
+    execFileSync(
+      'npm',
+      ['view', name, 'versions', '--json', '--loglevel=error'],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'inherit'],
+      }
+    )
+  );
+  return Array.isArray(versions) ? versions : [versions];
+}
+
 function audit() {
   const lock = JSON.parse(readFileSync('composer.lock', 'utf8'));
   return [
@@ -251,7 +342,7 @@ function summaryLine(findings) {
     .join('\n');
 }
 
-function syncIssue(findings, runUrl) {
+function syncIssue(findings, runUrl, accepted) {
   gh([
     'label',
     'create',
@@ -290,7 +381,7 @@ function syncIssue(findings, runUrl) {
       '--label',
       ISSUE_LABEL,
       '--body',
-      renderIssue(findings, runUrl),
+      renderIssue(findings, runUrl, accepted),
     ]).trim();
     console.log(`Opened ${url}.`);
   } else if (plan.action === 'update') {
@@ -301,7 +392,7 @@ function syncIssue(findings, runUrl) {
       'edit',
       String(issue.number),
       '--body',
-      renderIssue(findings, runUrl),
+      renderIssue(findings, runUrl, accepted),
     ]);
     if (plan.added.length > 0) {
       gh([
@@ -332,7 +423,12 @@ function syncIssue(findings, runUrl) {
 }
 
 export function main(argv = process.argv.slice(2), environment = process.env) {
-  const findings = sortFindings(audit());
+  const { open, accepted } = partitionAccepted(
+    audit(),
+    ACCEPTED_ADVISORIES,
+    publishedVersions
+  );
+  const findings = sortFindings(open);
   const runUrl =
     environment.GITHUB_SERVER_URL &&
     environment.GITHUB_REPOSITORY &&
@@ -341,15 +437,15 @@ export function main(argv = process.argv.slice(2), environment = process.env) {
       : 'local run';
   const report =
     findings.length === 0
-      ? 'No advisories in the locked npm or Composer dependencies.\n'
-      : renderIssue(findings, runUrl);
+      ? `No open advisories in the locked npm or Composer dependencies.\n${renderAccepted(accepted)}`
+      : renderIssue(findings, runUrl, accepted);
 
   if (environment.GITHUB_STEP_SUMMARY) {
     appendFileSync(environment.GITHUB_STEP_SUMMARY, report, 'utf8');
   }
 
   if (argv.includes('--sync-issue')) {
-    syncIssue(findings, runUrl);
+    syncIssue(findings, runUrl, accepted);
     return;
   }
 

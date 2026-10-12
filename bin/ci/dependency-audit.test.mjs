@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  ACCEPTED_ADVISORIES,
   findingKey,
+  fixPublished,
   parseComposerAudit,
   parsePnpmAudit,
+  partitionAccepted,
   planIssue,
   recordedKeys,
   renderIssue,
@@ -171,5 +174,59 @@ describe('dependency audit issue', () => {
   it('closes the issue once the audit is clean, and otherwise does nothing', () => {
     assert.equal(planIssue([], { number: 7, body: '' }).action, 'close');
     assert.equal(planIssue([], null).action, 'none');
+  });
+});
+
+describe('accepted advisories', () => {
+  const [uuid] = parsePnpmAudit(VULNERABLE_PNPM);
+  const accepted = { [uuid.advisory]: 'Only test fixtures generate ids.' };
+
+  it('holds an accepted advisory while no release reaches the patched range', () => {
+    const { open, accepted: held } = partitionAccepted([uuid], accepted, () => [
+      '10.0.0',
+      '11.1.0',
+      '12.0.0-beta.1',
+    ]);
+
+    assert.deepEqual(open, []);
+    assert.deepEqual(held, [uuid]);
+  });
+
+  it('reports it again once a fixed version is published', () => {
+    const { open, accepted: held } = partitionAccepted([uuid], accepted, () => [
+      '11.1.0',
+      '11.1.1',
+    ]);
+
+    assert.deepEqual(open, [uuid]);
+    assert.deepEqual(held, []);
+  });
+
+  it('never holds an advisory that is not on the list', () => {
+    const { open } = partitionAccepted([uuid], {}, () => []);
+    assert.deepEqual(open, [uuid]);
+  });
+
+  it('reads the patched ranges the audit reports', () => {
+    assert.equal(fixPublished('>=3.0.4', ['3.0.3']), false);
+    assert.equal(fixPublished('>=3.0.4', ['3.0.3', '3.0.4']), true);
+    assert.equal(fixPublished('>=3.0.4', ['3.10.0']), true);
+    assert.equal(fixPublished('>=1.1.4 || >=2.0.1', ['1.1.3', '2.0.1']), true);
+    assert.equal(fixPublished('<0.0.0', ['9.9.9']), false);
+  });
+
+  it('treats a range it cannot read as fixed, so the advisory stays visible', () => {
+    assert.equal(fixPublished('>=1.2.3 <2.0.0', []), true);
+    assert.equal(fixPublished('', []), true);
+  });
+
+  it('lists accepted advisories with their reasons in the issue', () => {
+    const body = renderIssue([], 'run', [
+      { ...uuid, advisory: 'GHSA-vfj7-8cjw-p6xm', package: 'braces' },
+    ]);
+
+    assert.match(body, /braces 8\.3\.2: \[GHSA-vfj7-8cjw-p6xm\]/u);
+    assert.ok(body.includes(ACCEPTED_ADVISORIES['GHSA-vfj7-8cjw-p6xm']));
+    assert.deepEqual(recordedKeys(body), new Set());
   });
 });
