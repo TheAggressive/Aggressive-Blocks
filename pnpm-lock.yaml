@@ -13,6 +13,10 @@ overrides:
   postcss-selector-parser@<7.1.6: ^7.1.6
   source-map-js@<1.2.2: ^1.2.2
   katex@<0.18.2: ^0.18.2
+  simple-git@<4.0.1: ^4.0.2
+
+patchedDependencies:
+  '@wordpress/env@11.17.0': 9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85
 
 importers:
 
@@ -89,7 +93,7 @@ importers:
         version: 8.8.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@18.3.1(react@19.3.0))(react@19.3.0)
       '@wordpress/env':
         specifier: ^11.17.0
-        version: 11.17.0(@types/node@26.6.1)(supports-color@10.2.2)
+        version: 11.17.0(patch_hash=9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85)(@types/node@26.6.1)(supports-color@10.2.2)
       '@wordpress/eslint-plugin':
         specifier: ^25.9.0
         version: 25.10.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(jest@30.5.0(@types/node@26.6.1)(babel-plugin-macros@3.1.0)(supports-color@10.2.2))(lightningcss@1.33.0)(postcss@8.5.28)(prettier@3.9.8)(react-dom@18.3.1(react@19.3.0))(react@19.3.0)(stylelint@17.15.0(supports-color@10.2.2)(typescript@5.9.3))(supports-color@10.2.2)(typescript@5.9.3)
@@ -113,7 +117,7 @@ importers:
         version: 14.2.0(@babel/core@7.29.7(supports-color@10.2.2))(jest@30.5.0(@types/node@26.6.1)(babel-plugin-macros@3.1.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@wordpress/scripts':
         specifier: ^36.1.0
-        version: 36.1.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@playwright/test@1.63.0)(@types/node@26.6.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@wordpress/env@11.17.0(@types/node@26.6.1)(supports-color@10.2.2))(csso@5.0.5)(debug@4.4.3(supports-color@10.2.2))(jest@30.5.0(@types/node@26.6.1)(babel-plugin-macros@3.1.0)(supports-color@10.2.2))(jiti@2.7.0)(lightningcss@1.33.0)(react-dom@18.3.1(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)(svgo@3.3.5)(type-fest@4.41.0)(typescript@5.9.3)(uglify-js@3.19.3)(yauzl@2.10.0)
+        version: 36.1.0(2b67953678516f19e74706c0ee59ef2d)
       '@wordpress/stylelint-config':
         specifier: ^24.2.0
         version: 24.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lightningcss@1.33.0)(postcss@8.5.28)(react-dom@18.3.1(react@19.3.0))(react@19.3.0)(stylelint-scss@6.14.0(stylelint@17.15.0(supports-color@10.2.2)(typescript@5.9.3)))(stylelint@17.15.0(supports-color@10.2.2)(typescript@5.9.3))
@@ -2512,11 +2516,11 @@ packages:
     resolution: {integrity: sha512-PG3a+3GxurYYipLykRM3qezWjkIBYuqBjn8EuXzzlG6mpucMVtU8SRgr3EB0wdVaj1Pz+mhz+MLh8CGnLfKhCQ==}
     engines: {node: '>=18'}
 
-  '@simple-git/args-pathspec@1.0.3':
-    resolution: {integrity: sha512-ngJMaHlsWDTfjyq9F3VIQ8b7NXbBLq5j9i5bJ6XLYtD6qlDXT7fdKY2KscWWUF8t18xx052Y/PUO1K1TRc9yKA==}
+  '@simple-git/args-pathspec@1.0.4':
+    resolution: {integrity: sha512-EtMX6XjRWSastG2SdkmSQByPtJ9dx/NIjnHbpQPCYt62j4RmSx5rgLTGpw0YCjF5h191gZOmBfheOT23cRSFdw==}
 
-  '@simple-git/argv-parser@1.1.1':
-    resolution: {integrity: sha512-Q9lBcfQ+VQCpQqGJFHe5yooOS5hGdLFFbJ5R+R5aDsnkPCahtn1hSkMcORX65J2Z5lxSkD0lQorMsncuBQxYUw==}
+  '@simple-git/argv-parser@2.0.1':
+    resolution: {integrity: sha512-M++IaVWrN+vYalilOHfwvT2IL3wYZtVEBQpmX6DLSOJLtxbZ+SUeIDE3IiPogzhPACLajwtxfa5rp+ZX1FczzQ==}
 
   '@simple-libs/child-process-utils@1.0.2':
     resolution: {integrity: sha512-/4R8QKnd/8agJynkNdJmNw2MBxuFTRcNFnE5Sg/G+jkSsV8/UBgULMzhizWWW42p8L5H7flImV2ATi79Ove2Tw==}
@@ -9005,8 +9009,8 @@ packages:
   simple-get@4.0.1:
     resolution: {integrity: sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA==}
 
-  simple-git@3.36.0:
-    resolution: {integrity: sha512-cGQjLjK8bxJw4QuYT7gxHw3/IouVESbhahSsHrX97MzCL1gu2u7oy38W6L2ZIGECEfIBG4BabsWDPjBxJENv9Q==}
+  simple-git@4.0.2:
+    resolution: {integrity: sha512-l0sIsv9VrPwovKELFDBOj/lhmIcbMvxBk2B+hRhsMM4/VL3gKtuZvYnBNixVo+N/0HnqQx2cBdLvxnAbygHpqA==}
 
   simple-html-tokenizer@0.5.11:
     resolution: {integrity: sha512-C2WEK/Z3HoSFbYq8tI7ni3eOo/NneSPRoPpcM7WdLjFOArFuyXEjAoCdOC3DgMfRyziZQ1hCNR4mrNdWEvD0og==}
@@ -13036,11 +13040,11 @@ snapshots:
       '@sentry/conventions': 0.16.0
       '@sentry/core': 10.75.3
 
-  '@simple-git/args-pathspec@1.0.3': {}
+  '@simple-git/args-pathspec@1.0.4': {}
 
-  '@simple-git/argv-parser@1.1.1':
+  '@simple-git/argv-parser@2.0.1':
     dependencies:
-      '@simple-git/args-pathspec': 1.0.3
+      '@simple-git/args-pathspec': 1.0.4
 
   '@simple-libs/child-process-utils@1.0.2':
     dependencies:
@@ -14926,7 +14930,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@wordpress/env@11.17.0(@types/node@26.6.1)(supports-color@10.2.2)':
+  '@wordpress/env@11.17.0(patch_hash=9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85)(@types/node@26.6.1)(supports-color@10.2.2)':
     dependencies:
       '@inquirer/prompts': 7.10.1(@types/node@26.6.1)
       '@wp-playground/cli': 3.1.57(supports-color@10.2.2)
@@ -14939,7 +14943,7 @@ snapshots:
       js-yaml: 3.15.2
       ora: 4.1.1
       rimraf: 5.0.10
-      simple-git: 3.36.0(supports-color@10.2.2)
+      simple-git: 4.0.2(supports-color@10.2.2)
       yargs: 17.7.3
     transitivePeerDependencies:
       - '@types/node'
@@ -15385,7 +15389,7 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@wordpress/scripts@36.1.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))(@playwright/test@1.63.0)(@types/node@26.6.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript-eslint/eslint-plugin@8.70.0(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@typescript-eslint/parser@8.70.0(eslint@9.39.5(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@wordpress/env@11.17.0(@types/node@26.6.1)(supports-color@10.2.2))(csso@5.0.5)(debug@4.4.3(supports-color@10.2.2))(jest@30.5.0(@types/node@26.6.1)(babel-plugin-macros@3.1.0)(supports-color@10.2.2))(jiti@2.7.0)(lightningcss@1.33.0)(react-dom@18.3.1(react@19.3.0))(react@19.3.0)(supports-color@10.2.2)(svgo@3.3.5)(type-fest@4.41.0)(typescript@5.9.3)(uglify-js@3.19.3)(yauzl@2.10.0)':
+  '@wordpress/scripts@36.1.0(2b67953678516f19e74706c0ee59ef2d)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@pmmmwh/react-refresh-webpack-plugin': 0.5.17(react-refresh@0.14.2)(type-fest@4.41.0)(webpack-dev-server@5.2.6)(webpack@5.111.1)
@@ -15440,7 +15444,7 @@ snapshots:
       webpack-dev-server: 5.2.6(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)(webpack-cli@5.1.4)(webpack@5.111.1)
     optionalDependencies:
       '@playwright/test': 1.63.0
-      '@wordpress/env': 11.17.0(@types/node@26.6.1)(supports-color@10.2.2)
+      '@wordpress/env': 11.17.0(patch_hash=9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85)(@types/node@26.6.1)(supports-color@10.2.2)
       jest: 30.5.0(@types/node@26.6.1)(babel-plugin-macros@3.1.0)(supports-color@10.2.2)
     transitivePeerDependencies:
       - '@minify-html/node'
@@ -21478,12 +21482,12 @@ snapshots:
       once: 1.4.0
       simple-concat: 1.0.1
 
-  simple-git@3.36.0(supports-color@10.2.2):
+  simple-git@4.0.2(supports-color@10.2.2):
     dependencies:
       '@kwsites/file-exists': 1.1.1(supports-color@10.2.2)
       '@kwsites/promise-deferred': 1.1.1
-      '@simple-git/args-pathspec': 1.0.3
-      '@simple-git/argv-parser': 1.1.1
+      '@simple-git/args-pathspec': 1.0.4
+      '@simple-git/argv-parser': 2.0.1
       debug: 4.4.3(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color

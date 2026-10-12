@@ -1,11 +1,17 @@
 /** Contracts for isolated CI wp-env: plugin only, default block theme, no theme source. */
 
+import { readdirSync, realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+
 import {
   artifactWpEnv,
   betaUpdater,
   betaWorkflow,
   check,
   packageJson,
+  readText,
+  repositoryRoot,
   wpEnv,
 } from '../lib/contract-inputs.mjs';
 
@@ -96,3 +102,25 @@ check(
     betaUpdater.includes('files_after'),
   'The beta updater must use the isolated CI wrapper and verify wp-content restore.'
 );
+
+// simple-git 4 removed the callable default export that @wordpress/env 11.17
+// calls. pnpm-workspace.yaml raises simple-git to 4 and patches that one wp-env
+// version to the named export. A later wp-env leaves the patch unused, so it
+// must call the named export itself, or the patch must move to it.
+const wpEnvLib = 'node_modules/@wordpress/env/lib';
+// pnpm links a package's dependencies beside its real directory, not its link.
+const simpleGit = createRequire(
+  path.join(realpathSync(path.join(repositoryRoot, wpEnvLib)), 'index.js')
+)('simple-git');
+const callsDefaultExport =
+  /(?:const|let|var)\s+\w+\s*=\s*require\(\s*['"]simple-git['"]\s*\)/u;
+for (const file of readdirSync(path.join(repositoryRoot, wpEnvLib), {
+  recursive: true,
+})) {
+  if (!file.endsWith('.js')) continue;
+  check(
+    typeof simpleGit === 'function' ||
+      !callsDefaultExport.test(readText(path.join(wpEnvLib, file))),
+    `@wordpress/env ${file} calls the simple-git default export, which simple-git 4 removed: point the @wordpress/env patch in pnpm-workspace.yaml at the installed version.`
+  );
+}

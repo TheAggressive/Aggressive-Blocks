@@ -21,7 +21,8 @@ allowBuilds:
 # (GHSA-68fv-2mgg-jv7q); and micromark-extension-math (via markdownlint) wants
 # katex 0.16 (GHSA-238p-pmpm-9mq7), which only its HTML renderer loads and
 # markdownlint never calls. Each patched version keeps the CommonJS entry and
-# API those callers use. Remove an entry once no dependency resolves below it.
+# API those callers use, except simple-git (below). Remove an entry once no
+# dependency resolves below it.
 overrides:
   'serialize-javascript@<7.0.5': ^7.0.5
   'uuid@<11.1.1': ^11.1.1
@@ -31,3 +32,18 @@ overrides:
   'postcss-selector-parser@<7.1.6': ^7.1.6
   'source-map-js@<1.2.2': ^1.2.2
   'katex@<0.18.2': ^0.18.2
+  'simple-git@<4.0.1': ^4.0.2
+
+# @wordpress/env 11.17 wants simple-git ^3, which has no fix for
+# GHSA-v5rq-49vh-5v5c, GHSA-x6jw-m9v5-85vh, GHSA-858h-whjf-mvg5 or
+# GHSA-g4wm-2vf7-vfgr. simple-git 4 drops the callable default export that
+# wp-env requires, so this patch carries WordPress/gutenberg#84137, the upstream
+# change that moves wp-env to the named `simpleGit` export, verbatim. It is
+# pinned to 11.17.0, and allowUnusedPatches lets a later @wordpress/env install
+# without it; bin/ci/contracts/wp-env.mjs fails if that version still calls the
+# default export. Delete the patch and the simple-git override once
+# @wordpress/env requires simple-git 4 itself.
+allowUnusedPatches: true
+
+patchedDependencies:
+  '@wordpress/env@11.17.0': patches/@wordpress__env@11.17.0.patch
