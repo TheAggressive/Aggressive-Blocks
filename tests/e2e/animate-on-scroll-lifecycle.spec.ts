@@ -1,12 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
-const asset = (name: string) =>
-  readFileSync(
-    path.resolve(`build/blocks-interactivity/animate-on-scroll/${name}`),
-    'utf8'
-  );
+import { readAnimationAsset } from './animation-assets';
 
 declare global {
   interface Window {
@@ -20,7 +13,12 @@ declare global {
 
 // Run the shipped store with real observers, CSS and animation events. The
 // adapter supplies only WordPress context/class bindings, without a WP server.
-async function prepare(page: Page, effect = 'slide', sequence = false) {
+async function prepare(
+  page: Page,
+  baseURL: string | undefined,
+  effect = 'slide',
+  sequence = false
+) {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.setContent(`
     <style>body { margin: 0; } .spacer { height: 850px; }</style>
@@ -34,7 +32,9 @@ async function prepare(page: Page, effect = 'slide', sequence = false) {
     </div>
     <div style="height: 2000px"></div>
   `);
-  await page.addStyleTag({ content: asset('style-index.css') });
+  await page.addStyleTag({
+    content: await readAnimationAsset(page, baseURL, 'style-index.css'),
+  });
   const adapter = `
     const root = document.querySelector('.wp-block-animate-on-scroll');
     window.aosFixture = { events: [] };
@@ -65,7 +65,10 @@ async function prepare(page: Page, effect = 'slide', sequence = false) {
       },
     }),
   });
-  await page.addScriptTag({ type: 'module', content: asset('view.js') });
+  await page.addScriptTag({
+    type: 'module',
+    content: await readAnimationAsset(page, baseURL, 'view.js'),
+  });
   await page.waitForFunction(() => !!window.aosFixture?.init);
   return page.locator('.wp-block-animate-on-scroll');
 }
@@ -77,8 +80,9 @@ test.afterEach(async ({ page }) => {
 for (const effect of ['fade', 'slide', 'bounce', 'sequence']) {
   test(`${effect} waits for its first scroll trigger without an exit @webkit`, async ({
     page,
+    baseURL,
   }) => {
-    const root = await prepare(page, effect, effect === 'sequence');
+    const root = await prepare(page, baseURL, effect, effect === 'sequence');
     const first = root.locator('> div').first();
     await expect(first).toHaveCSS('opacity', '1');
     expect(await page.evaluate(() => window.aosFixture.events)).toEqual([]);
@@ -118,8 +122,9 @@ for (const effect of ['fade', 'slide', 'bounce', 'sequence']) {
 for (const change of ['viewport', 'content']) {
   test(`recalculates a tall block's trigger after ${change} resizing @webkit`, async ({
     page,
+    baseURL,
   }) => {
-    const root = await prepare(page);
+    const root = await prepare(page, baseURL);
     await root.evaluate(el => {
       (el.previousElementSibling as HTMLElement).style.height = '2000px';
       for (const child of Array.from(el.children)) {

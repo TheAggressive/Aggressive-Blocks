@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { readAnimationAsset } from './animation-assets';
 
 const effects = [
   ['slide', 'left'],
@@ -16,16 +15,12 @@ const effects = [
 for (const width of [375, 1440]) {
   test(`animations keep the page width at ${width}px @webkit`, async ({
     page,
+    baseURL,
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.setContent('<style>body { margin: 0; }</style>');
     await page.addStyleTag({
-      content: readFileSync(
-        path.resolve(
-          'build/blocks-interactivity/animate-on-scroll/style-index.css'
-        ),
-        'utf8'
-      ),
+      content: await readAnimationAsset(page, baseURL, 'style-index.css'),
     });
 
     for (const sequence of [false, true]) {
