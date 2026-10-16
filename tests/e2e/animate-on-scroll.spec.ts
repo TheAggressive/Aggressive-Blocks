@@ -42,6 +42,71 @@ test.describe('Animate On Scroll — front end', () => {
     pageId = 0;
   });
 
+  test('editor preview assigns sequence steps and stagger to individual blocks', async ({
+    page,
+  }) => {
+    await openPageEditor(page);
+    await page.addLocatorHandler(
+      page.getByRole('dialog').filter({
+        has: page.getByRole('heading', {
+          name: 'Choose a pattern',
+          exact: true,
+        }),
+      }),
+      async chooser => {
+        await chooser.getByRole('button', { name: /^(Close|Cancel)$/ }).click();
+      }
+    );
+    pageId = await page.evaluate(() =>
+      Number(window.wp.data.select('core/editor').getCurrentPostId())
+    );
+    await page.evaluate(() => {
+      const { createBlock } = window.wp.blocks;
+      const aos = createBlock(
+        'aggressive-blocks/animate-on-scroll',
+        {
+          useSequence: true,
+          animationSequence: [
+            { animation: 'slide', direction: 'left' },
+            { animation: 'bounce', direction: 'standard' },
+          ],
+          staggerChildren: true,
+          staggerDelay: 0.2,
+          duration: 2,
+        },
+        [
+          createBlock('core/paragraph', { content: 'First preview child' }),
+          createBlock('core/paragraph', { content: 'Second preview child' }),
+        ]
+      );
+      const editor = window.wp.data.dispatch('core/block-editor');
+      editor.insertBlock(aos);
+      editor.selectBlock(aos.clientId);
+      window.wp.data
+        .dispatch('core/interface')
+        .enableComplementaryArea('core', 'edit-post/block');
+    });
+    const root = page
+      .frameLocator('iframe[name="editor-canvas"]')
+      .locator('.wp-block-animate-on-scroll')
+      .first();
+    await expect(root.locator('> p')).toHaveCount(2);
+    await page
+      .getByRole('button', { name: 'Preview animation', exact: true })
+      .click();
+    const children = root.locator('> p');
+    await expect(children.nth(0)).toHaveAttribute(
+      'data-animate-sequence-type',
+      'slide'
+    );
+    await expect(children.nth(1)).toHaveAttribute(
+      'data-animate-sequence-type',
+      'bounce'
+    );
+    await expect(children.nth(0)).toHaveCSS('transition-delay', '0s');
+    await expect(children.nth(1)).toHaveCSS('transition-delay', '0.2s');
+  });
+
   test('staggers child transition-delay after becoming visible', async ({
     page,
   }) => {
@@ -137,7 +202,7 @@ test.describe('Animate On Scroll — front end', () => {
     const { id, url } = await publishAndGetUrl(page);
     pageId = id;
 
-    // The entrance starts on first paint; record it as it starts.
+    // Record the entrance when the observer reveals the block.
     await page.addInitScript(() => {
       const started: string[] = [];
       (window as unknown as { bounceStarts: string[] }).bounceStarts = started;
@@ -196,83 +261,31 @@ test.describe('Animate On Scroll — front end', () => {
       .toBe('none');
   });
 
-  test('an in-view block animates in on first paint, without the view script', async ({
+  test('content stays visible without the view script and does not animate early', async ({
     page,
   }) => {
     await openPageEditor(page);
-
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const { createBlock } = window.wp.blocks;
-      const aos = createBlock(
-        'aggressive-blocks/animate-on-scroll',
-        { animation: 'fade', duration: 0.4, respectReducedMotion: false },
-        [createBlock('core/paragraph', { content: 'In view at load' })]
-      );
-      window.wp.data.dispatch('core/block-editor').insertBlock(aos, 0);
-      await new Promise(r => setTimeout(r, 400));
+      window.wp.data
+        .dispatch('core/block-editor')
+        .insertBlock(
+          createBlock(
+            'aggressive-blocks/animate-on-scroll',
+            { animation: 'bounce', duration: 0.4, respectReducedMotion: false },
+            [createBlock('core/paragraph', { content: 'In view at load' })]
+          ),
+          0
+        );
     });
-
     const { id, url } = await publishAndGetUrl(page);
     pageId = id;
-
-    // The entrance is CSS only: block the store's script entirely.
     await page.route(/animate-on-scroll\/view\.js/, route => route.abort());
-
-    // Record the entrance: every opacity change from the first frame, and
-    // the opacity transitions the CSS starts on the child.
-    await page.addInitScript(() => {
-      const state = { trace: [] as number[], transitions: 0 };
-      (window as unknown as { aos: typeof state }).aos = state;
-      document.addEventListener(
-        'transitionrun',
-        event => {
-          const target = event.target;
-          if (
-            event.propertyName === 'opacity' &&
-            target instanceof Element &&
-            target.parentElement?.matches('.wp-block-animate-on-scroll')
-          ) {
-            state.transitions++;
-          }
-        },
-        true
-      );
-      // Sample for 4s from the first frame, not from navigation start: a
-      // slow server can take most of that before the page first paints.
-      let until = 0;
-      const sample = (now: number) => {
-        until ||= now + 4000;
-        const child = document.querySelector('.wp-block-animate-on-scroll > *');
-        if (child) {
-          const opacity = Number(getComputedStyle(child).opacity);
-          if (state.trace.at(-1) !== opacity) state.trace.push(opacity);
-        }
-        if (now < until) requestAnimationFrame(sample);
-      };
-      requestAnimationFrame(sample);
-    });
-
     await page.goto(url);
-    await page.waitForTimeout(1500);
-
     const root = page.locator('.wp-block-animate-on-scroll').first();
     await expect(root).not.toHaveAttribute('data-animate-id');
-
-    const { trace, transitions } = await page.evaluate(
-      () =>
-        (window as unknown as { aos: { trace: number[]; transitions: number } })
-          .aos
-    );
-    // The CSS entrance ran with the store's script blocked. Whether the
-    // first sampled frame catches it mid-flight depends on how soon the
-    // runner presents that frame, so the event, not the first sample,
-    // proves it.
-    expect(transitions).toBeGreaterThan(0);
-    // Never shown, hidden, and shown again: opacity only rises, to 1.
-    expect(trace.at(-1)).toBe(1);
-    trace.slice(1).forEach((opacity, i) => {
-      expect(opacity).toBeGreaterThanOrEqual(trace[i]);
-    });
+    await expect(root.locator('> p')).toHaveCSS('opacity', '1');
+    await expect(root.locator('> p')).toHaveCSS('animation-name', 'none');
   });
 
   test('keyboard focus reveals an armed block', async ({ page }) => {

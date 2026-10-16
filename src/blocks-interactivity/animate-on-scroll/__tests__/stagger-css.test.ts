@@ -82,11 +82,14 @@ describe('animate-on-scroll stylesheet', () => {
     });
   });
 
-  it('plays the first-paint entrance on the front end only', () => {
-    expect(rules).toMatch(
-      /&\[data-wp-interactive\] > \* \{\s*@starting-style \{/
+  it('leaves the first entrance to the scroll trigger and arms without an exit', () => {
+    expect(rules).not.toMatch(/@starting-style/);
+    expect(rules).not.toMatch(
+      /\[data-wp-interactive\]:not\(\[data-animate-id\]\)/
     );
-    expect(rules.match(/@starting-style/g)).toHaveLength(1);
+    expect(rules).toMatch(
+      /&\[data-aos-preparing\] > \* \{\s*transition: none;\s*animation: none;/
+    );
   });
 
   it('ships the bounce-family keyframes, in and out', () => {

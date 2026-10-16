@@ -2,12 +2,10 @@
 /**
  * Animate On Scroll — server render.
  *
- * Children render in their natural, visible state; style.css plays the
- * entrance on first paint (@starting-style), so a block in view at load
- * animates without waiting for the store and content never depends on
- * JavaScript. The store then arms only the blocks that are off screen
- * (data-animate-id) and reveals them as they scroll in. Stagger delays are
- * written here so the first-paint entrance staggers too.
+ * Children render in their natural, visible state without JavaScript.
+ * The store arms every block (data-animate-id) without an exit transition
+ * and reveals it only when its configured scroll trigger is reached.
+ * Stagger delays are written here and kept in sync by the store.
  *
  * The animation is named in data attributes (data-animate-type and
  * data-animate-direction on the wrapper, data-animate-sequence-* on each

@@ -44,6 +44,7 @@ const observers: Array<{
   callback: ObserverCallback;
   options: IntersectionObserverInit;
   disconnect: jest.Mock;
+  observe: jest.Mock;
 }> = [];
 
 class MockIntersectionObserver {
@@ -410,6 +411,7 @@ describe('initObserver reduced motion', () => {
 });
 
 describe('initObserver arming and entry', () => {
+  const cleanups: Array<() => void> = [];
   const inViewport = (el: HTMLElement) => {
     el.getBoundingClientRect = () =>
       ({
@@ -448,12 +450,15 @@ describe('initObserver arming and entry', () => {
       reverseOnScrollBack: false,
       ...ctxOverrides,
     };
-    holder.config!.callbacks.initObserver();
+    const cleanup = holder.config!.callbacks.initObserver();
+    if (cleanup) cleanups.push(cleanup);
     return { ref: holder.ref, observer: observers[0] };
   };
 
   afterEach(() => {
+    cleanups.splice(0).forEach(cleanup => cleanup());
     document.body.innerHTML = '';
+    jest.restoreAllMocks();
   });
 
   it('arms a block that is off screen at hydration', () => {
@@ -462,23 +467,32 @@ describe('initObserver arming and entry', () => {
     expect(holder.ctx.isVisible).toBe(false);
   });
 
-  it('leaves a block in view at hydration unarmed and visible', () => {
+  it('arms an in-view block until it reaches its configured trigger', () => {
     const { ref } = setup({}, inViewport);
-    expect(ref.hasAttribute('data-animate-id')).toBe(false);
-    expect(holder.ctx.isVisible).toBe(true);
+    expect(ref.getAttribute('data-animate-id')).toBe('test');
+    expect(ref.hasAttribute('data-aos-preparing')).toBe(false);
+    expect(holder.ctx.isVisible).toBe(false);
+    expect(holder.ctx.hasAnimated).toBe(false);
   });
 
-  it('arms an in-view block only when it first exits', () => {
+  it('never exits an in-view block before its first triggered entrance', () => {
     const { ref, observer } = setup({ reverseOnScrollBack: true }, inViewport);
 
-    // A sliver on screen at load: below the exit threshold, but no exit.
     observer.callback([{ intersectionRatio: 0.05, isIntersecting: true }]);
-    expect(holder.ctx.isVisible).toBe(true);
-    expect(ref.hasAttribute('data-animate-id')).toBe(false);
-
     observer.callback([{ intersectionRatio: 0, isIntersecting: false }]);
     expect(holder.ctx.isVisible).toBe(false);
+    expect(holder.ctx.isExiting).toBe(false);
+    expect(holder.ctx.hasAnimated).toBe(false);
     expect(ref.getAttribute('data-animate-id')).toBe('test');
+
+    observer.callback([{ intersectionRatio: 0.4, isIntersecting: true }]);
+    expect(holder.ctx.isVisible).toBe(true);
+    expect(holder.ctx.hasAnimated).toBe(true);
+    expect(holder.ctx.isExiting).toBe(false);
+
+    observer.callback([{ intersectionRatio: 0.1, isIntersecting: true }]);
+    expect(holder.ctx.isVisible).toBe(false);
+    expect(holder.ctx.isExiting).toBe(true);
   });
 
   it('does not enter off-screen at a visibility trigger of 0', () => {
@@ -490,6 +504,75 @@ describe('initObserver arming and entry', () => {
 
     observer.callback([{ intersectionRatio: 0, isIntersecting: true }]);
     expect(holder.ctx.isVisible).toBe(true);
+  });
+
+  it('rebuilds the observer with a reachable trigger after viewport resizing', () => {
+    const { ref, observer } = setup({ visibilityTrigger: '0.6' }, ref => {
+      Object.defineProperty(ref, 'offsetHeight', { value: 2000 });
+    });
+    const originalHeight = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 200,
+    });
+    try {
+      window.dispatchEvent(new Event('resize'));
+      const resized = observers[observers.length - 1];
+      expect(resized).not.toBe(observer);
+      expect(observer.disconnect).toHaveBeenCalledTimes(1);
+      expect(resized.observe).toHaveBeenCalledWith(ref);
+      // Root box: 200px + 100% top - 25% bottom = 350px.
+      expect(resized.options.threshold).toEqual([0, 0.07875, 0.1575]);
+      resized.callback([{ intersectionRatio: 0.17, isIntersecting: true }]);
+      expect(holder.ctx.isVisible).toBe(true);
+    } finally {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: originalHeight,
+      });
+    }
+  });
+
+  it('tracks content growth and disconnects resize observation on cleanup', () => {
+    const originalResizeObserver = window.ResizeObserver;
+    let resized: () => void = () => {};
+    const disconnect = jest.fn();
+    const observe = jest.fn();
+    window.ResizeObserver = jest.fn(callback => {
+      resized = callback;
+      return { observe, disconnect };
+    }) as unknown as typeof ResizeObserver;
+    let height = 200;
+    try {
+      const { ref, observer } = setup({ visibilityTrigger: '0.6' }, ref => {
+        Object.defineProperty(ref, 'offsetHeight', { get: () => height });
+      });
+      expect(observe).toHaveBeenCalledWith(ref);
+      resized();
+      expect(observer.disconnect).not.toHaveBeenCalled();
+
+      height = 8000;
+      resized();
+      const grown = observers[observers.length - 1];
+      expect(observer.disconnect).toHaveBeenCalledTimes(1);
+      expect(grown.options.threshold).toEqual([
+        0,
+        (((window.innerHeight * 1.75) / height) * 0.9) / 2,
+        ((window.innerHeight * 1.75) / height) * 0.9,
+      ]);
+      grown.callback([{ intersectionRatio: 0.17, isIntersecting: true }]);
+      expect(holder.ctx.isVisible).toBe(true);
+
+      cleanups.splice(0).forEach(cleanup => cleanup());
+      expect(disconnect).toHaveBeenCalledTimes(1);
+      expect(grown.disconnect).toHaveBeenCalledTimes(1);
+      const count = observers.length;
+      height = 16000;
+      window.dispatchEvent(new Event('resize'));
+      expect(observers).toHaveLength(count);
+    } finally {
+      window.ResizeObserver = originalResizeObserver;
+    }
   });
 
   it('leaves the content visible when the observer cannot be created', () => {

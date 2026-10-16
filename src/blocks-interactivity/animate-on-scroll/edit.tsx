@@ -5,7 +5,7 @@
  */
 
 import {
-  InnerBlocks,
+  useInnerBlocksProps,
   useBlockProps,
   store as blockEditorStore,
 } from '@wordpress/block-editor';
@@ -113,6 +113,7 @@ export default function Edit({
       '--wp-block-animate-on-scroll-elastic-distance': `${attributes.elasticDistance ?? 50}px`,
     } as CSSProperties,
   });
+  const innerBlocksProps = useInnerBlocksProps(blockProps);
 
   const playPreview = useCallback(() => {
     if (previewTimerRef.current) {
@@ -320,9 +321,7 @@ export default function Edit({
         playPreview={playPreview}
       />
 
-      <div {...blockProps}>
-        <InnerBlocks />
-      </div>
+      <div {...innerBlocksProps} />
     </>
   );
 }

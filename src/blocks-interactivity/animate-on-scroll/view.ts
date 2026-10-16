@@ -9,11 +9,9 @@
  * blocks. Debug tooling lives in debug.ts and is only downloaded when a
  * block enables Debug Mode.
  *
- * Children render visible and play their entrance on first paint in CSS
- * (@starting-style), so a block in view at load never waits for this store.
- * On hydration the store arms (data-animate-id) only the blocks that are off
- * screen, which returns them to their hidden "from" state unseen; a block
- * in view at load is armed only when it first exits.
+ * Children render visible without JavaScript. On hydration the store arms
+ * every block without animating out, then lets the configured observer
+ * trigger its first entrance. Merely touching the viewport is not entry.
  *
  * @package Aggressive Apparel
  */
@@ -225,34 +223,43 @@ store('aggressive-blocks/animate-on-scroll', {
       const rootMargin = `${ctx.detectionBoundary.top} ${ctx.detectionBoundary.right} ${ctx.detectionBoundary.bottom} ${ctx.detectionBoundary.left}`;
       // Elements taller than the root box can never reach the configured
       // ratio — observe at the reachable effective threshold instead.
-      const threshold = getEffectiveThreshold(
-        getVisibilityThreshold(ctx.visibilityTrigger),
-        ref.offsetHeight,
-        window.innerHeight,
-        rootMargin
-      );
+      const calculateThreshold = (): number =>
+        getEffectiveThreshold(
+          getVisibilityThreshold(ctx.visibilityTrigger),
+          ref.offsetHeight,
+          window.innerHeight,
+          rootMargin
+        );
+      let threshold = calculateThreshold();
       // Exit fires at half the entry threshold (hysteresis): the reverse
       // animation starts while the element is still meaningfully on
       // screen, and the gap between the two thresholds prevents
       // enter/exit flicker right at the boundary.
-      const exitThreshold = threshold / 2;
+      let exitThreshold = threshold / 2;
       let exitTimeout: ReturnType<typeof setTimeout> | null = null;
 
       // Debug tooling is code-split; production pages never fetch it.
       // Loaded after threshold so the async callback closes over a defined value.
       let debugController: AosDebugController | null = null;
+      let createDebug: (() => AosDebugController) | null = null;
+      let disposed = false;
       if (ctx.debugMode) {
         import('./debug')
           .then(module => {
-            debugController = module.createDebugController(
-              {
-                id: ctx.id,
-                detectionBoundary: ctx.detectionBoundary,
-                threshold,
-                reverseOnScrollBack: ctx.reverseOnScrollBack,
-              },
-              ref
-            );
+            if (disposed) {
+              return;
+            }
+            createDebug = () =>
+              module.createDebugController(
+                {
+                  id: ctx.id,
+                  detectionBoundary: ctx.detectionBoundary,
+                  threshold,
+                  reverseOnScrollBack: ctx.reverseOnScrollBack,
+                },
+                ref
+              );
+            debugController = createDebug();
           })
           .catch(error => {
             console.warn(
@@ -284,8 +291,6 @@ store('aggressive-blocks/animate-on-scroll', {
         // entrance mid-flight.
         clearExitState();
         ctx.isVisible = true;
-        // Marks the JS path as owner so the CSS scroll-driven animation
-        // can't double-fire.
         ctx.hasAnimated = true;
       };
 
@@ -308,8 +313,6 @@ store('aggressive-blocks/animate-on-scroll', {
         ref.contains(ref.ownerDocument.activeElement);
 
       const handleExit = (): void => {
-        // A block in view at load is armed only now, as it leaves.
-        arm();
         ctx.isVisible = false;
         ctx.isExiting = true;
 
@@ -339,27 +342,18 @@ store('aggressive-blocks/animate-on-scroll', {
         }, holdMs);
       };
 
-      let reportedOnce = false;
-      let inViewAtLoad = false;
       let observer: IntersectionObserver;
-      try {
-        observer = new IntersectionObserver(
+      const createObserver = (): IntersectionObserver =>
+        new IntersectionObserver(
           entries => {
             entries.forEach(entry => {
               if (isSequenceMode && !hasAnimationSequenceAttributes(ref)) {
                 return;
               }
 
-              // The first report for a block in view at load can sit below
-              // the thresholds (a sliver on screen); it already played its
-              // entrance, so that report must not start an exit.
-              const firstReport = !reportedOnce;
-              reportedOnce = true;
-
-              if (isEntering(entry, threshold)) {
+              if (isEntering(entry, threshold) || isStuckAtPageEnd()) {
                 reveal();
               } else if (
-                !(firstReport && inViewAtLoad) &&
                 ctx.reverseOnScrollBack &&
                 ctx.isVisible &&
                 (entry.intersectionRatio <= exitThreshold ||
@@ -384,24 +378,25 @@ store('aggressive-blocks/animate-on-scroll', {
             rootMargin,
           }
         );
+      try {
+        observer = createObserver();
       } catch (error) {
         // An invalid boundary (e.g. a unitless margin) throws here. The
         // block is not armed yet, so its content simply stays visible.
         console.warn('[AnimateOnScroll] Could not observe block', error);
+        disposed = true;
         ctx.isVisible = true;
         ctx.hasAnimated = true;
         return;
       }
 
-      // In view now: it played its entrance on first paint, so mark it
-      // visible and leave it unarmed. Off screen: arm it, unseen.
-      inViewAtLoad = isInViewport(ref);
-      if (inViewAtLoad) {
-        ctx.isVisible = true;
-        ctx.hasAnimated = true;
-      } else {
-        arm();
-      }
+      // Establish the hidden state without playing an exit. Flush styles
+      // while transitions are disabled, before the first observer report
+      // can reveal a block that already meets its configured trigger.
+      ref.setAttribute('data-aos-preparing', 'true');
+      arm();
+      ref.getBoundingClientRect();
+      ref.removeAttribute('data-aos-preparing');
 
       observer.observe(ref);
 
@@ -419,14 +414,37 @@ store('aggressive-blocks/animate-on-scroll', {
           }
         });
       };
+      // The observer updates its root/target geometry automatically, but
+      // its threshold list is immutable. Rebuild when the reachable entry
+      // threshold changes after a viewport resize or content reflow.
+      const refreshGeometry = (): void => {
+        const next = calculateThreshold();
+        if (next !== threshold) {
+          observer.disconnect();
+          threshold = next;
+          exitThreshold = threshold / 2;
+          observer = createObserver();
+          observer.observe(ref);
+          debugController?.destroy();
+          debugController = createDebug?.() ?? null;
+        }
+        checkPageEnd();
+      };
+      const resizeObserver =
+        typeof ResizeObserver === 'undefined'
+          ? null
+          : new ResizeObserver(refreshGeometry);
+      resizeObserver?.observe(ref);
       ref.addEventListener('focusin', reveal);
       window.addEventListener('scroll', checkPageEnd, { passive: true });
-      window.addEventListener('resize', checkPageEnd, { passive: true });
+      window.addEventListener('resize', refreshGeometry, { passive: true });
 
       return () => {
+        disposed = true;
         ref.removeEventListener('focusin', reveal);
         window.removeEventListener('scroll', checkPageEnd);
-        window.removeEventListener('resize', checkPageEnd);
+        window.removeEventListener('resize', refreshGeometry);
+        resizeObserver?.disconnect();
         if (frame) {
           window.cancelAnimationFrame(frame);
         }
