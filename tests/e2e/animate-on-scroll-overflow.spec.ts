@@ -2,11 +2,6 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const stylesheet = readFileSync(
-  path.resolve('build/blocks-interactivity/animate-on-scroll/style-index.css'),
-  'utf8'
-);
-
 const effects = [
   ['slide', 'left'],
   ['slide', 'right'],
@@ -24,7 +19,14 @@ for (const width of [375, 1440]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.setContent('<style>body { margin: 0; }</style>');
-    await page.addStyleTag({ content: stylesheet });
+    await page.addStyleTag({
+      content: readFileSync(
+        path.resolve(
+          'build/blocks-interactivity/animate-on-scroll/style-index.css'
+        ),
+        'utf8'
+      ),
+    });
 
     for (const sequence of [false, true]) {
       for (const [effect, direction] of effects) {
