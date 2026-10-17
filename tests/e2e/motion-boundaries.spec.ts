@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { test, expect } from '@playwright/test';
 import ts from 'typescript';
+import { readAnimationAsset } from './animation-assets';
 
 const source = (name: string): string =>
   fs.readFileSync(
@@ -22,13 +23,6 @@ const script =
     )
     .join('\n') +
   '\nwindow.prepareMotion = root => mountMotionStage(root, () => measureMovement(root)); window.prepareStage = mountMotionStage;';
-const css = fs.readFileSync(
-  new URL(
-    '../../build/blocks-interactivity/animate-on-scroll/style-index.css',
-    import.meta.url
-  ),
-  'utf8'
-);
 const root = (
   id = 'motion',
   children = '<div class="card">Motion content</div>'
@@ -38,19 +32,19 @@ const root = (
 test.describe('Viewport motion boundaries', { tag: '@webkit' }, () => {
   test('Card Flip perspective never widens the page during either half of a flip', async ({
     page,
+    baseURL,
   }) => {
-    const cardCss = fs.readFileSync(
-      new URL(
-        '../../build/blocks-interactivity/card-flip/style-index.css',
-        import.meta.url
-      ),
-      'utf8'
+    const cardCss = await readAnimationAsset(
+      page,
+      baseURL,
+      'style-index.css',
+      'card-flip'
     );
     for (const width of [375, 1440]) {
       await page.goto('about:blank');
       await page.setViewportSize({ width, height: 720 });
       await page.setContent(
-        '<style>body{margin:0}</style><div class="aa-card-flip"><div class="aa-motion-stage"><div class="aa-motion-content"><button class="aa-card-flip__toggle">Flip</button><div class="aa-card-flip__inner"><div class="aa-card-flip__face" style="height:200px">Front</div><div class="aa-card-flip__face aa-card-flip__face--back">Back</div></div></div></div></div>'
+        '<style>body{margin:0}.aa-card-flip{aspect-ratio:16/9;border-radius:24px}.aa-card-flip__face{min-height:200px}</style><div class="aa-card-flip"><div class="aa-motion-stage"><div class="aa-motion-content"><button class="aa-card-flip__toggle">Flip</button><div class="aa-card-flip__inner"><div class="aa-card-flip__face">Front</div><div class="aa-card-flip__face aa-card-flip__face--back">Back</div></div></div></div></div>'
       );
       await page.addStyleTag({ content: cardCss });
       await page.addScriptTag({ content: script });
@@ -61,6 +55,19 @@ test.describe('Viewport motion boundaries', { tag: '@webkit' }, () => {
             window as unknown as { prepareStage: (root: HTMLElement) => void }
           ).prepareStage(el as HTMLElement)
         );
+      const card = page.locator('.aa-card-flip');
+      const height = await card.evaluate(
+        el => el.getBoundingClientRect().height
+      );
+      expect(
+        await card
+          .locator('.aa-card-flip__inner')
+          .evaluate(el => el.getBoundingClientRect().height)
+      ).toBe(height);
+      await expect(card.locator('.aa-card-flip__face').first()).toHaveCSS(
+        'border-top-left-radius',
+        '24px'
+      );
       for (const angle of [0, 37, 90, 143, 180]) {
         await page.locator('.aa-card-flip__inner').evaluate((el, angle) => {
           const inner = el as HTMLElement;
@@ -76,13 +83,16 @@ test.describe('Viewport motion boundaries', { tag: '@webkit' }, () => {
   for (const layout of ['constrained', 'columns', 'full', 'nested', 'rtl']) {
     test(`offscreen entrances preserve ${layout} layout and clip only at screen edges`, async ({
       page,
+      baseURL,
     }) => {
       await page.setViewportSize({ width: 1280, height: 720 });
       const markup = layout === 'nested' ? root('outer', root()) : root();
       await page.setContent(
         `<style>body{margin:0}.layout{width:600px;margin:0 auto}.columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;width:100%}.full{width:100%}.card{height:80px;background:rgb(0,100,200);box-shadow:0 0 12px red}#motion{--wp-block-animate-on-scroll-animation-duration:1s;--wp-block-animate-on-scroll-animation-timing:linear}</style><main class="layout ${layout}" dir="${layout === 'rtl' ? 'rtl' : 'ltr'}">${layout === 'columns' ? '<button id="neighbor" onclick="this.dataset.clicked=1">Column one</button>' : ''}${markup}</main>`
       );
-      await page.addStyleTag({ content: css });
+      await page.addStyleTag({
+        content: await readAnimationAsset(page, baseURL, 'style-index.css'),
+      });
       await page.addScriptTag({ content: script });
       const before = await page.locator('#motion .card').evaluate(el => ({
         left: el.getBoundingClientRect().left,
@@ -159,12 +169,15 @@ test.describe('Viewport motion boundaries', { tag: '@webkit' }, () => {
 
   test('fit mode keeps slides inside the screen and fades full-width rotation', async ({
     page,
+    baseURL,
   }) => {
     await page.setViewportSize({ width: 600, height: 720 });
     await page.setContent(
       `<style>body{margin:0}.card{height:80px}</style>${root()}`
     );
-    await page.addStyleTag({ content: css });
+    await page.addStyleTag({
+      content: await readAnimationAsset(page, baseURL, 'style-index.css'),
+    });
     await page.addScriptTag({ content: script });
     await page.locator('#motion').evaluate(el => {
       const root = el as HTMLElement;

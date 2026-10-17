@@ -16,6 +16,11 @@
   min-block-size: calc(var(--aa-icon-button-size, 2.75rem) + 1.5rem);
 }
 
+.aa-card-flip > .aa-motion-stage {
+  display: grid;
+  border-radius: inherit;
+}
+
 .aa-card-flip > .aa-motion-stage > .aa-motion-content {
   position: relative;
   display: grid;

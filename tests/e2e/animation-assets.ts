@@ -6,9 +6,10 @@ import path from 'node:path';
 export async function readAnimationAsset(
   page: Page,
   baseURL: string | undefined,
-  filename: string
+  filename: string,
+  block: 'animate-on-scroll' | 'card-flip' = 'animate-on-scroll'
 ): Promise<string> {
-  const assetPath = `build/blocks-interactivity/animate-on-scroll/${filename}`;
+  const assetPath = `build/blocks-interactivity/${block}/${filename}`;
   if (!baseURL) {
     return readFileSync(path.resolve(assetPath), 'utf8');
   }
