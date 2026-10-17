@@ -138,6 +138,27 @@ const mountBlock = (
 };
 
 describe('renderer selection', () => {
+  it.each([{ intensity: NaN }, { perspectiveDistance: 0 }])(
+    'leaves invalid container settings static: %p',
+    settings => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const { root, layer } = mountBlock(settings);
+        flushFrames();
+        expect(
+          root.classList.contains('aggressive-apparel-parallax--initialized')
+        ).toBe(false);
+        expect(layer.style.translate).toBe('');
+        expect(layer.style.backgroundColor).toBe('rgb(1, 2, 3)');
+        expect(observers).toHaveLength(0);
+        expect(window.matchMedia).not.toHaveBeenCalled();
+        expect(spy).toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
+    }
+  );
+
   it('uses the JS engine where scroll timelines are unavailable', () => {
     const { root, layer, cleanup } = mountBlock();
     flushFrames();

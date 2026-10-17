@@ -143,6 +143,11 @@ function bindDialogDismiss(id: string): void {
   });
 }
 
+const TRIGGER_CONTROLS =
+  'button, a[href], input[type="button"], input[type="submit"], input[type="reset"]';
+const EDITABLE_CONTROLS =
+  'input:not([type="button"]):not([type="submit"]):not([type="reset"]), select, textarea, [contenteditable]:not([contenteditable="false"])';
+
 function getExternalTriggers(id: string): HTMLElement[] {
   const classHolders = Array.from(
     document.getElementsByClassName(`modal-trigger-${id}`)
@@ -150,18 +155,14 @@ function getExternalTriggers(id: string): HTMLElement[] {
   const targets = new Set<HTMLElement>();
 
   classHolders.forEach(holder => {
-    if (
-      holder.matches(
-        'button, a[href], input:not([type="hidden"]), select, textarea'
-      )
-    ) {
+    if (holder.matches(EDITABLE_CONTROLS)) return;
+    if (holder.matches(TRIGGER_CONTROLS)) {
       targets.add(holder);
       return;
     }
 
-    const nestedControls = holder.querySelectorAll<HTMLElement>(
-      'button, a[href], input:not([type="hidden"]), select, textarea'
-    );
+    const nestedControls =
+      holder.querySelectorAll<HTMLElement>(TRIGGER_CONTROLS);
     if (nestedControls.length > 0) {
       nestedControls.forEach(control => targets.add(control));
     } else {
@@ -193,8 +194,6 @@ function bindExternalTrigger(
   const isNativeControl =
     el instanceof HTMLButtonElement ||
     el instanceof HTMLInputElement ||
-    el instanceof HTMLSelectElement ||
-    el instanceof HTMLTextAreaElement ||
     (el instanceof HTMLAnchorElement && el.hasAttribute('href'));
 
   if (!isNativeControl) {
@@ -203,6 +202,12 @@ function bindExternalTrigger(
   }
 
   const open = (event: Event): void => {
+    if (
+      event.defaultPrevented ||
+      (event.target instanceof Element &&
+        event.target.closest(EDITABLE_CONTROLS))
+    )
+      return;
     event.preventDefault();
     openModal(id, modalsState);
   };
@@ -211,8 +216,19 @@ function bindExternalTrigger(
 
   // Anchors use native Enter activation; Space is added for button parity.
   // Custom elements receive both Enter and Space activation.
-  if (el.tagName !== 'BUTTON') {
+  if (!(el instanceof HTMLButtonElement) && !(el instanceof HTMLInputElement)) {
     el.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        (event.target instanceof Element &&
+          event.target.closest(EDITABLE_CONTROLS))
+      )
+        return;
       const isSpace = event.key === ' ' || event.key === 'Spacebar';
       const isCustomEnter = !isNativeControl && event.key === 'Enter';
       if ((!isSpace && !isCustomEnter) || event.repeat) {

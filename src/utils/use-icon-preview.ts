@@ -18,7 +18,7 @@ export interface UseIconPreviewResult {
 }
 
 /**
- * Load sanitized SVG markup for an icon slug from the theme REST API.
+ * Load sanitized SVG markup for an icon slug from the plugin REST API.
  */
 export function useIconPreview(slug: string): UseIconPreviewResult {
   const [svg, setSvg] = useState('');

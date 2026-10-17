@@ -37,9 +37,9 @@ const SEVERITY_RANK = ['critical', 'high', 'moderate', 'medium', 'low', 'info'];
  */
 export const ACCEPTED_ADVISORIES = {
   'GHSA-vfj7-8cjw-p6xm':
-    'braces expands only the glob patterns this repository gives its build, lint and test tools.',
+    'braces is locally patched to cap parser and AST walker nesting at 100; bin/dependency-patches.test.mjs tests the installed patch. Remove the patch when a fixed version ships.',
   'GHSA-hp3w-g68c-fv3c':
-    'sprintf-js comes only through argparse 1, which js-yaml 3 loads for its own command line; the tools here use js-yaml as a library.',
+    'sprintf-js is locally patched to cap formatting width at 10000 and precision at 100; bin/dependency-patches.test.mjs tests the installed patch. Remove the patch when a fixed version ships.',
 };
 
 /** @param {RegExpExecArray} left @param {RegExpExecArray} right */

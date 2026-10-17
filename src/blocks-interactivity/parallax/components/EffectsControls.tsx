@@ -536,10 +536,14 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
           {effects?.colorTransition?.enabled && (
             <>
               <div style={{ marginBottom: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '4px' }}>
+                <label
+                  htmlFor={`${clientId}-parallax-start-color`}
+                  style={{ display: 'block', marginBottom: '4px' }}
+                >
                   {__('Start Color', 'aggressive-blocks')}
                 </label>
                 <input
+                  id={`${clientId}-parallax-start-color`}
                   type='color'
                   value={effects.colorTransition.startColor || '#ffffff'}
                   onChange={e =>
@@ -558,10 +562,14 @@ export const EffectsControls = ({ clientId }: EffectsControlsProps) => {
                 />
               </div>
               <div style={{ marginBottom: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '4px' }}>
+                <label
+                  htmlFor={`${clientId}-parallax-end-color`}
+                  style={{ display: 'block', marginBottom: '4px' }}
+                >
                   {__('End Color', 'aggressive-blocks')}
                 </label>
                 <input
+                  id={`${clientId}-parallax-end-color`}
                   type='color'
                   value={effects.colorTransition.endColor || '#000000'}
                   onChange={e =>

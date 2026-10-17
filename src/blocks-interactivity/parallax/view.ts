@@ -26,7 +26,7 @@ import { collectLayers, restoreLayerStyles } from './layers';
 import { observeInstance } from './observer';
 import { canUseScrollTimeline, startTimelineAnimations } from './timeline';
 import type { ParallaxContext } from './types';
-import { ParallaxLogger, validateConfiguration } from './utils';
+import { validateConfiguration } from './validation';
 
 import type { DebugController } from './debug/controller';
 
@@ -77,7 +77,7 @@ const startParallax = (
         instance.onFrame = progress => debugController?.onFrame(progress);
       })
       .catch(error => {
-        ParallaxLogger.error('Failed to load parallax debug tooling', {
+        console.error('[PARALLAX]', 'Failed to load parallax debug tooling', {
           error,
         });
       });
@@ -110,16 +110,24 @@ store('aggressive-blocks/parallax', {
       const { ref } = getElement();
 
       if (!ref || !rawContext) {
-        ParallaxLogger.warn('Parallax init skipped: missing element/context');
+        console.warn(
+          '[PARALLAX]',
+          'Parallax init skipped: missing element/context'
+        );
         return;
       }
 
       const ctx = applyParallaxDefaults(rawContext);
       const validation = validateConfiguration(ctx);
-      if (!validation.isValid) {
-        ParallaxLogger.error('Parallax configuration validation failed:', {
-          errors: validation.errors,
-        });
+      if (validation.length) {
+        console.error(
+          '[PARALLAX]',
+          'Parallax configuration validation failed:',
+          {
+            errors: validation,
+          }
+        );
+        return;
       }
 
       if (!ctx.id) {

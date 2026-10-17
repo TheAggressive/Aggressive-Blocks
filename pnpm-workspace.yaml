@@ -51,5 +51,10 @@ overrides:
 # @wordpress/env requires simple-git 4 itself.
 allowUnusedPatches: true
 
+# No fixed npm releases exist for GHSA-vfj7-8cjw-p6xm or GHSA-hp3w-g68c-fv3c.
+# Bound AST nesting and formatting allocations locally until upstream ships.
+# bin/dependency-patches.test.mjs exercises the installed patched packages.
 patchedDependencies:
+  'braces@3.0.3': patches/braces@3.0.3.patch
+  'sprintf-js@1.0.3': patches/sprintf-js@1.0.3.patch
   '@wordpress/env@11.17.0': patches/@wordpress__env@11.17.0.patch

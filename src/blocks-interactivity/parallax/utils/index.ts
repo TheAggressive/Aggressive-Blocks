@@ -14,8 +14,6 @@ export {
   calculateShadow,
   clamp,
 } from '../calculations';
-export { validateParallaxEffects } from '../types';
-export { ParallaxLogger, validateConfiguration } from './error-handling';
 export {
   calculateProgressWithinBoundary,
   measureProgressGeometry,
