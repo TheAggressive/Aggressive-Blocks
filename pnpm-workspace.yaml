@@ -23,7 +23,13 @@ allowBuilds:
 # markdownlint never calls. Each patched version keeps the CommonJS entry and
 # API those callers use, except simple-git (below). Remove an entry once no
 # dependency resolves below it.
+# Preset 10 uses writer 9 template helpers; semantic-release 25's notes plugin
+# still requests writer 8 (semantic-release/release-notes-generator#1027).
+# Its writeChangelogString API is unchanged. Remove this scoped override when
+# the notes plugin itself requires writer 9. The release-rules test renders
+# the installed project preset through that plugin to guard this pairing.
 overrides:
+  '@semantic-release/release-notes-generator>conventional-changelog-writer': ^9.3.0
   'serialize-javascript@<7.0.5': ^7.0.5
   'uuid@<11.1.1': ^11.1.1
   'qs@<6.16.0': ^6.16.0

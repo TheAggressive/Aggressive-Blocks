@@ -28,6 +28,19 @@ const { analyzeCommits } = await import(
   requireFromSemanticRelease.resolve('@semantic-release/commit-analyzer')
 );
 
+const [, notesOptions] = configuration.plugins.find(
+  plugin =>
+    Array.isArray(plugin) &&
+    plugin[0] === '@semantic-release/release-notes-generator'
+);
+const { default: createPreset } =
+  await import('conventional-changelog-conventionalcommits');
+const { generateNotes } = await import(
+  requireFromSemanticRelease.resolve(
+    '@semantic-release/release-notes-generator'
+  )
+);
+
 /** @param {string[]} messages */
 function releaseType(messages) {
   return analyzeCommits(analyzerOptions, {
@@ -87,5 +100,43 @@ describe('release rules', () => {
     ]) {
       assert.equal(await releaseType([message]), null, message);
     }
+  });
+});
+
+describe('release notes', () => {
+  it('renders the configured preset with the installed semantic-release writer', async () => {
+    // Explicitly exercise the project's preset: stale local pnpm links can
+    // otherwise resolve the generator's older development-only preset first.
+    const preset = await createPreset();
+    const notes = await generateNotes(
+      { ...notesOptions, parserOpts: preset.parser, writerOpts: preset.writer },
+      {
+        cwd: repositoryRoot,
+        options: {
+          repositoryUrl:
+            configuration.repositoryUrl ??
+            'https://github.com/TheAggressive/Aggressive-Blocks.git',
+        },
+        commits: [
+          {
+            hash: 'a'.repeat(40),
+            message: 'fix: keep carousel video paused (#65)',
+          },
+          { hash: 'b'.repeat(40), message: 'feat: add native editor controls' },
+        ],
+        lastRelease: { gitTag: 'v2.1.2', gitHead: 'c'.repeat(40) },
+        nextRelease: {
+          version: '2.2.0',
+          gitTag: 'v2.2.0',
+          gitHead: 'd'.repeat(40),
+        },
+        logger: { log() {}, error() {} },
+      }
+    );
+    assert.match(notes, /Bug Fixes/);
+    assert.match(notes, /keep carousel video paused/);
+    assert.match(notes, /Features/);
+    assert.match(notes, /add native editor controls/);
+    assert.match(notes, /compare\/v2\.1\.2\.\.\.v2\.2\.0/);
   });
 });
