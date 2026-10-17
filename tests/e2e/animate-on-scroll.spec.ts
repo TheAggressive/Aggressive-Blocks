@@ -90,11 +90,35 @@ test.describe('Animate On Scroll — front end', () => {
       .frameLocator('iframe[name="editor-canvas"]')
       .locator('.wp-block-animate-on-scroll')
       .first();
-    await expect(root.locator('> p')).toHaveCount(2);
+    await expect(
+      root.locator('> .aa-motion-stage > .aa-motion-content > p')
+    ).toHaveCount(2);
+    const bounds = page.getByLabel('Animation bounds', { exact: true });
+    await expect(bounds).toHaveValue('viewport');
+    await bounds.selectOption('fit');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            window.wp.data
+              .select('core/block-editor')
+              .getBlocks()
+              .find(
+                (block: {
+                  name: string;
+                  attributes: { motionBoundary?: string };
+                }) => block.name === 'aggressive-blocks/animate-on-scroll'
+              )?.attributes.motionBoundary
+        )
+      )
+      .toBe('fit');
+    await bounds.selectOption('viewport');
     await page
       .getByRole('button', { name: 'Preview animation', exact: true })
       .click();
-    const children = root.locator('> p');
+    const children = root.locator(
+      '> .aa-motion-stage > .aa-motion-content > p'
+    );
     await expect(children.nth(0)).toHaveAttribute(
       'data-animate-sequence-type',
       'slide'
@@ -151,9 +175,10 @@ test.describe('Animate On Scroll — front end', () => {
     await expect(root).toHaveClass(/is-visible/, { timeout: 10_000 });
 
     const delays = await root.evaluate(el =>
-      Array.from(el.children).map(
-        child => getComputedStyle(child as HTMLElement).transitionDelay
-      )
+      Array.from(
+        el.querySelector(':scope > .aa-motion-stage > .aa-motion-content')!
+          .children
+      ).map(child => getComputedStyle(child as HTMLElement).transitionDelay)
     );
 
     expect(delays).toHaveLength(3);
@@ -284,8 +309,12 @@ test.describe('Animate On Scroll — front end', () => {
     await page.goto(url);
     const root = page.locator('.wp-block-animate-on-scroll').first();
     await expect(root).not.toHaveAttribute('data-animate-id');
-    await expect(root.locator('> p')).toHaveCSS('opacity', '1');
-    await expect(root.locator('> p')).toHaveCSS('animation-name', 'none');
+    await expect(
+      root.locator('> .aa-motion-stage > .aa-motion-content > p')
+    ).toHaveCSS('opacity', '1');
+    await expect(
+      root.locator('> .aa-motion-stage > .aa-motion-content > p')
+    ).toHaveCSS('animation-name', 'none');
   });
 
   test('keyboard focus reveals an armed block', async ({ page }) => {
@@ -330,7 +359,9 @@ test.describe('Animate On Scroll — front end', () => {
       respectReducedMotion: false,
     });
     const root = page.locator('.wp-block-animate-on-scroll').first();
-    const child = root.locator('> p').first();
+    const child = root
+      .locator('> .aa-motion-stage > .aa-motion-content > p')
+      .first();
 
     // Armed: hidden, not offset, and not clickable.
     await expect(child).toHaveCSS('opacity', '0');
@@ -377,7 +408,9 @@ test.describe('Animate On Scroll — front end', () => {
     await page.goto(url);
 
     const root = page.locator('.wp-block-animate-on-scroll').first();
-    const figure = root.locator('> figure.alignleft');
+    const figure = root.locator(
+      '> .aa-motion-stage > .aa-motion-content > figure.alignleft'
+    );
     // The image is marked itself, not wrapped, so the flow layout's
     // `> .alignleft` float still reaches it.
     await expect(figure).toHaveAttribute('data-animate-sequence-type', 'fade');

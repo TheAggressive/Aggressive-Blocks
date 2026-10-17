@@ -27,8 +27,10 @@ async function prepare(
       data-wp-interactive="test" data-animate-type="${sequence ? '' : effect}"
       data-animate-direction="${effect === 'bounce' ? 'standard' : 'left'}"
       style="--wp-block-animate-on-scroll-animation-duration: 0.12s">
+      <div class="aa-motion-stage"><div class="aa-motion-content">
       <div style="height: 100px" ${sequence ? 'data-animate-sequence-type="slide" data-animate-sequence-direction="left"' : ''}>First</div>
       <div style="height: 100px" ${sequence ? 'data-animate-sequence-type="bounce"' : ''}>Second</div>
+      </div></div>
     </div>
     <div style="height: 2000px"></div>
   `);
@@ -83,7 +85,9 @@ for (const effect of ['fade', 'slide', 'bounce', 'sequence']) {
     baseURL,
   }) => {
     const root = await prepare(page, baseURL, effect, effect === 'sequence');
-    const first = root.locator('> div').first();
+    const first = root
+      .locator('> .aa-motion-stage > .aa-motion-content > div')
+      .first();
     await expect(first).toHaveCSS('opacity', '1');
     expect(await page.evaluate(() => window.aosFixture.events)).toEqual([]);
 
@@ -127,26 +131,36 @@ for (const change of ['viewport', 'content']) {
     const root = await prepare(page, baseURL);
     await root.evaluate(el => {
       (el.previousElementSibling as HTMLElement).style.height = '2000px';
-      for (const child of Array.from(el.children)) {
+      for (const child of Array.from(
+        el.querySelector(':scope > .aa-motion-stage > .aa-motion-content')!
+          .children
+      )) {
         (child as HTMLElement).style.height = '1000px';
       }
     });
     await page.evaluate(() => {
       window.aosFixture.cleanup = window.aosFixture.init();
     });
-    await expect(root.locator('> div').first()).toHaveCSS('opacity', '0');
+    await expect(
+      root.locator('> .aa-motion-stage > .aa-motion-content > div').first()
+    ).toHaveCSS('opacity', '0');
 
     if (change === 'viewport') {
       await page.setViewportSize({ width: 375, height: 400 });
     } else {
       await root.evaluate(el => {
-        for (const child of Array.from(el.children)) {
+        for (const child of Array.from(
+          el.querySelector(':scope > .aa-motion-stage > .aa-motion-content')!
+            .children
+        )) {
           (child as HTMLElement).style.height = '4000px';
         }
       });
     }
     await page.evaluate(() => window.scrollTo(0, 2000));
     await expect(root).toHaveClass(/is-visible/);
-    await expect(root.locator('> div').first()).toHaveCSS('opacity', '1');
+    await expect(
+      root.locator('> .aa-motion-stage > .aa-motion-content > div').first()
+    ).toHaveCSS('opacity', '1');
   });
 }

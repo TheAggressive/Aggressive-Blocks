@@ -428,6 +428,7 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'aa-card-flip aa-card-flip--click', $html );
 		$this->assertStringContainsString( 'data-wp-interactive="aggressive-blocks/card-flip"', $html );
+		$this->assertStringContainsString( 'data-wp-watch="callbacks.syncFaces"', $html );
 		$this->assertStringContainsString( 'aa-card-flip__inner', $html );
 		$this->assertStringContainsString( 'aa-card-flip__toggle', $html );
 		$this->assertStringContainsString( 'data-wp-on--click="actions.toggle"', $html );

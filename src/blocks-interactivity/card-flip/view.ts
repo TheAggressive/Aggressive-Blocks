@@ -11,6 +11,7 @@
  */
 
 /// <reference types="@wordpress/interactivity" />
+import { mountMotionStage, motionContent } from '../motion-shared/stage';
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
 interface CardFlipContext {
@@ -24,10 +25,11 @@ interface CardFlipContext {
  * a card nested inside a face keeps its own state. Exported for unit testing.
  */
 export function applyFaceInert(root: Element, isFlipped: boolean): void {
-  const front = root.querySelector(
+  const content = motionContent(root);
+  const front = content.querySelector(
     ':scope > .aa-card-flip__inner > .aa-card-flip__face--front'
   );
-  const back = root.querySelector(
+  const back = content.querySelector(
     ':scope > .aa-card-flip__inner > .aa-card-flip__face--back'
   );
   const turningAway = isFlipped ? front : back;
@@ -35,7 +37,9 @@ export function applyFaceInert(root: Element, isFlipped: boolean): void {
   // Inerting the face that holds focus would drop focus to <body>; hand it to
   // the flip control so keyboard and screen reader users keep their place.
   if (turningAway?.contains(root.ownerDocument.activeElement)) {
-    root.querySelector<HTMLElement>(':scope > .aa-card-flip__toggle')?.focus();
+    content
+      .querySelector<HTMLElement>(':scope > .aa-card-flip__toggle')
+      ?.focus();
   }
 
   front?.toggleAttribute('inert', isFlipped);
@@ -88,6 +92,10 @@ store('aggressive-blocks/card-flip', {
   },
 
   callbacks: {
+    init(): (() => void) | void {
+      const { ref } = getElement();
+      if (ref) return mountMotionStage(ref);
+    },
     // Runs on hydration and whenever isFlipped changes.
     syncFaces(): void {
       const ctx = getContext<CardFlipContext>();

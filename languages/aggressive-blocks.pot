@@ -2,16 +2,16 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Aggressive Blocks\n"
+"Project-Id-Version: Aggressive Blocks 2.1.4\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/aggressive-blocks\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"POT-Creation-Date: 2026-10-17T18:23:21+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: aggressive-blocks\n"
 
 #. Plugin Name of the plugin
@@ -266,7 +266,7 @@ msgstr ""
 msgid "No release notes were published."
 msgstr ""
 
-#: src/blocks-interactivity/card-flip/render.php:88
+#: src/blocks-interactivity/card-flip/render.php:90
 msgid "Flip card"
 msgstr ""
 
@@ -926,6 +926,22 @@ msgid "Stagger and sequence only animate direct children. This block has a singl
 msgstr ""
 
 #: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Animation bounds"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Offscreen entrance"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Fit to viewport"
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
+msgid "Offscreen entrances use the screen edges. Fit to viewport shortens motion or uses a fade when space is limited."
+msgstr ""
+
+#: build/blocks-interactivity/animate-on-scroll/index.js:4
 msgid "Use Animation Sequence"
 msgstr ""
 
@@ -950,7 +966,7 @@ msgid "Animation Customization"
 msgstr ""
 
 #: build/blocks-interactivity/animate-on-scroll/index.js:4
-msgid "Distance the element slides during animation"
+msgid "Travel distance in fit mode; extra distance beyond the screen edge for horizontal offscreen entrances."
 msgstr ""
 
 #: build/blocks-interactivity/animate-on-scroll/index.js:4

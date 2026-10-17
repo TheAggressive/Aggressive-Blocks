@@ -35,7 +35,8 @@ $wrapper_extra = array(
 	'data-wp-interactive'       => 'aggressive-blocks/card-flip',
 	'data-wp-context'           => (string) wp_json_encode( array( 'isFlipped' => false ) ),
 	'data-wp-class--is-flipped' => 'context.isFlipped',
-	'data-wp-watch--faces'      => 'callbacks.syncFaces',
+	'data-wp-init'              => 'callbacks.init',
+	'data-wp-watch'             => 'callbacks.syncFaces',
 	'data-wp-on--keydown'       => 'actions.keydown',
 );
 
@@ -81,6 +82,7 @@ $flip_icon = aggressive_blocks_get_icon(
 );
 ?>
 <div <?php echo aggressive_blocks_get_block_wrapper_attributes( $wrapper_extra ); ?>>
+	<div class="aa-motion-stage"><div class="aa-motion-content">
 	<button
 		type="button"
 		class="aa-card-flip__toggle aa-icon-button aa-icon-button--only"
@@ -94,4 +96,5 @@ $flip_icon = aggressive_blocks_get_icon(
 	<div class="aa-card-flip__inner">
 		<?php echo aggressive_blocks_trusted_html( $inert_back_face( $content ) ); ?>
 	</div>
+	</div></div>
 </div>

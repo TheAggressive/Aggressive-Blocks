@@ -15,6 +15,8 @@
  *
  * @package Aggressive Apparel
  */
+import { mountMotionStage, motionChildren } from '../motion-shared/stage';
+import { measureMovement } from './movement';
 import { getContext, getElement, store } from '@wordpress/interactivity';
 
 import {
@@ -136,7 +138,7 @@ export const getMaxChildStaggerDelaySeconds = (
   element: HTMLElement
 ): number => {
   let max = 0;
-  for (const child of Array.from(element.children) as HTMLElement[]) {
+  for (const child of motionChildren(element)) {
     const n = parseFloat(
       child.style.getPropertyValue('--wp-block-animate-on-scroll-stagger-delay')
     );
@@ -159,7 +161,7 @@ export const getExitHoldMs = (
 // ---------------------------------------------------------------------------
 
 const hasAnimationSequenceAttributes = (element: HTMLElement): boolean =>
-  Array.from(element.children).some(child =>
+  motionChildren(element).some(child =>
     (child as HTMLElement).hasAttribute('data-animate-sequence-type')
   );
 
@@ -390,12 +392,14 @@ store('aggressive-blocks/animate-on-scroll', {
         return;
       }
 
+      const stopStage = mountMotionStage(ref, () => measureMovement(ref));
+
       // Establish the hidden state without playing an exit. Flush styles
       // while transitions are disabled, before the first observer report
       // can reveal a block that already meets its configured trigger.
       ref.setAttribute('data-aos-preparing', 'true');
       arm();
-      ref.getBoundingClientRect();
+      motionChildren(ref).forEach(child => child.getBoundingClientRect());
       ref.removeAttribute('data-aos-preparing');
 
       observer.observe(ref);
@@ -440,6 +444,7 @@ store('aggressive-blocks/animate-on-scroll', {
       window.addEventListener('resize', refreshGeometry, { passive: true });
 
       return () => {
+        stopStage();
         disposed = true;
         ref.removeEventListener('focusin', reveal);
         window.removeEventListener('scroll', checkPageEnd);

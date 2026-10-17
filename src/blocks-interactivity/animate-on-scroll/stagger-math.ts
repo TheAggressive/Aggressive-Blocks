@@ -7,6 +7,8 @@
  * @package Aggressive Apparel
  */
 
+import { motionChildren } from '../motion-shared/stage';
+
 export interface StaggerConfig {
   pattern: string;
   delay: number;
@@ -148,7 +150,7 @@ export const setupStaggerDelays = (
   config: StaggerConfig,
   reverse: boolean = false
 ): void => {
-  const children = Array.from(element.children) as HTMLElement[];
+  const children = motionChildren(element);
   const seed =
     config.pattern === 'random'
       ? resolveStaggerSeed(element, config.seed)

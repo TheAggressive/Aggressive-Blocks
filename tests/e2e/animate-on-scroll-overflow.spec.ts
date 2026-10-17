@@ -42,6 +42,13 @@ for (const width of [375, 1440]) {
                 '--wp-block-animate-on-scroll-animation-duration',
                 '1s'
               );
+              const stage = document.createElement('div');
+              stage.className = 'aa-motion-stage';
+              stage.dataset.ready = 'true';
+              const content = document.createElement('div');
+              content.className = 'aa-motion-content';
+              stage.append(content);
+              root.append(stage);
               for (let i = 0; i < 2; i++) {
                 const child = document.createElement('div');
                 child.style.height = '200px';
@@ -53,7 +60,7 @@ for (const width of [375, 1440]) {
                   child.dataset.animateSequenceType = effect;
                   child.dataset.animateSequenceDirection = direction;
                 }
-                root.append(child);
+                content.append(child);
               }
               document.body.replaceChildren(root);
 
@@ -63,7 +70,7 @@ for (const width of [375, 1440]) {
               });
               const seek = (progress: number) => {
                 // Force style resolution so transitions exist before seeking.
-                getComputedStyle(root.firstElementChild!).transform;
+                getComputedStyle(content.firstElementChild!).transform;
                 for (const animation of root.getAnimations({ subtree: true })) {
                   animation.pause();
                   const timing = animation.effect!.getComputedTiming();

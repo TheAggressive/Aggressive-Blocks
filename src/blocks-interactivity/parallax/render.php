@@ -122,7 +122,9 @@ $wrapper_attributes = aggressive_blocks_get_block_wrapper_attributes(
 // nested in the block.
 ?>
 <div <?php echo aggressive_blocks_trusted_html( $wrapper_attributes ); ?>>
+	<div class="aa-motion-stage"><div class="aa-motion-content">
 	<div class="aggressive-apparel-parallax__container">
 		<div class="aggressive-apparel-parallax__content"><?php echo aggressive_blocks_trusted_html( $content ); ?></div>
 	</div>
+</div></div>
 </div>

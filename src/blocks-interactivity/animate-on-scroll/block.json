@@ -10,7 +10,9 @@
     "html": false,
     "interactivity": true,
     "layout": {
-      "default": { "type": "default" },
+      "default": {
+        "type": "default"
+      },
       "allowSwitching": false,
       "allowInheriting": false
     },
@@ -134,6 +136,11 @@
     "respectReducedMotion": {
       "type": "boolean",
       "default": true
+    },
+    "motionBoundary": {
+      "type": "string",
+      "enum": ["viewport", "fit"],
+      "default": "viewport"
     }
   },
   "textdomain": "aggressive-blocks",

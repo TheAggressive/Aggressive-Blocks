@@ -1,0 +1,29 @@
+/* Balance the stage's extra width with padding so content stays in its layout.
+   Only the stage clips; the block remains the original grid/flex item. */
+.aa-motion-stage {
+	--aa-motion-left: 0%;
+	--aa-motion-right: 0%;
+
+	box-sizing: border-box;
+	min-width: 0;
+	margin-left: calc(-1 * var(--aa-motion-left));
+	margin-right: calc(-1 * var(--aa-motion-right));
+	padding-left: var(--aa-motion-left);
+	padding-right: var(--aa-motion-right);
+	pointer-events: none;
+}
+
+.aa-motion-stage[data-ready="true"] {
+	overflow: clip visible;
+}
+
+.aa-motion-content {
+	min-width: 0;
+	pointer-events: auto;
+}
+
+/* An outer stage already owns viewport clipping. Moving a nested stage
+   with its animated parent must not create a second moving clip edge. */
+.aa-motion-stage[data-ready="true"] .aa-motion-stage[data-ready="true"] {
+	overflow: visible;
+}

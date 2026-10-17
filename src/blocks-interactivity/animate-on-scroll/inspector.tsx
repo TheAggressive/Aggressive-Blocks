@@ -133,6 +133,29 @@ export function AosInspector({
           </Notice>
         )}
 
+        <SelectControl
+          label={__('Animation bounds', 'aggressive-blocks')}
+          value={attributes.motionBoundary ?? 'viewport'}
+          options={[
+            {
+              label: __('Offscreen entrance', 'aggressive-blocks'),
+              value: 'viewport',
+            },
+            { label: __('Fit to viewport', 'aggressive-blocks'), value: 'fit' },
+          ]}
+          onChange={value =>
+            setAttributes({
+              motionBoundary: value === 'fit' ? 'fit' : 'viewport',
+            })
+          }
+          help={__(
+            'Offscreen entrances use the screen edges. Fit to viewport shortens motion or uses a fade when space is limited.',
+            'aggressive-blocks'
+          )}
+          __next40pxDefaultSize
+          __nextHasNoMarginBottom
+        />
+
         <ToggleControl
           label={__('Use Animation Sequence', 'aggressive-blocks')}
           checked={attributes.useSequence}
@@ -234,7 +257,7 @@ export function AosInspector({
               max={200}
               step={5}
               help={__(
-                'Distance the element slides during animation',
+                'Travel distance in fit mode; extra distance beyond the screen edge for horizontal offscreen entrances.',
                 'aggressive-blocks'
               )}
             />

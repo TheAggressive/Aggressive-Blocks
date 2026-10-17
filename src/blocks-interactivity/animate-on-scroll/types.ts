@@ -39,6 +39,7 @@ export interface DetectionBoundary {
 export type AnimateOnScrollAttributes = {
   animation: string;
   direction: string;
+  motionBoundary?: 'viewport' | 'fit';
   staggerChildren: boolean;
   staggerDelay: number;
   duration: number;

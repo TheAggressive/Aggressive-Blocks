@@ -15,6 +15,8 @@ import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { __, _n } from '@wordpress/i18n';
 import type { CSSProperties } from 'react';
 import type { AnimateOnScrollAttributes, AnimationSequenceItem } from './types';
+import { mountMotionStage, motionChildren } from '../motion-shared/stage';
+import { measureMovement } from './movement';
 import { AosInspector } from './inspector';
 import {
   createStaggerSeed,
@@ -98,6 +100,7 @@ export default function Edit({
             attributes.staggerChildren || useSequencePreview ? 'true' : 'false',
         }
       : {}),
+    'data-motion-boundary': attributes.motionBoundary ?? 'viewport',
     style: {
       '--wp-block-animate-on-scroll-animation-duration': `${attributes.duration}s`,
       '--wp-block-animate-on-scroll-initial-delay': `${attributes.initialDelay}s`,
@@ -113,7 +116,9 @@ export default function Edit({
       '--wp-block-animate-on-scroll-elastic-distance': `${attributes.elasticDistance ?? 50}px`,
     } as CSSProperties,
   });
-  const innerBlocksProps = useInnerBlocksProps(blockProps);
+  const innerBlocksProps = useInnerBlocksProps({
+    className: 'aa-motion-content is-layout-flow',
+  });
 
   const playPreview = useCallback(() => {
     if (previewTimerRef.current) {
@@ -124,9 +129,11 @@ export default function Edit({
   }, []);
 
   const clearPreviewChildState = useCallback((root: HTMLElement) => {
-    Array.from(root.children).forEach(child => {
+    motionChildren(root).forEach(child => {
       const el = child as HTMLElement;
       el.style.removeProperty('--wp-block-animate-on-scroll-stagger-delay');
+      el.style.removeProperty('--aos-from-transform');
+      el.removeAttribute('data-aos-fade-only');
       el.removeAttribute('data-animate-sequence-type');
       el.removeAttribute('data-animate-sequence-direction');
       [
@@ -148,7 +155,7 @@ export default function Edit({
     }
 
     const root = blockRef.current;
-    const children = Array.from(root.children) as HTMLElement[];
+    const children = motionChildren(root);
     const sequence = attributes.animationSequence ?? [];
     const staggerConfig: StaggerConfig = {
       pattern: attributes.staggerPattern,
@@ -310,6 +317,19 @@ export default function Edit({
     setAttributes,
   ]);
 
+  useEffect(() => {
+    if (!isPreviewing || !blockRef.current) return;
+    return mountMotionStage(blockRef.current, () => {
+      if (blockRef.current) measureMovement(blockRef.current);
+    });
+  }, [
+    isPreviewing,
+    attributes.motionBoundary,
+    attributes.animation,
+    attributes.direction,
+    attributes.animationSequence,
+  ]);
+
   return (
     <>
       <AosInspector
@@ -321,7 +341,11 @@ export default function Edit({
         playPreview={playPreview}
       />
 
-      <div {...innerBlocksProps} />
+      <div {...blockProps}>
+        <div className='aa-motion-stage'>
+          <div {...innerBlocksProps} />
+        </div>
+      </div>
     </>
   );
 }
