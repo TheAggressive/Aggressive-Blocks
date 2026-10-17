@@ -55,6 +55,7 @@ describe('syncDeepLinkHash', () => {
 describe('isSlideFocused', () => {
   it('is true only for a real slide inside the carousel root', () => {
     const root = document.createElement('section');
+    root.className = 'aa-hero';
     const slide = document.createElement('div');
     slide.className = 'aa-hero__slide';
     slide.tabIndex = 0;
@@ -64,6 +65,16 @@ describe('isSlideFocused', () => {
 
     expect(isSlideFocused(root)).toBe(true);
     expect(isSlideFocused(root, document.createElement('button'))).toBe(false);
+
+    const link = document.createElement('a');
+    slide.appendChild(link);
+    expect(isSlideFocused(root, link)).toBe(true);
+    const nested = document.createElement('section');
+    nested.className = 'aa-hero';
+    nested.innerHTML =
+      '<div class="aa-hero__slide"><button>Nested</button></div>';
+    slide.appendChild(nested);
+    expect(isSlideFocused(root, nested.querySelector('button'))).toBe(false);
 
     slide.setAttribute(CLONE_ATTR, 'first');
     expect(isSlideFocused(root, slide)).toBe(false);

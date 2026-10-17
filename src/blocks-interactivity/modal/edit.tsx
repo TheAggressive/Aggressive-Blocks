@@ -22,7 +22,7 @@ import {
   useBlockProps,
 } from '@wordpress/block-editor';
 import { BlockEditProps } from '@wordpress/blocks';
-import { select, subscribe } from '@wordpress/data';
+import { select, subscribe, useSelect } from '@wordpress/data';
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import type { CSSProperties } from 'react';
 import { __ } from '@wordpress/i18n';
@@ -31,7 +31,7 @@ import { queryAllEditorDocuments } from './editor-dom';
 import { cleanupAllHighlights, highlightModalTrigger } from './highlights';
 import { useTriggerManagement } from './hooks/useTriggerManagement';
 import { useUpdateBlockTriggerClass } from './hooks/useUpdateBlockTriggerClass';
-import type { ModalAttributes } from './types';
+import type { EditorBlock, ModalAttributes } from './types';
 import { Debug } from './utils/debug';
 import {
   blockExists,
@@ -43,6 +43,9 @@ import { Icon } from '@wordpress/components';
 import { link as linkIcon } from '@wordpress/icons';
 import { generatePersistentId } from './utils/generatePersistentId';
 import { ModalInspector } from './inspector';
+
+// Preserve mounted owners when a copy is inserted before its source.
+const modalOwners = new Map<string, string>();
 
 /**
  * The edit function describes the structure of your block in the context of the
@@ -60,12 +63,55 @@ export default function Edit({
   const {
     position = 'center',
     openOnLoad = false,
-    modalId = '',
+    modalId: savedModalId = '',
     triggerBlockId = '',
     triggerBlockKey = '',
     disableOverlay = false,
     dialogMaxWidth = '',
   } = attributes;
+
+  // Keep the first existing modal's identity and detach copied trigger references.
+  const duplicateId = useSelect(
+    sel => {
+      const editor = sel(blockEditorStore);
+      const registered = modalOwners.get(savedModalId);
+      const findOwner = (blocks: EditorBlock[]): string | undefined => {
+        for (const block of blocks) {
+          if (
+            block.name === 'aggressive-blocks/modal' &&
+            block.attributes.modalId === savedModalId
+          )
+            return block.clientId;
+          const nested = findOwner(block.innerBlocks ?? []);
+          if (nested) return nested;
+        }
+        return undefined;
+      };
+      const owner =
+        registered &&
+        editor.getBlockAttributes(registered)?.modalId === savedModalId
+          ? registered
+          : findOwner(editor.getBlocks());
+      return !!savedModalId && !!owner && owner !== clientId;
+    },
+    [savedModalId, clientId]
+  );
+  const modalId = duplicateId ? '' : savedModalId;
+  useEffect(() => {
+    if (!modalId) return;
+    modalOwners.set(modalId, clientId);
+    return () => {
+      if (modalOwners.get(modalId) === clientId) modalOwners.delete(modalId);
+    };
+  }, [modalId, clientId]);
+  useEffect(() => {
+    if (duplicateId)
+      setAttributes({
+        modalId: generatePersistentId(),
+        triggerBlockId: '',
+        triggerBlockKey: '',
+      });
+  }, [duplicateId, setAttributes]);
 
   const updateBlockTriggerClass = useUpdateBlockTriggerClass();
 
@@ -82,14 +128,15 @@ export default function Edit({
   const { availableTriggers, safeTriggerBlockId, handleTriggerBlockChange } =
     useTriggerManagement({
       modalId,
-      triggerBlockId,
-      triggerBlockKey,
+      triggerBlockId: duplicateId ? '' : triggerBlockId,
+      triggerBlockKey: duplicateId ? '' : triggerBlockKey,
       setAttributes,
       updateBlockTriggerClass,
     });
 
   // Initialize modal ID once.
   useEffect(() => {
+    if (duplicateId) return;
     if (!modalId) {
       // Generate a new ID.
       const newModalId = generatePersistentId();
@@ -110,7 +157,13 @@ export default function Edit({
         );
       }
     }
-  }, [modalId, setAttributes, safeTriggerBlockId, updateBlockTriggerClass]);
+  }, [
+    duplicateId,
+    modalId,
+    setAttributes,
+    safeTriggerBlockId,
+    updateBlockTriggerClass,
+  ]);
 
   // Handle highlighting when selection changes.
   useEffect(() => {

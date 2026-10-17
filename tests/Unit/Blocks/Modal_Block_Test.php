@@ -471,4 +471,17 @@ class Modal_Block_Test extends WP_UnitTestCase {
 		$this->assertSame( 1, substr_count( $v1, 'wp-block-aggressive-apparel-modal__close' ) );
 		$this->assertStringNotContainsString( '✕', $v1 );
 	}
+
+	/** Saved duplicates must have independently addressable dialogs and triggers. */
+	public function test_legacy_duplicate_ids_are_unique_at_render(): void {
+		$attrs = array( 'modalId' => 'legacy-duplicate', 'triggerBlockId' => 'external-button' );
+		$first = $this->render_modal( $attrs, '<p>First</p>' );
+		$copy  = $this->render_modal( $attrs, '<p>Copy</p>' );
+		$this->assertStringContainsString( 'id="legacy-duplicate"', $first );
+		$this->assertStringNotContainsString( 'id="legacy-duplicate"', $copy );
+		preg_match( '/<dialog[^>]*\sid="([^"]+)"/', $copy, $matches );
+		$this->assertNotEmpty( $matches );
+		$this->assertStringContainsString( 'aria-controls="' . $matches[1] . '"', $copy );
+	}
+
 }

@@ -19,6 +19,7 @@ import {
   // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
   __experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
+import { Text } from '@wordpress/ui';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import type {
   AnimateOnScrollAttributes,
@@ -114,12 +115,12 @@ export function AosInspector({
               : __('Preview animation', 'aggressive-blocks')}
           </Button>
           {attributes.useSequence && (
-            <p className='components-base-control__help aggressive-apparel-animate-on-scroll-preview__help'>
+            <Text variant='body-sm' render={<p />}>
               {__(
                 'Sequence mode previews each direct child’s step in the canvas (types cycle when there are more children than steps).',
                 'aggressive-blocks'
               )}
-            </p>
+            </Text>
           )}
         </div>
 
@@ -549,12 +550,12 @@ export function AosInspector({
                   >
                     {__('Reshuffle delays', 'aggressive-blocks')}
                   </Button>
-                  <p className='components-base-control__help aggressive-apparel-animate-on-scroll-preview__help'>
+                  <Text variant='body-sm' render={<p />}>
                     {__(
                       'Random delays are seeded so the cascade stays the same across reloads. Reshuffle picks a new pattern.',
                       'aggressive-blocks'
                     )}
-                  </p>
+                  </Text>
                 </div>
               </>
             )}

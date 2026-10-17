@@ -3,7 +3,7 @@
  *
  * Used by the Parallax and Animate On Scroll blocks so both present the
  * same UI: a 2-column grid of name-only tiles (descriptions in
- * tooltips), an accent ring + check on the preset matching the current
+ * tooltips), native pressed styling + check on the preset matching the current
  * settings, and an optional quiet Reset link in the header.
  *
  * Styles live in editor-shared/editor.css (imported by each block's
@@ -13,9 +13,10 @@
  * @package Aggressive Apparel
  */
 
-import { Button } from '@wordpress/components';
+import { BaseControl, Button } from '@wordpress/components';
+import { Stack } from '@wordpress/ui';
 import { __ } from '@wordpress/i18n';
-import { check, Icon } from '@wordpress/icons';
+import { check } from '@wordpress/icons';
 
 export interface PresetTile<T> {
   key: string;
@@ -45,9 +46,9 @@ export function PresetPicker<T>({
   onReset,
 }: PresetPickerProps<T>) {
   return (
-    <div className='aa-preset-picker'>
-      <div className='aa-preset-picker__header'>
-        <span className='aa-preset-picker__label'>{label}</span>
+    <Stack direction='column' gap='sm' className='aa-preset-picker'>
+      <Stack direction='row' align='center' justify='space-between'>
+        <BaseControl.VisualLabel>{label}</BaseControl.VisualLabel>
         {onReset && (
           <Button
             variant='link'
@@ -58,35 +59,27 @@ export function PresetPicker<T>({
             {__('Reset', 'aggressive-blocks')}
           </Button>
         )}
-      </div>
+      </Stack>
       <div className='aa-preset-picker__grid' role='group' aria-label={label}>
         {presets.map(preset => {
           const isActive = preset.key === activeKey;
           return (
             <Button
               key={preset.key}
-              className={
-                isActive
-                  ? 'aa-preset-picker__tile is-active'
-                  : 'aa-preset-picker__tile'
-              }
+              className='aa-preset-picker__tile'
+              variant='secondary'
+              isPressed={isActive}
+              icon={isActive ? check : undefined}
               aria-pressed={isActive}
               label={preset.description}
               showTooltip={Boolean(preset.description)}
               onClick={() => onApply(preset)}
             >
-              <span className='aa-preset-picker__name'>{preset.name}</span>
-              {isActive && (
-                <Icon
-                  icon={check}
-                  size={16}
-                  className='aa-preset-picker__check'
-                />
-              )}
+              {preset.name}
             </Button>
           );
         })}
       </div>
-    </div>
+    </Stack>
   );
 }

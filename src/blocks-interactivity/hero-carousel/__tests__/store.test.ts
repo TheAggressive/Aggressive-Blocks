@@ -803,3 +803,73 @@ describe('motion hold across transition modes', () => {
     destroy();
   });
 });
+
+it('leaves shortcuts, consumed events, widgets and nested carousels alone', () => {
+  const ctx = makeContext();
+  const { root, destroy } = initCarousel(ctx);
+  const slider = document.createElement('div');
+  slider.setAttribute('role', 'slider');
+  slider.innerHTML = '<span>Value</span>';
+  root.appendChild(slider);
+  const nested = document.createElement('section');
+  nested.className = 'aa-hero';
+  root.appendChild(nested);
+  const cases = [
+    { target: root, altKey: true },
+    { target: root, ctrlKey: true },
+    { target: root, metaKey: true },
+    { target: root, shiftKey: true },
+    { target: root, isComposing: true },
+    { target: root, defaultPrevented: true },
+    { target: slider.firstChild },
+    { target: nested },
+  ];
+  for (const options of cases) {
+    const preventDefault = jest.fn();
+    actions.handleKeydown({ key: 'ArrowRight', preventDefault, ...options });
+    expect(ctx.activeIndex).toBe(0);
+    expect(preventDefault).not.toHaveBeenCalled();
+  }
+  const preventDefault = jest.fn();
+  actions.handleKeydown({ key: 'ArrowRight', target: root, preventDefault });
+  expect(ctx.activeIndex).toBe(1);
+  expect(preventDefault).toHaveBeenCalledTimes(1);
+  destroy();
+});
+
+it('keeps background playback in step with pause, focus holds and tab visibility', () => {
+  const ctx = makeContext({ autoplay: true, isPlaying: true });
+  let paused = false;
+  let video: HTMLVideoElement;
+  const { destroy } = initCarousel(ctx, undefined, root => {
+    video = document.createElement('video');
+    video.className = 'wp-block-cover__video-background';
+    video.autoplay = true;
+    Object.defineProperty(video, 'paused', { get: () => paused });
+    video.pause = jest.fn(() => {
+      paused = true;
+    });
+    video.play = jest.fn(() => {
+      paused = false;
+      return Promise.resolve();
+    });
+    root.querySelector('.aa-hero__slide')?.appendChild(video);
+  });
+  actions.togglePlay();
+  expect(paused).toBe(true);
+  actions.togglePlay();
+  expect(paused).toBe(false);
+  actions.pause();
+  expect(paused).toBe(true);
+  actions.resume();
+  expect(paused).toBe(false);
+  const hidden = jest.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(paused).toBe(true);
+  hidden.mockReturnValue(false);
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(paused).toBe(false);
+  hidden.mockRestore();
+  destroy();
+  expect(video!.pause).toHaveBeenCalled();
+});

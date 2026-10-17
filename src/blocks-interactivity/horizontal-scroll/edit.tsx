@@ -4,6 +4,7 @@
  * @package Aggressive_Blocks
  */
 
+import { InputControl, Text } from '@wordpress/ui';
 import { __ } from '@wordpress/i18n';
 import {
   useBlockProps,
@@ -14,7 +15,6 @@ import {
   PanelBody,
   RangeControl,
   SelectControl,
-  TextControl,
   ToggleControl,
   Button,
   // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
@@ -188,14 +188,14 @@ export default function Edit({
     <>
       <InspectorControls>
         <PanelBody title={__('Horizontal Scroll', 'aggressive-blocks')}>
-          <TextControl
+          <InputControl
             label={__('Accessibility Label', 'aggressive-blocks')}
-            help={__(
+            description={__(
               'Accessible name for this carousel region. Required for clarity when a page has more than one horizontal-scroll section — use a unique label for each.',
               'aggressive-blocks'
             )}
             value={ariaLabel}
-            onChange={(val: string) => setAttributes({ ariaLabel: val })}
+            onValueChange={(val: string) => setAttributes({ ariaLabel: val })}
           />
           <SelectControl
             label={__('Slide Size', 'aggressive-blocks')}
@@ -371,12 +371,12 @@ export default function Edit({
                 ? __('Playing…', 'aggressive-blocks')
                 : __('Preview scroll', 'aggressive-blocks')}
             </Button>
-            <p className='components-base-control__help'>
+            <Text variant='body-sm' render={<p />}>
               {__(
                 'Scrubs the track across the canvas so you can judge slide size without publishing.',
                 'aggressive-blocks'
               )}
-            </p>
+            </Text>
           </div>
           <ToggleControl
             label={__('Show Progress Bar', 'aggressive-blocks')}

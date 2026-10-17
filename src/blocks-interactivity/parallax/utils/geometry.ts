@@ -114,7 +114,7 @@ export const progressFromGeometry = (
   const totalTravel = zoneBottom - zoneTop + geom.elementHeight;
   const distanceCovered = zoneBottom - originalTop;
 
-  let progress = 0;
+  let progress: number;
   if (totalTravel > 0) {
     progress = distanceCovered / totalTravel;
   } else {

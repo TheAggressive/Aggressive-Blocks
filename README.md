@@ -20,6 +20,8 @@ composer install
 pnpm qa:fast
 ```
 
+Type checks use TypeScript 7's `tsc`, installed under the `@typescript/native` alias. The `typescript` dependency aliases `@typescript/typescript6` to supply the compiler API required by ESLint, following [Microsoft's side-by-side setup](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-6-0). ESLint 10 uses `@eslint/compat` to run plugins that still use the older rule APIs.
+
 `pnpm qa:fast` is the pre-push check. It does not start containers. `pnpm qa` rehearses the same wp-env lanes CI runs. The WordPress floor and screenshot lanes (`pnpm ci:floor`, `pnpm ci:visual`) run WordPress natively, so they also work without Docker once `pnpm build && bash bin/release/package.sh` has built `aggressive-blocks.zip`.
 
 For browser tests without Docker, `pnpm test:e2e:studio` runs Playwright against your Studio site. Opt the site in once with `touch <site>/.aggressive-blocks-e2e-site`; the script restores everything it changes. Pass Playwright arguments through, e.g. `pnpm test:e2e:studio tests/e2e/modal.spec.ts`.

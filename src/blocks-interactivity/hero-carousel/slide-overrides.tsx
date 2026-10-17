@@ -17,12 +17,15 @@ import {
 } from '@wordpress/block-editor';
 import type { BlockEditProps } from '@wordpress/blocks';
 import {
+  BaseControl,
   Button,
+  useBaseControlProps,
   DateTimePicker,
   Dropdown,
   PanelBody,
   SelectControl,
 } from '@wordpress/components';
+import { Stack } from '@wordpress/ui';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
@@ -105,58 +108,63 @@ function ScheduleDateTimeControl({
   clearLabel,
   onChange,
 }: ScheduleDateTimeControlProps) {
+  const { baseControlProps, controlProps } = useBaseControlProps({
+    label,
+    help,
+    className: 'aa-hero-schedule-control',
+  });
   return (
-    <div className='aa-hero-schedule-control'>
-      <div className='aa-hero-schedule-control__row'>
-        <span className='components-base-control__label aa-hero-schedule-control__label'>
-          {label}
-        </span>
-        <Dropdown
-          className='aa-hero-schedule-control__dropdown'
-          contentClassName='aa-hero-schedule-popover'
-          expandOnMobile
-          headerTitle={label}
-          popoverProps={{ placement: 'left-start' }}
-          renderToggle={({ isOpen, onToggle }) => (
-            <Button
-              className='aa-hero-schedule-control__toggle'
-              icon={calendar}
-              onClick={onToggle}
-              variant='secondary'
-              aria-expanded={isOpen}
-              aria-haspopup='dialog'
-            >
-              <span className='aa-hero-schedule-control__toggle-text'>
-                {formatScheduleSummary(value, emptyLabel)}
-              </span>
-            </Button>
-          )}
-          renderContent={({ onClose }) => (
-            <div className='aa-hero-schedule-popover__inner'>
-              <DateTimePicker
-                currentDate={value || new Date().toISOString()}
-                onChange={(nextValue: string | null) =>
-                  onChange(toLocalDateTimeValue(nextValue ?? ''))
-                }
-                dateOrder='mdy'
-                is12Hour={true}
-              />
-              <div className='aa-hero-schedule-popover__actions'>
-                {value && (
-                  <Button variant='tertiary' onClick={() => onChange('')}>
-                    {clearLabel}
-                  </Button>
-                )}
-                <Button variant='primary' onClick={onClose}>
-                  {__('Done', 'aggressive-blocks')}
+    <BaseControl {...baseControlProps}>
+      <Dropdown
+        className='aa-hero-schedule-control__dropdown'
+        contentClassName='aa-hero-schedule-popover'
+        expandOnMobile
+        headerTitle={label}
+        popoverProps={{ placement: 'left-start' }}
+        renderToggle={({ isOpen, onToggle }) => (
+          <Button
+            {...controlProps}
+            className='aa-hero-schedule-control__toggle'
+            icon={calendar}
+            onClick={onToggle}
+            variant='secondary'
+            aria-label={`${label}: ${formatScheduleSummary(value, emptyLabel)}`}
+            aria-expanded={isOpen}
+            aria-haspopup='dialog'
+          >
+            <span className='aa-hero-schedule-control__toggle-text'>
+              {formatScheduleSummary(value, emptyLabel)}
+            </span>
+          </Button>
+        )}
+        renderContent={({ onClose }) => (
+          <Stack
+            direction='column'
+            gap='lg'
+            className='aa-hero-schedule-popover__inner'
+          >
+            <DateTimePicker
+              currentDate={value || new Date().toISOString()}
+              onChange={(nextValue: string | null) =>
+                onChange(toLocalDateTimeValue(nextValue ?? ''))
+              }
+              dateOrder='mdy'
+              is12Hour={true}
+            />
+            <Stack direction='row' align='center' justify='flex-end' gap='sm'>
+              {value && (
+                <Button variant='tertiary' onClick={() => onChange('')}>
+                  {clearLabel}
                 </Button>
-              </div>
-            </div>
-          )}
-        />
-      </div>
-      <p className='components-base-control__help'>{help}</p>
-    </div>
+              )}
+              <Button variant='primary' onClick={onClose}>
+                {__('Done', 'aggressive-blocks')}
+              </Button>
+            </Stack>
+          </Stack>
+        )}
+      />
+    </BaseControl>
   );
 }
 

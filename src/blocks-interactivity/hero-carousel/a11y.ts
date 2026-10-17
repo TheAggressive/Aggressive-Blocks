@@ -7,7 +7,7 @@
  * @package Aggressive_Blocks
  */
 
-import { CLONE_ATTR } from './constants';
+import { CLONE_ATTR, ROOT_SELECTOR } from './constants';
 import { slideHash } from './logic';
 
 /**
@@ -48,11 +48,12 @@ export function isSlideFocused(
   root: HTMLElement,
   active: Element | null = document.activeElement
 ): boolean {
-  return (
-    active instanceof HTMLElement &&
-    active.classList.contains('aa-hero__slide') &&
-    !active.hasAttribute(CLONE_ATTR) &&
-    root.contains(active)
+  const slide = active?.closest('.aa-hero__slide');
+  return !!(
+    slide &&
+    !slide.hasAttribute(CLONE_ATTR) &&
+    root.contains(slide) &&
+    slide.closest(ROOT_SELECTOR) === root
   );
 }
 

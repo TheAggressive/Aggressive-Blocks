@@ -40,7 +40,7 @@ export const getBlockLabel = (
   }
 
   // Try to find a meaningful label based on block type.
-  let label = '';
+  let label: string;
 
   if (block.name === 'core/button') {
     // For buttons, use the text content.

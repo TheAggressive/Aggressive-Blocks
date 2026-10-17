@@ -7,12 +7,12 @@
  * @module src/blocks-interactivity/modal/inspector-buttons
  */
 
+import { InputControl } from '@wordpress/ui';
 import { PanelColorSettings } from '@wordpress/block-editor';
 import {
   Notice,
   PanelBody,
   SelectControl,
-  TextControl,
   ToggleControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -177,17 +177,17 @@ export function CloseButtonPanels({
               __nextHasNoMarginBottom
             />
 
-            <TextControl
+            <InputControl
               label={__('Label', 'aggressive-blocks')}
               value={closeButtonLabel}
               placeholder={__('e.g. Close', 'aggressive-blocks')}
-              onChange={value => setAttributes({ closeButtonLabel: value })}
-              help={__(
+              onValueChange={value =>
+                setAttributes({ closeButtonLabel: value })
+              }
+              description={__(
                 'Optional visible text alongside the icon.',
                 'aggressive-blocks'
               )}
-              __next40pxDefaultSize
-              __nextHasNoMarginBottom
             />
           </>
         )}
@@ -305,17 +305,15 @@ export function TriggerButtonPanel({
         __nextHasNoMarginBottom
       />
 
-      <TextControl
+      <InputControl
         label={__('Border Radius', 'aggressive-blocks')}
         value={triggerBorderRadius}
         placeholder='0.25rem'
-        onChange={value => setAttributes({ triggerBorderRadius: value })}
-        help={__(
+        onValueChange={value => setAttributes({ triggerBorderRadius: value })}
+        description={__(
           'e.g. 0.25rem, 9999px for pill. Leave empty for square.',
           'aggressive-blocks'
         )}
-        __next40pxDefaultSize
-        __nextHasNoMarginBottom
       />
 
       <PanelColorSettings

@@ -28,6 +28,8 @@ import {
   isSlideFocused,
   syncDeepLinkHash,
 } from './a11y';
+import { shouldIgnoreKeyboardEvent } from '../../utils/keyboard';
+import { BackgroundVideos } from './videos';
 import { AutoplayEngine, type HoldReason } from './autoplay';
 import {
   CLONE_ATTR,
@@ -106,6 +108,7 @@ class HeroController {
   private readonly announcer: HTMLElement | null;
   private readonly io: IntersectionObserver;
   private readonly autoplay: AutoplayEngine;
+  private readonly videos: BackgroundVideos;
   private readonly scrollGuard = new ProgrammaticScrollGuard();
   private resizeObserver: ResizeObserver | null = null;
   private layoutTimer = 0;
@@ -133,7 +136,8 @@ class HeroController {
       root.querySelectorAll<HTMLElement>(
         `${SLIDE_SELECTOR}:not([${CLONE_ATTR}])`
       )
-    );
+    ).filter(slide => slide.closest(ROOT_SELECTOR) === root);
+    this.videos = new BackgroundVideos(this.slides);
     this.announcer = root.querySelector<HTMLElement>('.aa-hero__live');
     this.isRtl = getComputedStyle(root).direction === 'rtl';
     this.seamless = usesSeamlessLoop(
@@ -183,6 +187,7 @@ class HeroController {
         ctx.isPaused = value;
       },
       onTick: () => self.next(true),
+      onPlaybackChange: playing => this.videos.sync(ctx.activeIndex, playing),
     });
 
     this.applyFocalOrigins();
@@ -412,6 +417,7 @@ class HeroController {
     }
     this.ctx.activeIndex = index;
     this.ctx.displayIndex = index;
+    this.autoplay.reconcile();
     if (this.retainSlideFocus) {
       this.retainSlideFocus = false;
       this.focusActiveSlide();
@@ -561,6 +567,7 @@ class HeroController {
   destroy(): void {
     this.wrapCancel?.();
     this.autoplay.destroy();
+    this.videos.destroy();
     this.scrollGuard.destroy();
     window.clearTimeout(this.layoutTimer);
     this.io.disconnect();
@@ -700,18 +707,15 @@ const { state } = store<HeroStore>('aggressive-blocks/hero-carousel', {
       controllerFor(getElement().ref)?.togglePlay();
     },
     handleKeydown: withSyncEvent((event: KeyboardEvent): void => {
-      // Don't steal arrows from form fields / editable content inside a Cover.
+      const root = getElement().ref?.closest(ROOT_SELECTOR);
       const target = event.target;
       if (
-        target instanceof HTMLElement &&
-        (target.closest('input, textarea, select, [contenteditable="true"]') ||
-          target.isContentEditable)
-      ) {
+        shouldIgnoreKeyboardEvent(event, root) ||
+        (target instanceof Element && target.closest(ROOT_SELECTOR) !== root)
+      )
         return;
-      }
-
       const ctx = getContext<HeroContext>();
-      const controller = controllerFor(getElement().ref);
+      const controller = controllerFor(root ?? null);
       if (!controller) return;
       // The track runs right-to-left in RTL, so the arrow keys swap.
       const forward = controller.isRtl ? 'ArrowLeft' : 'ArrowRight';
