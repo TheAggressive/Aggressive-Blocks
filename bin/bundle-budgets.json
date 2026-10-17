@@ -1,10 +1,10 @@
 {
-  "$comment": "Gzip bytes each production frontend asset may reach: the size measured when the budget was set, plus about 15%, rounded up to 256 bytes (1 KB minimum). A -rtl.css file shares its stylesheet's budget. Raise a number only for a deliberate change, and say why in the commit. See docs/ci.md.",
+  "$comment": "Gzip bytes each production frontend asset may reach: the size measured when the budget was set, plus about 15%, rounded up to 256 bytes (1 KB minimum). A -rtl.css file shares its stylesheet's budget. Raise a number only for a deliberate change, and say why in the commit. Animate On Scroll includes viewport-stage geometry and fit-mode bounds calculations; Card Flip includes the shared viewport-stage guard. See docs/ci.md.",
   "files": {
     "build/blocks-interactivity/animate-on-scroll/style-index.css": 1792,
-    "build/blocks-interactivity/animate-on-scroll/view.js": 4096,
+    "build/blocks-interactivity/animate-on-scroll/view.js": 5376,
     "build/blocks-interactivity/card-flip/style-index.css": 1536,
-    "build/blocks-interactivity/card-flip/view.js": 1024,
+    "build/blocks-interactivity/card-flip/view.js": 1792,
     "build/blocks-interactivity/hero-carousel/style-index.css": 6656,
     "build/blocks-interactivity/hero-carousel/view.js": 5888,
     "build/blocks-interactivity/horizontal-scroll/style-index.css": 3328,

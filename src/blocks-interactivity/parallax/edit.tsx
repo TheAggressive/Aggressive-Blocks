@@ -635,9 +635,13 @@ function Edit({
       </InspectorControls>
 
       <div {...blockProps}>
-        <div className='aggressive-apparel-parallax__container'>
-          <div className='aggressive-apparel-parallax__content'>
-            <InnerBlocks />
+        <div className='aa-motion-stage'>
+          <div className='aa-motion-content'>
+            <div className='aggressive-apparel-parallax__container'>
+              <div className='aggressive-apparel-parallax__content'>
+                <InnerBlocks />
+              </div>
+            </div>
           </div>
         </div>
       </div>

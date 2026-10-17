@@ -14,6 +14,7 @@
  *
  * @package Aggressive Apparel
  */
+import { mountMotionStage } from '../motion-shared/stage';
 import { getContext, getElement, store } from '@wordpress/interactivity';
 import { applyParallaxDefaults, MOBILE_MAX_WIDTH_PX } from './config';
 import {
@@ -45,6 +46,7 @@ const startParallax = (
   // Decided before collectLayers() writes any style, so the ancestor
   // overflow check reads clean computed styles.
   const renderer = canUseScrollTimeline(ref, ctx) ? 'timeline' : 'frame';
+  const stopStage = mountMotionStage(ref);
   const layers = collectLayers(ref, ctx);
   const instance = createInstance(ref, container, ctx, layers, renderer);
 
@@ -92,6 +94,7 @@ const startParallax = (
   ctx.hasInitialized = true;
 
   return () => {
+    stopStage();
     setInstanceActive(instance, false);
     observer.disconnect();
     unregister();

@@ -15,6 +15,7 @@ jest.mock(
 );
 
 import { applyFaceInert, isHoverPointer } from '../view';
+import { motionContent } from '../../motion-shared/stage';
 
 const CARD = [
   '<button class="aa-card-flip__toggle" type="button"></button>',
@@ -27,13 +28,13 @@ const CARD = [
 function buildCard(): HTMLElement {
   const root = document.createElement('div');
   root.className = 'aa-card-flip';
-  root.innerHTML = CARD;
+  root.innerHTML = `<div class="aa-motion-stage"><div class="aa-motion-content">${CARD}</div></div>`;
   document.body.appendChild(root);
   return root;
 }
 
 const face = (r: HTMLElement, side: 'front' | 'back') =>
-  r.querySelector(
+  motionContent(r).querySelector(
     `:scope > .aa-card-flip__inner > .aa-card-flip__face--${side}`
   ) as HTMLElement;
 const front = (r: HTMLElement) => face(r, 'front');

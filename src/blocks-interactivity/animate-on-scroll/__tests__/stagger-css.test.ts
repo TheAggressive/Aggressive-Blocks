@@ -19,7 +19,9 @@ import fs from 'fs';
 import path from 'path';
 
 const css = fs.readFileSync(path.join(__dirname, '../style.css'), 'utf8');
-const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+const rules = css
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replaceAll(' > .aa-motion-stage > .aa-motion-content', '');
 
 /** Remove one `@media <query> { … }` block, braces balanced. */
 const withoutMedia = (source: string, query: string): string => {
@@ -60,7 +62,7 @@ describe('animate-on-scroll stylesheet', () => {
     const rest = withoutMedia(
       withoutMedia(rules, '(prefers-reduced-motion: reduce)'),
       'print'
-    );
+    ).replace(/&\[data-aos-measuring\][^{]*\{[^}]*\}/g, '');
     expect(rest).not.toMatch(/!important/);
   });
 

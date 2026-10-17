@@ -182,6 +182,7 @@ $wrapper_attributes_array = array(
 	// imperatively added class is wiped on the next re-render.
 	'data-wp-class--has-animated' => 'context.hasAnimated',
 	'data-wp-class--is-exiting'   => 'context.isExiting',
+	'data-motion-boundary'        => 'fit' === ( $attributes['motionBoundary'] ?? '' ) ? 'fit' : 'viewport',
 	'data-animate-type'           => $use_sequence ? false : $aos_animation_value( $aos_animation ),
 	'data-animate-direction'      => $use_sequence || '' === $aos_direction ? false : $aos_direction,
 	'data-stagger-children'       => $aos_stagger ? 'true' : false,
@@ -353,6 +354,25 @@ $aos_mark_sequence_child = static function ( string $html, array $attrs, string 
 };
 
 echo aggressive_blocks_trusted_html( $aos_opening->get_updated_html() );
+// The new inner content box owns flow spacing, including before hydration.
+$aos_inner_class = 'aa-motion-content is-layout-flow';
+$aos_raw_gap     = $attributes['style']['spacing']['blockGap'] ?? null;
+if ( is_array( $aos_raw_gap ) ) {
+	$aos_raw_gap = $aos_raw_gap['top'] ?? null;
+}
+$aos_gap = null;
+if ( ( is_string( $aos_raw_gap ) || is_numeric( $aos_raw_gap ) ) && ! preg_match( '/[;{}]/', (string) $aos_raw_gap ) ) {
+	$aos_gap_styles = wp_style_engine_get_styles( array( 'spacing' => array( 'margin' => array( 'top' => $aos_raw_gap ) ) ) );
+	if ( ! empty( $aos_gap_styles['css'] ) ) {
+		$aos_gap = $aos_gap_styles['declarations']['margin-top'] ?? null;
+	}
+}
+if ( null !== $aos_gap ) {
+	$aos_layout_class = 'aa-aos-layout-' . $aos_id;
+	$aos_inner_class .= ' ' . $aos_layout_class;
+	wp_enqueue_block_support_styles( wp_get_layout_style( '.' . $aos_layout_class, array( 'type' => 'default' ), true, $aos_gap ) );
+}
+echo '<div class="aa-motion-stage"><div class="' . esc_attr( $aos_inner_class ) . '">';
 
 if ( $use_sequence ) {
 	$aos_sequence_count = count( $aos_sequence );
@@ -387,4 +407,4 @@ if ( $use_sequence ) {
 	echo aggressive_blocks_trusted_html( $aos_stagger ? $aos_stagger_content( $content ) : $content );
 }
 
-echo '</div>';
+echo '</div></div></div>';

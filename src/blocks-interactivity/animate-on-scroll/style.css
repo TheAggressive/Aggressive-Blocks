@@ -7,6 +7,7 @@
  * emitting anything of its own.
  */
 @reference 'tailwindcss';
+@import '../motion-shared/style.css';
 
 /* Scroll-debug UI ships separately (build/styles/components/debug-overlays.css),
    enqueued by render.php only when Debug Mode is active for an editor. */
@@ -68,13 +69,6 @@
 	display: block;
 	overflow: visible;
 
-	/* Transforms still contribute to scrollable overflow when transparent.
-	   Clip every effect (including sequences and reverse exits) horizontally,
-	   without creating a scroll container or clipping vertical movement.
-	   Leave the idle editor canvas open for block controls. */
-	&:is([data-wp-interactive], .is-aos-previewing) {
-		overflow-x: clip;
-	}
 
 	/* ==========================================================================
 	   2. CHILDREN: TRANSITIONS AND DEFAULT "FROM" VALUES
@@ -90,7 +84,7 @@
 	   (none), never an identity like blur(0) or translate(0, 0): any other
 	   filter or transform makes the child the containing block for
 	   position: fixed content inside it. */
-	& > * {
+	& > .aa-motion-stage > .aa-motion-content > * {
 		--aos-from-transform: none;
 		--aos-from-filter: none;
 		--aos-from-clip-path: none;
@@ -99,7 +93,7 @@
 
 	/* Front end and the editor preview only: in the editor canvas a transform
 	   transition would drag behind the block-moving animation. */
-	&:is([data-wp-interactive], .is-aos-previewing) > * {
+	&:is([data-wp-interactive], .is-aos-previewing) > .aa-motion-stage > .aa-motion-content > * {
 		transition:
 			opacity var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
 			transform var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing),
@@ -109,7 +103,7 @@
 	}
 
 	/* Per-child stagger delay, written inline by render.php and the store. */
-	&[data-stagger-children="true"] > * {
+	&[data-stagger-children="true"] > .aa-motion-stage > .aa-motion-content > * {
 		--wp-block-animate-on-scroll-effective-delay: calc(
 			var(--wp-block-animate-on-scroll-initial-delay) +
 			var(--wp-block-animate-on-scroll-stagger-delay, 0s)
@@ -126,110 +120,110 @@
 	   opacity. The direction is the way the content travels in. */
 
 	/* Slide */
-	&[data-animate-type="slide"][data-animate-direction="up"] > *,
-	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="up"] {
+	&[data-animate-type="slide"][data-animate-direction="up"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="slide"][data-animate-sequence-direction="up"] {
 		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-slide-distance));
 	}
 
-	&[data-animate-type="slide"][data-animate-direction="down"] > *,
-	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="down"] {
+	&[data-animate-type="slide"][data-animate-direction="down"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="slide"][data-animate-sequence-direction="down"] {
 		--aos-from-transform: translateY(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
 	}
 
-	&[data-animate-type="slide"][data-animate-direction="left"] > *,
-	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="left"] {
+	&[data-animate-type="slide"][data-animate-direction="left"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="slide"][data-animate-sequence-direction="left"] {
 		--aos-from-transform: translateX(var(--wp-block-animate-on-scroll-slide-distance));
 	}
 
-	&[data-animate-type="slide"][data-animate-direction="right"] > *,
-	& > [data-animate-sequence-type="slide"][data-animate-sequence-direction="right"] {
+	&[data-animate-type="slide"][data-animate-direction="right"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="slide"][data-animate-sequence-direction="right"] {
 		--aos-from-transform: translateX(calc(-1 * var(--wp-block-animate-on-scroll-slide-distance)));
 	}
 
 	/* Zoom */
-	&[data-animate-type="zoom"][data-animate-direction="in"] > *,
-	& > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="in"] {
+	&[data-animate-type="zoom"][data-animate-direction="in"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="in"] {
 		--aos-from-transform: scale(var(--wp-block-animate-on-scroll-zoom-in-start));
 	}
 
-	&[data-animate-type="zoom"][data-animate-direction="out"] > *,
-	& > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="out"] {
+	&[data-animate-type="zoom"][data-animate-direction="out"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="zoom"][data-animate-sequence-direction="out"] {
 		--aos-from-transform: scale(var(--wp-block-animate-on-scroll-zoom-out-start));
 	}
 
 	/* Flip */
-	&[data-animate-type="flip"][data-animate-direction="up"] > *,
-	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="up"] {
+	&[data-animate-type="flip"][data-animate-direction="up"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="flip"][data-animate-sequence-direction="up"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(var(--wp-block-animate-on-scroll-rotate-angle));
 	}
 
-	&[data-animate-type="flip"][data-animate-direction="down"] > *,
-	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="down"] {
+	&[data-animate-type="flip"][data-animate-direction="down"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="flip"][data-animate-sequence-direction="down"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateX(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
 	}
 
-	&[data-animate-type="flip"][data-animate-direction="left"] > *,
-	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="left"] {
+	&[data-animate-type="flip"][data-animate-direction="left"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="flip"][data-animate-sequence-direction="left"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
 	}
 
-	&[data-animate-type="flip"][data-animate-direction="right"] > *,
-	& > [data-animate-sequence-type="flip"][data-animate-sequence-direction="right"] {
+	&[data-animate-type="flip"][data-animate-direction="right"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="flip"][data-animate-sequence-direction="right"] {
 		--aos-from-transform: perspective(var(--wp-block-animate-on-scroll-perspective)) rotateY(var(--wp-block-animate-on-scroll-rotate-angle));
 	}
 
 	/* Rotate */
-	&[data-animate-type="rotate"][data-animate-direction="left"] > *,
-	& > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="left"] {
+	&[data-animate-type="rotate"][data-animate-direction="left"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="left"] {
 		--aos-from-transform: rotate(var(--wp-block-animate-on-scroll-rotate-angle));
 	}
 
-	&[data-animate-type="rotate"][data-animate-direction="right"] > *,
-	& > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="right"] {
+	&[data-animate-type="rotate"][data-animate-direction="right"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="rotate"][data-animate-sequence-direction="right"] {
 		--aos-from-transform: rotate(calc(-1 * var(--wp-block-animate-on-scroll-rotate-angle)));
 	}
 
 	/* Blur */
-	&[data-animate-type="blur-in"] > *,
-	& > [data-animate-sequence-type="blur-in"] {
+	&[data-animate-type="blur-in"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="blur-in"] {
 		--aos-from-filter: blur(var(--wp-block-animate-on-scroll-blur-amount));
 	}
 
 	/* Reveal (wipe). clip-path cannot interpolate to or from none, so the
 	   settled state is the full inset(0) box. */
-	&[data-animate-type="reveal"] > *,
-	& > [data-animate-sequence-type="reveal"] {
+	&[data-animate-type="reveal"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="reveal"] {
 		clip-path: inset(0 0 0 0);
 	}
 
-	&[data-animate-type="reveal"][data-animate-direction="up"] > *,
-	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="up"] {
+	&[data-animate-type="reveal"][data-animate-direction="up"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="up"] {
 		--aos-from-clip-path: inset(100% 0 0 0);
 	}
 
-	&[data-animate-type="reveal"][data-animate-direction="down"] > *,
-	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="down"] {
+	&[data-animate-type="reveal"][data-animate-direction="down"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="down"] {
 		--aos-from-clip-path: inset(0 0 100% 0);
 	}
 
-	&[data-animate-type="reveal"][data-animate-direction="left"] > *,
-	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="left"] {
+	&[data-animate-type="reveal"][data-animate-direction="left"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="left"] {
 		--aos-from-clip-path: inset(0 0 0 100%);
 	}
 
-	&[data-animate-type="reveal"][data-animate-direction="right"] > *,
-	& > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="right"] {
+	&[data-animate-type="reveal"][data-animate-direction="right"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="reveal"][data-animate-sequence-direction="right"] {
 		--aos-from-clip-path: inset(0 100% 0 0);
 	}
 
 	/* Bounce family: the armed state rests at the keyframes' first frame. */
-	&[data-animate-type="bounce"] > *,
-	& > [data-animate-sequence-type="bounce"] {
+	&[data-animate-type="bounce"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"] {
 		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-bounce-distance));
 	}
 
-	&[data-animate-type="bounce"][data-animate-direction="elastic"] > *,
-	& > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
+	&[data-animate-type="bounce"][data-animate-direction="elastic"] > .aa-motion-stage > .aa-motion-content > *,
+	& > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
 		--aos-from-transform: translateY(var(--wp-block-animate-on-scroll-elastic-distance));
 	}
 
@@ -239,7 +233,7 @@
 
 	/* Arming is setup, never an exit animation. The store flushes this
 	   hidden state before restoring transitions and observing the block. */
-	&[data-aos-preparing] > * {
+	&[data-aos-preparing] > .aa-motion-stage > .aa-motion-content > * {
 		transition: none;
 		animation: none;
 	}
@@ -247,7 +241,7 @@
 	/* Armed and not in view (or exiting): rest at the "from" values. Leaving
 	   this state transitions back to the natural values. Invisible content
 	   takes no clicks; keyboard focus reveals it (view.ts). */
-	&[data-animate-id]:not(.is-visible) > * {
+	&[data-animate-id]:not(.is-visible) > .aa-motion-stage > .aa-motion-content > * {
 		pointer-events: none;
 		opacity: 0;
 		transform: var(--aos-from-transform);
@@ -263,34 +257,34 @@
 	   the first frame through the stagger
 	   delay; no forwards fill, which would keep the final frame as an
 	   identity matrix (a containing block) instead of the natural none. */
-	&[data-animate-type="bounce"].is-visible > *,
-	&.is-visible > [data-animate-sequence-type="bounce"] {
+	&[data-animate-type="bounce"].is-visible > .aa-motion-stage > .aa-motion-content > *,
+	&.is-visible > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"] {
 		animation: bounce-in var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) backwards;
 	}
 
-	&[data-animate-type="bounce"][data-animate-direction="elastic"].is-visible > *,
-	&.is-visible > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
+	&[data-animate-type="bounce"][data-animate-direction="elastic"].is-visible > .aa-motion-stage > .aa-motion-content > *,
+	&.is-visible > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
 		animation-name: elastic-in;
 	}
 
-	&[data-animate-type="bounce"][data-animate-direction="spring"].is-visible > *,
-	&.is-visible > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
+	&[data-animate-type="bounce"][data-animate-direction="spring"].is-visible > .aa-motion-stage > .aa-motion-content > *,
+	&.is-visible > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
 		animation-name: spring-in;
 	}
 
 	/* Exit plays the mirrored keyframes; the store staggers them in reverse. */
-	&[data-animate-type="bounce"].is-exiting > *,
-	&.is-exiting > [data-animate-sequence-type="bounce"] {
+	&[data-animate-type="bounce"].is-exiting > .aa-motion-stage > .aa-motion-content > *,
+	&.is-exiting > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"] {
 		animation: bounce-out var(--wp-block-animate-on-scroll-animation-duration) var(--wp-block-animate-on-scroll-animation-timing) var(--wp-block-animate-on-scroll-effective-delay) both;
 	}
 
-	&[data-animate-type="bounce"][data-animate-direction="elastic"].is-exiting > *,
-	&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
+	&[data-animate-type="bounce"][data-animate-direction="elastic"].is-exiting > .aa-motion-stage > .aa-motion-content > *,
+	&.is-exiting > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="elastic"] {
 		animation-name: elastic-out;
 	}
 
-	&[data-animate-type="bounce"][data-animate-direction="spring"].is-exiting > *,
-	&.is-exiting > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
+	&[data-animate-type="bounce"][data-animate-direction="spring"].is-exiting > .aa-motion-stage > .aa-motion-content > *,
+	&.is-exiting > .aa-motion-stage > .aa-motion-content > [data-animate-sequence-type="bounce"][data-animate-sequence-direction="spring"] {
 		animation-name: spring-out;
 	}
 
@@ -302,9 +296,21 @@
 	   unless the block opts out) show their content at once. A block that
 	   opts out still never moves: it fades, with no transform, blur, wipe
 	   or bounce. */
+	&[data-motion-boundary="fit"][data-animate-id] > .aa-motion-stage > .aa-motion-content > [data-aos-fade-only] {
+		--aos-from-transform: none;
+
+		animation: none;
+	}
+
+	&[data-aos-measuring] > .aa-motion-stage > .aa-motion-content > * {
+		transform: none !important;
+		transition: none !important;
+		animation: none !important;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 
-		&[data-respect-reduced-motion] > * {
+		&[data-respect-reduced-motion] > .aa-motion-stage > .aa-motion-content > * {
 			opacity: 1 !important;
 			transform: none !important;
 			filter: none !important;
@@ -313,7 +319,7 @@
 			transition: none !important;
 		}
 
-		&:not([data-respect-reduced-motion]) > * {
+		&:not([data-respect-reduced-motion]) > .aa-motion-stage > .aa-motion-content > * {
 			--aos-from-transform: none !important;
 			--aos-from-filter: none !important;
 			--aos-from-clip-path: none !important;
@@ -325,7 +331,7 @@
 	/* Blocks never scrolled into view are still armed; print them anyway. */
 	@media print {
 
-		& > * {
+		& > .aa-motion-stage > .aa-motion-content > * {
 			opacity: 1 !important;
 			transform: none !important;
 			filter: none !important;
