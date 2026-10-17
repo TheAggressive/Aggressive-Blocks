@@ -30,6 +30,11 @@ $requested_id = isset( $attributes['modalId'] ) && is_string( $attributes['modal
 	? sanitize_html_class( $attributes['modalId'] )
 	: '';
 $unique_id    = '' !== $requested_id ? $requested_id : 'modal-' . wp_unique_id();
+// Saved patterns and older duplicated blocks can still share an ID.
+$modal_state = wp_interactivity_state( 'aggressive-blocks/modal' );
+while ( isset( $modal_state['modals'][ $unique_id ] ) ) {
+	$unique_id = ( '' !== $requested_id ? $requested_id : 'modal' ) . '-' . wp_unique_id();
+}
 
 /**
  * Restrict class-generating attributes to values supported by this block.
@@ -93,11 +98,15 @@ $exit_intent_trigger     = ! empty( $attributes['exitIntentTrigger'] );
 $exit_intent_reshow_days = min( 90, max( 1, absint( $attributes['exitIntentReshowDays'] ?? 7 ) ) );
 $scroll_depth_trigger    = ! empty( $attributes['scrollDepthTrigger'] );
 $scroll_depth_percent    = min( 100, max( 10, absint( $attributes['scrollDepthPercent'] ?? 50 ) ) );
-$show_builtin_trigger    = ! $open_on_load
+// A duplicated legacy modal cannot share the original's external trigger.
+if ( '' !== $requested_id && $unique_id !== $requested_id ) {
+	$trigger_block_id = '';
+}
+$show_builtin_trigger = ! $open_on_load
 	&& empty( $trigger_block_id )
 	&& ! $exit_intent_trigger
 	&& ! $scroll_depth_trigger;
-$dialog_max_width        = $sanitize_css_value( $attributes['dialogMaxWidth'] ?? '' );
+$dialog_max_width     = $sanitize_css_value( $attributes['dialogMaxWidth'] ?? '' );
 
 // ── Close button attributes ───────────────────────────────────────────────────
 

@@ -27,7 +27,6 @@ export function startScrollTween(params: {
   }
 
   const start = performance.now();
-  let frame = 0;
 
   const tick = (now: number): void => {
     if (!callbacks.isCurrent()) return;
@@ -36,13 +35,11 @@ export function startScrollTween(params: {
     callbacks.onFrame(from + distance * easeInOutCubic(t));
 
     if (t < 1) {
-      frame = window.requestAnimationFrame(tick);
+      window.requestAnimationFrame(tick);
     } else {
-      frame = 0;
       callbacks.onComplete();
     }
   };
 
-  frame = window.requestAnimationFrame(tick);
-  return frame;
+  return window.requestAnimationFrame(tick);
 }

@@ -4,6 +4,7 @@
  * @package Aggressive_Blocks
  */
 
+import { InputControl } from '@wordpress/ui';
 import {
   AlignmentControl,
   BlockControls,
@@ -12,12 +13,7 @@ import {
   useBlockProps,
 } from '@wordpress/block-editor';
 import type { BlockEditProps } from '@wordpress/blocks';
-import {
-  PanelBody,
-  SelectControl,
-  TextControl,
-  ToggleControl,
-} from '@wordpress/components';
+import { PanelBody, SelectControl, ToggleControl } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 import { decodeEntities } from '@wordpress/html-entities';
@@ -250,12 +246,10 @@ export default function Edit({
             }
           />
           {ownerSource === 'custom' && (
-            <TextControl
-              __next40pxDefaultSize
-              __nextHasNoMarginBottom
+            <InputControl
               label={__('Owner Name', 'aggressive-blocks')}
               value={ownerName}
-              onChange={value => setAttributes({ ownerName: value })}
+              onValueChange={value => setAttributes({ ownerName: value })}
             />
           )}
           <SelectControl<string>
@@ -271,22 +265,26 @@ export default function Edit({
             onChange={value => setAttributes({ legalEntity: value })}
           />
           {legalEntity === LEGAL_ENTITY_CUSTOM && (
-            <TextControl
-              __next40pxDefaultSize
-              __nextHasNoMarginBottom
+            <InputControl
               label={__('Custom designation', 'aggressive-blocks')}
-              help={__('Example: S.A., Pty Ltd, PLLC.', 'aggressive-blocks')}
+              description={__(
+                'Example: S.A., Pty Ltd, PLLC.',
+                'aggressive-blocks'
+              )}
               value={legalEntityCustom}
-              onChange={value => setAttributes({ legalEntityCustom: value })}
+              onValueChange={value =>
+                setAttributes({ legalEntityCustom: value })
+              }
             />
           )}
-          <TextControl
-            __next40pxDefaultSize
-            __nextHasNoMarginBottom
+          <InputControl
             label={__('Prefix', 'aggressive-blocks')}
-            help={__('Symbol or text before the year.', 'aggressive-blocks')}
+            description={__(
+              'Symbol or text before the year.',
+              'aggressive-blocks'
+            )}
             value={prefix}
-            onChange={value => setAttributes({ prefix: value })}
+            onValueChange={value => setAttributes({ prefix: value })}
           />
           <ToggleControl
             __nextHasNoMarginBottom
@@ -300,16 +298,14 @@ export default function Edit({
           />
           {showStartYear && (
             <>
-              <TextControl
-                __next40pxDefaultSize
-                __nextHasNoMarginBottom
+              <InputControl
                 label={__('Start Year', 'aggressive-blocks')}
                 type='number'
                 value={String(startYear)}
                 min={1000}
                 max={currentYear}
                 step={1}
-                onChange={value => {
+                onValueChange={value => {
                   const parsed = parseInt(value, 10);
                   setAttributes({
                     startYear: Number.isFinite(parsed)

@@ -357,11 +357,9 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
     });
   };
 
-  // Keep runtime clones in sync with hydrated content. The Interactivity API
-  // only hydrates DOM present at load time; clones are inert snapshots.
-  const originals = getContents().filter(
-    content => !content.hasAttribute(CLONE_ATTR)
-  );
+  // Only the first copy hydrates. Mirror it to the server decorative copy
+  // and runtime clones, which remain inert snapshots.
+  const originals = getContents().slice(0, 1);
 
   const syncClones = (): void => {
     if (isDestroyed || originals.length === 0) return;
@@ -369,7 +367,7 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
     const source = originals[0];
 
     getContents().forEach(content => {
-      if (!content.hasAttribute(CLONE_ATTR)) return;
+      if (content === source) return;
 
       content.innerHTML = source.innerHTML;
       sanitizeTickerClone(content);
@@ -398,6 +396,7 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
       subtree: true,
       childList: true,
       characterData: true,
+      attributes: true,
     });
   });
 
@@ -483,6 +482,7 @@ export function setupTicker(ticker: HTMLElement): TickerRuntime {
   };
 
   tickerRuntimes.set(ticker, runtime);
+  syncClones();
   measure();
 
   return runtime;

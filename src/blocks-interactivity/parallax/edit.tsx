@@ -6,6 +6,7 @@
  * @package Aggressive Apparel
  */
 
+import { InputControl } from '@wordpress/ui';
 import {
   InnerBlocks,
   InspectorControls,
@@ -21,7 +22,6 @@ import {
   PanelBody,
   RangeControl,
   SelectControl,
-  TextControl,
   ToggleControl,
   // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
   __experimentalToggleGroupControl as ToggleGroupControl,
@@ -565,34 +565,28 @@ function Edit({
                 marginTop: '8px',
               }}
             >
-              <TextControl
-                __next40pxDefaultSize
-                __nextHasNoMarginBottom
+              <InputControl
                 label={__('Top', 'aggressive-blocks')}
                 value={detectionBoundary.top}
-                onChange={value =>
+                onValueChange={value =>
                   setAttributes({
                     detectionBoundary: { ...detectionBoundary, top: value },
                   })
                 }
               />
-              <TextControl
-                __next40pxDefaultSize
-                __nextHasNoMarginBottom
+              <InputControl
                 label={__('Right', 'aggressive-blocks')}
                 value={detectionBoundary.right}
-                onChange={value =>
+                onValueChange={value =>
                   setAttributes({
                     detectionBoundary: { ...detectionBoundary, right: value },
                   })
                 }
               />
-              <TextControl
-                __next40pxDefaultSize
-                __nextHasNoMarginBottom
+              <InputControl
                 label={__('Bottom', 'aggressive-blocks')}
                 value={detectionBoundary.bottom}
-                onChange={value =>
+                onValueChange={value =>
                   setAttributes({
                     detectionBoundary: {
                       ...detectionBoundary,
@@ -601,12 +595,10 @@ function Edit({
                   })
                 }
               />
-              <TextControl
-                __next40pxDefaultSize
-                __nextHasNoMarginBottom
+              <InputControl
                 label={__('Left', 'aggressive-blocks')}
                 value={detectionBoundary.left}
-                onChange={value =>
+                onValueChange={value =>
                   setAttributes({
                     detectionBoundary: { ...detectionBoundary, left: value },
                   })

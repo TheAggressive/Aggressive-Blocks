@@ -17,7 +17,7 @@ function expandCustomMedia() {
       /** @type {Map<string, string>} */
       const definitions = new Map();
 
-      root.walkAtRules('custom-media', (rule) => {
+      root.walkAtRules('custom-media', rule => {
         const params = rule.params.trim();
         const space = params.indexOf(' ');
 
@@ -35,7 +35,7 @@ function expandCustomMedia() {
         return;
       }
 
-      root.walkAtRules('media', (rule) => {
+      root.walkAtRules('media', rule => {
         const params = rule.params.trim();
         const match = params.match(/^\(\s*(--[\w-]+)\s*\)$/);
 
@@ -55,9 +55,11 @@ function expandCustomMedia() {
 
 expandCustomMedia.postcss = true;
 
+const nested = require('postcss-nested');
+
 module.exports = {
   plugins: [
-    require('postcss-nested'),
+    nested.default ?? nested,
     require('@tailwindcss/postcss')({ optimize: false }),
     expandCustomMedia(),
     require('postcss-lightningcss')({ minify: true }),

@@ -13,6 +13,7 @@
  */
 
 use Aggressive_Blocks\Blocks\Icon_Block;
+use Aggressive_Blocks\Blocks\Decorative_Copy;
 
 /**
  * Template variables.
@@ -281,7 +282,7 @@ $play_label  = __( 'Play animation', 'aggressive-blocks' );
 				<?php echo aggressive_blocks_trusted_html( $content ); ?>
 			</div>
 			<div class="ticker__content" aria-hidden="true" inert>
-				<?php echo aggressive_blocks_trusted_html( $content ); ?>
+				<?php echo aggressive_blocks_trusted_html( Decorative_Copy::sanitize( $content ) ); ?>
 			</div>
 		</div>
 	</div>

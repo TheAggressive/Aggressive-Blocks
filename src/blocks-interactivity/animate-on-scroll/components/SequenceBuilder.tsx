@@ -9,22 +9,11 @@
  * @package Aggressive_Blocks
  */
 
-import {
-  Button,
-  RangeControl,
-  SelectControl,
-  Tooltip,
-} from '@wordpress/components';
+import { Button, RangeControl, SelectControl } from '@wordpress/components';
+import { Badge, CollapsibleCard, Stack, Text } from '@wordpress/ui';
 import { useState } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
-import {
-  chevronDown,
-  chevronUp,
-  chevronRight,
-  copy,
-  plus,
-  trash,
-} from '@wordpress/icons';
+import { chevronDown, chevronUp, copy, plus, trash } from '@wordpress/icons';
 import type { AnimationSequenceItem } from '../types';
 import {
   describeSequenceItem,
@@ -44,29 +33,14 @@ interface SequenceBuilderProps {
 
 /** Compact "1 Fade → 2 Slide ↑ → …" overview of the whole pattern. */
 const FlowStrip = ({ sequence }: { sequence: AnimationSequenceItem[] }) => (
-  <div
-    className='aggressive-apparel-animate-on-scroll-sequence__flow'
-    aria-hidden='true'
-  >
+  <Stack direction='row' gap='xs' wrap='wrap' aria-hidden='true'>
     {sequence.map((item, index) => (
-      <div
-        key={index}
-        className='aggressive-apparel-animate-on-scroll-sequence__flow-item'
-      >
-        {index > 0 && (
-          <span className='aggressive-apparel-animate-on-scroll-sequence__flow-separator'>
-            →
-          </span>
-        )}
-        <span className='aggressive-apparel-animate-on-scroll-sequence__chip'>
-          <span className='aggressive-apparel-animate-on-scroll-sequence__badge aggressive-apparel-animate-on-scroll-sequence__badge--sm'>
-            {index + 1}
-          </span>
-          {describeSequenceItem(item)}
-        </span>
-      </div>
+      <Stack key={index} direction='row' align='center' gap='xs'>
+        {index > 0 && <Text variant='body-sm'>→</Text>}
+        <Badge>{`${index + 1} ${describeSequenceItem(item)}`}</Badge>
+      </Stack>
     ))}
-  </div>
+  </Stack>
 );
 
 /** Explains how the pattern maps onto the block's actual children. */
@@ -117,9 +91,9 @@ const ChildMappingHint = ({
   }
 
   return (
-    <p className='components-base-control__help aggressive-apparel-animate-on-scroll-sequence__hint'>
+    <Text variant='body-sm' render={<p />}>
       {message}
-    </p>
+    </Text>
   );
 };
 
@@ -286,7 +260,11 @@ export const SequenceBuilder = ({
   };
 
   return (
-    <div className='aggressive-apparel-animate-on-scroll-sequence'>
+    <Stack
+      direction='column'
+      gap='sm'
+      className='aggressive-apparel-animate-on-scroll-sequence'
+    >
       {sequence.length > 1 && <FlowStrip sequence={sequence} />}
       <ChildMappingHint sequence={sequence} childCount={childCount} />
 
@@ -295,100 +273,92 @@ export const SequenceBuilder = ({
         const summary = describeSequenceItem(item);
 
         return (
-          <div
+          <CollapsibleCard.Root
             key={index}
+            open={isExpanded}
+            onOpenChange={open => setExpandedIndex(open ? index : null)}
             className='aggressive-apparel-animate-on-scroll-sequence__step'
           >
-            <div className='aggressive-apparel-animate-on-scroll-sequence__step-header'>
+            <CollapsibleCard.Header>
+              <Stack direction='row' align='center' gap='sm'>
+                <Badge>{String(index + 1)}</Badge>
+                <Text>{summary}</Text>
+              </Stack>
+            </CollapsibleCard.Header>
+            <Stack
+              direction='row'
+              justify='flex-end'
+              gap='xs'
+              role='group'
+              aria-label={sprintf(
+                /* translators: %d: animation step number. */ __(
+                  'Actions for step %d',
+                  'aggressive-blocks'
+                ),
+                index + 1
+              )}
+              className='aggressive-apparel-animate-on-scroll-sequence__actions'
+            >
               <Button
-                className='aggressive-apparel-animate-on-scroll-sequence__step-toggle'
-                icon={isExpanded ? chevronDown : chevronRight}
+                icon={chevronUp}
                 size='small'
-                onClick={() => setExpandedIndex(isExpanded ? null : index)}
-                label={
-                  isExpanded
-                    ? __('Collapse step', 'aggressive-blocks')
-                    : __('Edit step', 'aggressive-blocks')
-                }
-                aria-expanded={isExpanded}
+                onClick={() => moveItem(index, -1)}
+                disabled={index === 0}
+                label={__('Move step up', 'aggressive-blocks')}
               />
-              <span className='aggressive-apparel-animate-on-scroll-sequence__badge aggressive-apparel-animate-on-scroll-sequence__badge--md'>
-                {index + 1}
-              </span>
-              <button
-                type='button'
-                className='aggressive-apparel-animate-on-scroll-sequence__step-summary'
-                onClick={() => setExpandedIndex(isExpanded ? null : index)}
-              >
-                {summary}
-              </button>
-              <Tooltip text={__('Move up', 'aggressive-blocks')}>
-                <Button
-                  icon={chevronUp}
-                  size='small'
-                  onClick={() => moveItem(index, -1)}
-                  disabled={index === 0}
-                  label={__('Move step up', 'aggressive-blocks')}
-                />
-              </Tooltip>
-              <Tooltip text={__('Move down', 'aggressive-blocks')}>
-                <Button
-                  icon={chevronDown}
-                  size='small'
-                  onClick={() => moveItem(index, 1)}
-                  disabled={index === sequence.length - 1}
-                  label={__('Move step down', 'aggressive-blocks')}
-                />
-              </Tooltip>
-              <Tooltip text={__('Duplicate', 'aggressive-blocks')}>
-                <Button
-                  icon={copy}
-                  size='small'
-                  onClick={() => duplicateItem(index)}
-                  label={__('Duplicate step', 'aggressive-blocks')}
-                />
-              </Tooltip>
-              <Tooltip text={__('Remove', 'aggressive-blocks')}>
-                <Button
-                  icon={trash}
-                  size='small'
-                  isDestructive
-                  onClick={() => removeItem(index)}
-                  label={__('Remove step', 'aggressive-blocks')}
-                />
-              </Tooltip>
-            </div>
 
-            {isExpanded && (
-              <div className='aggressive-apparel-animate-on-scroll-sequence__step-body'>
+              <Button
+                icon={chevronDown}
+                size='small'
+                onClick={() => moveItem(index, 1)}
+                disabled={index === sequence.length - 1}
+                label={__('Move step down', 'aggressive-blocks')}
+              />
+
+              <Button
+                icon={copy}
+                size='small'
+                onClick={() => duplicateItem(index)}
+                label={__('Duplicate step', 'aggressive-blocks')}
+              />
+
+              <Button
+                icon={trash}
+                size='small'
+                isDestructive
+                onClick={() => removeItem(index)}
+                label={__('Remove step', 'aggressive-blocks')}
+              />
+            </Stack>
+
+            <CollapsibleCard.Content hiddenUntilFound={false}>
+              <SelectControl
+                label={__('Animation', 'aggressive-blocks')}
+                value={item.animation}
+                options={getAnimationOptions()}
+                onChange={animation => {
+                  updateItem(index, {
+                    animation,
+                    direction: getDefaultDirection(animation),
+                  });
+                }}
+                __next40pxDefaultSize
+              />
+              {getDirectionOptions(item.animation).length > 0 && (
                 <SelectControl
-                  label={__('Animation', 'aggressive-blocks')}
-                  value={item.animation}
-                  options={getAnimationOptions()}
-                  onChange={animation => {
-                    updateItem(index, {
-                      animation,
-                      direction: getDefaultDirection(animation),
-                    });
-                  }}
+                  label={__('Direction', 'aggressive-blocks')}
+                  value={item.direction}
+                  options={getDirectionOptions(item.animation)}
+                  onChange={direction => updateItem(index, { direction })}
                   __next40pxDefaultSize
                 />
-                {getDirectionOptions(item.animation).length > 0 && (
-                  <SelectControl
-                    label={__('Direction', 'aggressive-blocks')}
-                    value={item.direction}
-                    options={getDirectionOptions(item.animation)}
-                    onChange={direction => updateItem(index, { direction })}
-                    __next40pxDefaultSize
-                  />
-                )}
-                <StepCustomization
-                  item={item}
-                  onUpdate={patch => updateItem(index, patch)}
-                />
-              </div>
-            )}
-          </div>
+              )}
+              <StepCustomization
+                item={item}
+                onUpdate={patch => updateItem(index, patch)}
+              />
+            </CollapsibleCard.Content>
+          </CollapsibleCard.Root>
         );
       })}
 
@@ -400,6 +370,6 @@ export const SequenceBuilder = ({
       >
         {__('Add Step', 'aggressive-blocks')}
       </Button>
-    </div>
+    </Stack>
   );
 };

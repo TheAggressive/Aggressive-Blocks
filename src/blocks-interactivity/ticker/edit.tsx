@@ -4,6 +4,7 @@
  * @package Aggressive_Blocks
  */
 
+import { InputControl } from '@wordpress/ui';
 import type { CSSProperties } from 'react';
 import {
   InspectorControls,
@@ -17,7 +18,6 @@ import {
   PanelBody,
   RangeControl,
   SelectControl,
-  TextControl,
   ToggleControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -267,11 +267,10 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                   />
                 </>
               ) : (
-                <TextControl
+                <InputControl
                   label={__('Label Text', 'aggressive-blocks')}
                   value={labelText}
-                  onChange={val => setAttributes({ labelText: val })}
-                  __nextHasNoMarginBottom
+                  onValueChange={val => setAttributes({ labelText: val })}
                 />
               )}
 

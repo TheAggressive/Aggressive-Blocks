@@ -15,10 +15,10 @@ import {
   PanelBody,
   RangeControl,
   SelectControl,
-  TextControl,
   ToggleControl,
   Tooltip,
 } from '@wordpress/components';
+import { InputControl, Text } from '@wordpress/ui';
 import { __ } from '@wordpress/i18n';
 import type { ModalAttributes } from './types';
 import type { TriggerOption } from './hooks/useTriggerManagement';
@@ -75,16 +75,14 @@ export function ModalInspector({
         initialOpen={true}
       >
         {/* Modal ID */}
-        <TextControl
+        <InputControl
           label={__('Modal ID', 'aggressive-blocks')}
           value={modalId}
-          onChange={value => setAttributes({ modalId: value })}
-          help={__(
+          onValueChange={value => setAttributes({ modalId: value })}
+          description={__(
             'Unique identifier for this modal. Used to link triggers to this modal.',
             'aggressive-blocks'
           )}
-          __next40pxDefaultSize
-          __nextHasNoMarginBottom
         />
 
         {/* Position */}
@@ -120,30 +118,26 @@ export function ModalInspector({
         />
 
         {/* Max width */}
-        <TextControl
+        <InputControl
           label={__('Max Width', 'aggressive-blocks')}
           value={dialogMaxWidth}
           placeholder='40rem'
-          onChange={value => setAttributes({ dialogMaxWidth: value })}
-          help={__(
+          onValueChange={value => setAttributes({ dialogMaxWidth: value })}
+          description={__(
             'e.g. 40rem, 600px, 80vw. Leave empty for default (40rem).',
             'aggressive-blocks'
           )}
-          __next40pxDefaultSize
-          __nextHasNoMarginBottom
         />
 
         {/* Accessible name */}
-        <TextControl
+        <InputControl
           label={__('Dialog Name', 'aggressive-blocks')}
           value={dialogLabel}
-          onChange={value => setAttributes({ dialogLabel: value })}
-          help={__(
+          onValueChange={value => setAttributes({ dialogLabel: value })}
+          description={__(
             'What screen readers announce when the modal opens. Leave empty to use the first heading inside the modal.',
             'aggressive-blocks'
           )}
-          __next40pxDefaultSize
-          __nextHasNoMarginBottom
         />
 
         {/* Open on load */}
@@ -297,12 +291,10 @@ export function ModalInspector({
 
         {/* Trigger label (only if no block selected) */}
         {!safeTriggerBlockId && (
-          <TextControl
+          <InputControl
             label={__('Trigger Button Label', 'aggressive-blocks')}
             value={triggerLabel}
-            onChange={value => setAttributes({ triggerLabel: value })}
-            __next40pxDefaultSize
-            __nextHasNoMarginBottom
+            onValueChange={value => setAttributes({ triggerLabel: value })}
           />
         )}
       </PanelBody>
@@ -467,12 +459,12 @@ export function ModalInspector({
         title={__('Modal Design', 'aggressive-blocks')}
         initialOpen={false}
       >
-        <p className='components-base-control__help' style={{ marginTop: 0 }}>
+        <Text variant='body-sm' render={<p />}>
           {__(
             'Style the panel from the Styles tab: color, border, padding, and shadow apply to the dialog. Theme color presets adapt to light and dark mode.',
             'aggressive-blocks'
           )}
-        </p>
+        </Text>
 
         <RangeControl
           label={__('Overlay Opacity (%)', 'aggressive-blocks')}

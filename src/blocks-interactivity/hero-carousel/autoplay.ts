@@ -32,6 +32,8 @@ export interface AutoplayHost {
   isPaused: boolean;
   /** Advance one slide as an autoplay tick. */
   onTick: () => void;
+  /** Keep background media in step with pause and visibility gates. */
+  onPlaybackChange?: (playing: boolean) => void;
 }
 
 export class AutoplayEngine {
@@ -50,7 +52,17 @@ export class AutoplayEngine {
    */
   private userStarted = false;
 
-  constructor(private readonly host: AutoplayHost) {}
+  private readonly preferences = [
+    window.matchMedia('(prefers-reduced-motion: reduce)'),
+    window.matchMedia('(prefers-reduced-data: reduce)'),
+  ];
+  private readonly onPreferenceChange = (): void => this.reconcile();
+
+  constructor(private readonly host: AutoplayHost) {
+    this.preferences.forEach(query =>
+      query.addEventListener('change', this.onPreferenceChange)
+    );
+  }
 
   /** Add or clear one hold reason; autoplay runs only when none remain. */
   hold(reason: HoldReason, held: boolean): void {
@@ -105,6 +117,13 @@ export class AutoplayEngine {
   reconcile(): void {
     const showPlaying = this.host.isPlaying && !this.host.isPaused;
     const run = this.shouldRun();
+    this.host.onPlaybackChange?.(
+      (!this.host.autoplay || this.host.isPlaying) &&
+        this.host.isVisible &&
+        !this.host.isPaused &&
+        !document.hidden &&
+        (this.userStarted || (!prefersReducedMotion() && !prefersReducedData()))
+    );
 
     // `is-playing` drives animation-play-state (running vs paused) — do not
     // remove the animation itself, or the pill snaps back to empty.
@@ -172,6 +191,9 @@ export class AutoplayEngine {
   }
 
   destroy(): void {
+    this.preferences.forEach(query =>
+      query.removeEventListener('change', this.onPreferenceChange)
+    );
     this.clearTimer();
     window.clearTimeout(this.resumeTimer);
     this.resumeTimer = 0;
