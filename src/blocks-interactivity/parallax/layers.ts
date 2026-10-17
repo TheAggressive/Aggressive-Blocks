@@ -10,7 +10,8 @@
 
 import { EASING_FUNCTIONS } from './config';
 import type { EasingType, ParallaxContext, ParallaxEffects } from './types';
-import { ParallaxLogger, clamp, validateParallaxEffects } from './utils';
+import { clamp } from './utils';
+import { sanitizeParallaxEffects } from './validation';
 
 /** Depth is normalized to [-1, 1]: negative = behind the focal plane. */
 export interface CachedLayer {
@@ -96,11 +97,17 @@ const parseEffects = (raw: string | undefined): ParallaxEffects => {
     return {};
   }
   try {
-    return JSON.parse(raw) as ParallaxEffects;
+    const { effects, errors } = sanitizeParallaxEffects(JSON.parse(raw));
+    if (errors.length) console.warn('[PARALLAX] Invalid effects', errors);
+    return effects;
   } catch (error) {
-    ParallaxLogger.warn('Ignoring malformed data-parallax-effects JSON', {
-      error,
-    });
+    console.warn(
+      '[PARALLAX]',
+      'Ignoring malformed data-parallax-effects JSON',
+      {
+        error,
+      }
+    );
     return {};
   }
 };
@@ -194,13 +201,6 @@ export const collectLayers = (
 
     const data = element.dataset;
     const effects = parseEffects(data.parallaxEffects);
-
-    const validation = validateParallaxEffects(effects);
-    if (!validation.isValid) {
-      ParallaxLogger.warn('Invalid parallax effect configuration', {
-        errors: validation.errors,
-      });
-    }
 
     const depth = resolveDepth(element, effects);
 

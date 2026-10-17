@@ -69,6 +69,52 @@ describe('collectLayers depth resolution', () => {
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
+
+  it.each(['null', '[]', '42'])(
+    'ignores a non-object effects payload %s',
+    raw => {
+      const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const { root } = buildContainer({ 'data-parallax-effects': raw });
+        const [layer] = collectLayers(root, buildContext());
+        expect(layer.effects).toEqual({});
+        expect(layer.hasFrameEffects).toBe(false);
+        expect(spy).toHaveBeenCalled();
+      } finally {
+        spy.mockRestore();
+      }
+    }
+  );
+
+  it('drops a malformed effect while rendering a valid sibling', () => {
+    const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const { root, layer } = buildContainer({
+        'data-parallax-effects': JSON.stringify({
+          blur: { enabled: true, startBlur: null, endBlur: 0 },
+          rotation: {
+            enabled: true,
+            startRotation: 0,
+            endRotation: 90,
+            axis: 'z',
+          },
+        }),
+      });
+      const ctx = buildContext();
+      const [cached] = collectLayers(root, ctx);
+      applyLayerFrame(
+        cached,
+        { progress: 1, baseline: 0.5, pointerX: 0, pointerY: 0, is3D: false },
+        ctx
+      );
+      expect(cached.effects.blur).toBeUndefined();
+      expect(layer.style.filter).toBe('');
+      expect(layer.style.rotate).toBe('90deg');
+      expect(spy).toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('collectLayers static styles', () => {

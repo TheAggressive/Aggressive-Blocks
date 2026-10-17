@@ -4,10 +4,6 @@
  * @package Aggressive Apparel
  */
 
-// =============================================================================
-// BASIC TYPE DEFINITIONS
-// =============================================================================
-
 /**
  * Direction options for parallax movement
  */
@@ -22,10 +18,6 @@ export type EasingType = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
  * Zoom effect types
  */
 export type ZoomType = 'in' | 'out';
-
-// =============================================================================
-// CONFIGURATION TYPES
-// =============================================================================
 
 /**
  * Settings for individual parallax elements with validation
@@ -44,7 +36,7 @@ export interface ElementSettings {
 }
 
 /**
- * Default element settings with proper typing
+ * Default per-element settings
  */
 export interface DefaultElementSettings extends ElementSettings {
   enabled: boolean;
@@ -64,7 +56,7 @@ export interface BlockAttributesWithParallax {
 }
 
 /**
- * Effects configuration for parallax elements with strict typing
+ * Per-element effects
  */
 export interface ParallaxEffects {
   zoom?: {
@@ -151,13 +143,12 @@ export interface DetectionBoundary {
 }
 
 /**
- * Block attributes with advanced detection boundary system
+ * Parallax block attributes
  */
 export type ParallaxAttributes = {
-  // Core settings (matching animate-on-scroll simplicity)
   intensity: number; // 0-200
-  visibilityTrigger: number; // Changed to number to match animate-on-scroll
-  detectionBoundary: DetectionBoundary; // Advanced boundary control
+  visibilityTrigger: number; // 0-1
+  detectionBoundary: DetectionBoundary;
   /** Engine pre-activation buffer, % of viewport height (0 disables). */
   activationBuffer?: number;
   enableMouseInteraction: boolean;
@@ -168,7 +159,6 @@ export type ParallaxAttributes = {
   disableOnMobile?: boolean;
   debugMode: boolean;
 
-  // New properties for enhanced control
   parallaxDirection?: 'up' | 'down' | 'both';
   mouseInfluenceMultiplier?: number;
   maxMouseTranslation?: number;
@@ -179,17 +169,12 @@ export type ParallaxAttributes = {
   depthOfField?: boolean;
 };
 
-// =============================================================================
-// RUNTIME TYPES
-// =============================================================================
-
 /**
- * Context passed to the Interactivity API with enhanced typing
+ * Parallax settings and runtime state
  */
 export interface ParallaxContext {
-  // Core validated settings (matching animate-on-scroll)
   intensity: number;
-  visibilityTrigger: number; // Changed from threshold to match animate-on-scroll
+  visibilityTrigger: number; // 0-1
   detectionBoundary: DetectionBoundary;
   /** Engine pre-activation buffer, % of viewport height (0 disables). */
   activationBuffer?: number;
@@ -197,13 +182,11 @@ export interface ParallaxContext {
   disableOnMobile?: boolean;
   debugMode: boolean;
 
-  // Runtime state (matching animate-on-scroll)
   isIntersecting: boolean;
   intersectionRatio: number;
   hasInitialized?: boolean;
   previousProgress?: number; // Track previous progress for sticky effects
 
-  // New properties for enhanced control
   parallaxDirection?: 'up' | 'down' | 'both';
   mouseInfluenceMultiplier?: number;
   maxMouseTranslation?: number;
@@ -214,255 +197,10 @@ export interface ParallaxContext {
   /** Blur layers progressively as they sit further from the focal plane. */
   depthOfField?: boolean;
 
-  // Runtime state properties
   /** Threshold the observer actually runs with (tall-element capped). */
   effectiveThreshold?: number;
   scrollProgress?: number;
   mouseX?: number;
   mouseY?: number;
   id?: string;
-}
-
-/**
- * Validation result interface
- */
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-// =============================================================================
-// EFFECT VALIDATION
-// =============================================================================
-
-/**
- * Validate blur effect configuration
- */
-export function validateBlurEffect(config: unknown): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (typeof config !== 'object' || config === null) {
-    return { isValid: false, errors: ['Invalid blur config'], warnings: [] };
-  }
-
-  const c = config as Record<string, unknown>;
-
-  if (typeof c.startBlur !== 'number' || c.startBlur < 0 || c.startBlur > 50) {
-    errors.push('Start blur must be a number between 0 and 50');
-  }
-
-  if (typeof c.endBlur !== 'number' || c.endBlur < 0 || c.endBlur > 50) {
-    errors.push('End blur must be a number between 0 and 50');
-  }
-
-  if (
-    typeof c.fadeRange !== 'string' ||
-    !['top', 'middle', 'bottom', 'full'].includes(c.fadeRange)
-  ) {
-    errors.push('Invalid fade range');
-  }
-
-  if (c.startBlur === c.endBlur) {
-    warnings.push(
-      'Start and end blur values are the same - no transition will occur'
-    );
-  }
-
-  return { isValid: errors.length === 0, errors, warnings };
-}
-
-/**
- * Validate color transition effect configuration
- */
-export function validateColorTransitionEffect(
-  config: unknown
-): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (typeof config !== 'object' || config === null) {
-    return {
-      isValid: false,
-      errors: ['Invalid color transition config'],
-      warnings: [],
-    };
-  }
-
-  const c = config as Record<string, unknown>;
-
-  // Basic color validation (hex, rgb, rgba, hsl, hsla)
-  const colorRegex =
-    /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$|^rgb\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$|^rgba\((\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3}),\s*(0|1|0?\.\d+)\)$|^hsl\((\d{1,3}),\s*(\d{1,3})%,\s*(\d{1,3})%\)$|^hsla\((\d{1,3}),\s*(\d{1,3})%,\s*(\d{1,3})%,\s*(0|1|0?\.\d+)\)$/;
-
-  if (typeof c.startColor !== 'string' || !colorRegex.test(c.startColor)) {
-    errors.push('Invalid start color format');
-  }
-
-  if (typeof c.endColor !== 'string' || !colorRegex.test(c.endColor)) {
-    errors.push('Invalid end color format');
-  }
-
-  if (
-    typeof c.transitionType !== 'string' ||
-    !['background', 'text', 'border'].includes(c.transitionType)
-  ) {
-    errors.push('Invalid transition type');
-  }
-
-  if (c.startColor === c.endColor) {
-    warnings.push(
-      'Start and end colors are the same - no transition will occur'
-    );
-  }
-
-  return { isValid: errors.length === 0, errors, warnings };
-}
-
-/**
- * Validate dynamic shadow effect configuration
- */
-export function validateDynamicShadowEffect(config: unknown): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (typeof config !== 'object' || config === null) {
-    return { isValid: false, errors: ['Invalid shadow config'], warnings: [] };
-  }
-
-  const c = config as Record<string, unknown>;
-
-  if (
-    typeof c.shadowType !== 'string' ||
-    ['box-shadow', 'text-shadow', 'drop-shadow'].indexOf(c.shadowType) === -1
-  ) {
-    errors.push('Invalid shadow type');
-  }
-
-  // Basic CSS shadow value validation
-  const shadowRegex = /^(-?\d+px\s+){3,4}(rgba?\([^)]+\)|#[0-9a-fA-F]{3,8})$/;
-  if (
-    typeof c.startShadow === 'string' &&
-    c.startShadow &&
-    !shadowRegex.test(c.startShadow.trim())
-  ) {
-    warnings.push('Start shadow may not be a valid CSS shadow value');
-  }
-
-  if (
-    typeof c.endShadow === 'string' &&
-    c.endShadow &&
-    !shadowRegex.test(c.endShadow.trim())
-  ) {
-    warnings.push('End shadow may not be a valid CSS shadow value');
-  }
-
-  return { isValid: errors.length === 0, errors, warnings };
-}
-
-/**
- * Validate rotation effect configuration
- */
-export function validateRotationEffect(config: unknown): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (typeof config !== 'object' || config === null) {
-    return {
-      isValid: false,
-      errors: ['Invalid rotation config'],
-      warnings: [],
-    };
-  }
-
-  const c = config as Record<string, unknown>;
-
-  if (
-    typeof c.startRotation !== 'number' ||
-    c.startRotation < -360 ||
-    c.startRotation > 360
-  ) {
-    errors.push('Start rotation must be a number between -360 and 360');
-  }
-
-  if (
-    typeof c.endRotation !== 'number' ||
-    c.endRotation < -360 ||
-    c.endRotation > 360
-  ) {
-    errors.push('End rotation must be a number between -360 and 360');
-  }
-
-  if (typeof c.axis !== 'string' || !['x', 'y', 'z', 'all'].includes(c.axis)) {
-    errors.push('Invalid rotation axis');
-  }
-
-  if (c.startRotation === c.endRotation) {
-    warnings.push(
-      'Start and end rotation values are the same - no rotation will occur'
-    );
-  }
-
-  return { isValid: errors.length === 0, errors, warnings };
-}
-
-/**
- * Enhanced effect validation that includes all new effects
- */
-export function validateParallaxEffects(effects: unknown): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (typeof effects !== 'object' || effects === null) {
-    return {
-      isValid: false,
-      errors: ['Effects must be an object'],
-      warnings: [],
-    };
-  }
-
-  const e = effects as Record<string, Record<string, unknown> | undefined>;
-
-  // Validate each enabled effect
-  if (e.blur?.enabled) {
-    const result = validateBlurEffect(e.blur);
-    errors.push(...result.errors);
-    warnings.push(...result.warnings);
-  }
-
-  if (e.colorTransition?.enabled) {
-    const result = validateColorTransitionEffect(e.colorTransition);
-    errors.push(...result.errors);
-    warnings.push(...result.warnings);
-  }
-
-  if (e.dynamicShadow?.enabled) {
-    const result = validateDynamicShadowEffect(e.dynamicShadow);
-    errors.push(...result.errors);
-    warnings.push(...result.warnings);
-  }
-
-  if (e.rotation?.enabled) {
-    const result = validateRotationEffect(e.rotation);
-    errors.push(...result.errors);
-    warnings.push(...result.warnings);
-  }
-
-  // Check for conflicting effects
-  if (
-    e.blur?.enabled &&
-    e.dynamicShadow?.enabled &&
-    e.dynamicShadow.shadowType === 'drop-shadow'
-  ) {
-    warnings.push(
-      'Using blur effect with drop-shadow may cause visual conflicts'
-    );
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
 }

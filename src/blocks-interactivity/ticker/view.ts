@@ -3,7 +3,7 @@
  * Ticker block — Interactivity API store.
  *
  * Pause model mirrors the hero carousel:
- * - `isPaused` — manual play/pause control (and reduced-motion lock).
+ * - `isPaused` — manual play/pause control.
  * - `isHeld` — temporary hover / focus hold that must not clobber manual pause.
  *
  * Accessible control labels live on `context.controlLabel` (not a `state`
@@ -22,7 +22,6 @@ import { PAUSE_EVENT, PAUSE_STORAGE_KEY } from './constants';
 import { isEffectivelyPaused, isTickerPauseControl } from './logic';
 import {
   canUseHoverPause,
-  prefersReducedMotion,
   readStoredPause,
   whenDocumentFontsReady,
   writeStoredPause,
@@ -96,12 +95,6 @@ store('aggressive-blocks/ticker', {
       }
 
       syncControlLabel(ctx);
-
-      // Drop sticky tap-focus on the control so `:focus-within` / hold don't linger.
-      const active = document.activeElement;
-      if (isTickerPauseControl(active) && active instanceof HTMLElement) {
-        active.blur();
-      }
     },
     mouseEnter() {
       const ctx = getContext<TickerContext>();
@@ -152,25 +145,18 @@ store('aggressive-blocks/ticker', {
         return;
       }
 
-      // Lock motion for reduced-motion visitors; keep the control disabled
-      // so "Play" cannot imply animation is available.
-      if (prefersReducedMotion()) {
-        ctx.isPaused = true;
-        ctx.motionLocked = true;
+      ctx.isPaused = readStoredPause();
+      const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const syncMotion = withScope(() => {
+        ctx.motionLocked = motionQuery.matches;
         syncControlLabel(ctx);
-      } else if (readStoredPause()) {
-        // Paused on an earlier page — start stopped, not with a glide.
-        ctx.isPaused = true;
-        syncControlLabel(ctx);
-      }
+      });
+      syncMotion();
+      motionQuery.addEventListener('change', syncMotion);
 
       // The pause is one site-wide preference: follow it when another ticker
       // on this page (event) or in another tab (storage) is toggled.
       const applyPause = withScope((paused: boolean) => {
-        if (ctx.motionLocked) {
-          return;
-        }
-
         ctx.isPaused = paused;
         syncControlLabel(ctx);
       });
@@ -197,6 +183,7 @@ store('aggressive-blocks/ticker', {
         cancelled = true;
         document.removeEventListener(PAUSE_EVENT, handlePauseEvent);
         window.removeEventListener('storage', handleStorage);
+        motionQuery.removeEventListener('change', syncMotion);
         destroyTicker(ref);
       };
     },

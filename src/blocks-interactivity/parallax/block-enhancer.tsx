@@ -1,11 +1,4 @@
-/**
- * Block Enhancer for Context-Aware Parallax Controls
- *
- * This file imports and initializes all parallax-related functionality.
- *
- * @package Aggressive Apparel
- */
+/** Register per-block parallax attributes and editor controls. */
 
-// Import all parallax functionality modules
 import './attributes';
 import './controls';

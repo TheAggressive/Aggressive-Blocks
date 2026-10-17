@@ -7,7 +7,6 @@
 import {
   findBlockDomElement,
   findTriggerElement,
-  getEditorDocuments,
   getOwnerView,
   ownerDocumentContains,
 } from './editor-dom';
@@ -16,7 +15,6 @@ import { Debug } from './utils/debug';
 interface HighlightInfo {
   targetElement: HTMLElement;
   styleTag: HTMLStyleElement;
-  originalStyles: Record<string, string>;
 }
 
 interface HighlightResult {
@@ -39,16 +37,24 @@ interface HighlightData {
   resizeObserver: ResizeObserver | null;
 }
 
-// Track which elements have been highlighted so we can clean them up precisely.
-const highlightedElements = new Set<Element>();
+const directHighlights = new Map<
+  HTMLElement,
+  {
+    styles: Array<{ name: string; value: string; priority: string }>;
+    hadHighlightClass: boolean;
+  }
+>();
+const styleElements = new Set<HTMLStyleElement>();
+let highlightSequence = 0;
+const DIRECT_STYLE_PROPERTIES = [
+  'position',
+  'z-index',
+  'outline',
+  'outline-offset',
+  'box-shadow',
+  'animation',
+] as const;
 
-// Store global references to cleanup timers and listeners.
-const highlightElements = new Map<string, HTMLElement>();
-const styleElements = new Map<string, HTMLStyleElement>();
-const animationTimers = new Map<string, ReturnType<typeof setInterval>>();
-const eventListeners = new Map<string, EventListener>();
-
-// Initialize arrays for tracking elements.
 const highlightData: HighlightData = {
   highlights: [],
   tooltips: [],
@@ -58,24 +64,8 @@ const highlightData: HighlightData = {
   resizeObserver: null,
 };
 
-/**
- * Utility function to remove all highlight styles and elements
- *
- * @param modalId - Optional modalId to target specific cleanup
- */
-export const cleanupAllHighlights = (modalId: string | null = null): void => {
-  // Clear all animation timers.
-  animationTimers.forEach(timer => clearInterval(timer));
-  animationTimers.clear();
-
-  // Remove all event listeners (module-level map) from every editor document.
-  eventListeners.forEach(listener => {
-    for (const doc of getEditorDocuments()) {
-      doc.removeEventListener('keydown', listener);
-    }
-  });
-  eventListeners.clear();
-
+/** Remove editor highlights and restore the styles they replaced. */
+export const cleanupAllHighlights = (): void => {
   // Remove event listeners tracked in highlightData.
   highlightData.eventListeners.forEach(({ element, eventType, callback }) => {
     element.removeEventListener(eventType, callback);
@@ -102,140 +92,20 @@ export const cleanupAllHighlights = (modalId: string | null = null): void => {
   highlightData.tooltips = [];
   highlightData.pulseElements = [];
 
-  // Step 1: Define all selectors we might need to clean up.
-  const highlightClassSelectors = [
-    '.modal-highlight-target',
-    '.modal-trigger-highlight',
-    '.modal-trigger-highlight-discreet',
-    '.no-layout-shift',
-    '.modal-direct-highlight',
-    '.modal-highlight-arrow',
-    '.modal-highlight-label',
-  ];
-
-  // Step 2: Find all elements with highlight styles applied via DOM classes or inline styles.
-  const findAndCleanElements = (rootElement: Document | HTMLElement): void => {
-    const allHighlightSelector = highlightClassSelectors.join(',');
-
-    rootElement
-      .querySelectorAll<HTMLElement>(allHighlightSelector)
-      .forEach(element => {
-        Debug.add(`Cleaning up highlight element: ${element.tagName}`);
-
-        highlightClassSelectors.forEach(selector => {
-          const className = selector.substring(1);
-          element.classList.remove(className);
-        });
-
-        element.style.outline = '';
-        element.style.outlineOffset = '';
-        element.style.boxShadow = '';
-        element.style.animation = '';
-        element.style.zIndex = '';
-        element.style.border = '';
-        element.style.position = '';
-        element.style.background = '';
-
-        highlightedElements.add(element);
-      });
-
-    // Safety cleanup for modal-trigger classes when a modalId is provided.
-    if (modalId) {
-      rootElement
-        .querySelectorAll<HTMLElement>(`[class*="modal-trigger-${modalId}"]`)
-        .forEach(element => {
-          if (
-            element.className &&
-            element.className.includes(`modal-trigger-${modalId}`)
-          ) {
-            element.className = element.className
-              .split(' ')
-              .filter(cls => cls !== `modal-trigger-${modalId}`)
-              .join(' ');
-
-            Debug.add(
-              `Removed specific modal-trigger-${modalId} class from element`
-            );
-          }
-        });
-    }
-  };
-
-  // Clean elements in the admin document and every editor canvas.
-  try {
-    for (const doc of getEditorDocuments()) {
-      findAndCleanElements(doc);
-    }
-  } catch (error) {
-    Debug.add(
-      `Error cleaning up highlights in editor documents: ${(error as Error).message}`,
-      true
-    );
-  }
-
-  // Step 3: Clean up specific elements we've tracked in our maps.
-  highlightElements.forEach(element => {
-    if (element && ownerDocumentContains(element)) {
-      element.style.outline = '';
-      element.style.outlineOffset = '';
-      element.style.boxShadow = '';
-      element.style.animation = '';
-      element.style.zIndex = '';
-      element.style.border = '';
-      element.style.position = '';
-      element.style.background = '';
-
-      highlightClassSelectors.forEach(selector => {
-        const className = selector.substring(1);
-        element.classList.remove(className);
-      });
-    }
-  });
-
-  // Clear our tracking maps.
-  highlightElements.clear();
-  styleElements.clear();
-
-  // Remove style tags / debug nodes from every editor document.
-  for (const doc of getEditorDocuments()) {
-    doc
-      .querySelectorAll('style[id^="modal-direct-highlight-style-"]')
-      .forEach(styleTag => {
-        styleTag.parentNode?.removeChild(styleTag);
-      });
-
-    doc.querySelectorAll('.modal-highlight-debug').forEach(el => {
-      el.parentNode?.removeChild(el);
+  // Restore only properties changed by our direct highlight, including
+  // !important priorities. Never scan unrelated editor styles by color.
+  directHighlights.forEach(({ styles, hadHighlightClass }, element) => {
+    styles.forEach(({ name, value, priority }) => {
+      if (value) element.style.setProperty(name, value, priority);
+      else element.style.removeProperty(name);
     });
-  }
-
-  // Final pass: clear residual blue outline/shadow via computed styles.
-  try {
-    for (const doc of getEditorDocuments()) {
-      const view = doc.defaultView;
-      if (!view) {
-        continue;
-      }
-
-      doc.querySelectorAll<HTMLElement>('*').forEach(element => {
-        const computedStyle = view.getComputedStyle(element);
-        if (
-          computedStyle.outline?.includes('rgb(0, 124, 186)') ||
-          computedStyle.boxShadow?.includes('rgb(0, 124, 186)')
-        ) {
-          Debug.add(`Found element with highlight styles via computed style`);
-          element.style.outline = '';
-          element.style.boxShadow = '';
-          element.style.animation = '';
-        }
-      });
-    }
-  } catch (error) {
-    Debug.add(`Error in final cleanup pass: ${(error as Error).message}`, true);
-  }
+    if (!hadHighlightClass) element.classList.remove('modal-highlight-target');
+  });
+  directHighlights.clear();
+  styleElements.forEach(style => style.remove());
+  styleElements.clear();
 };
 
-// For convenience, create an alias for cleanupAllHighlights.
 export const removeHighlight = cleanupAllHighlights;
 
 /**
@@ -255,7 +125,7 @@ export const highlightModalTrigger = (
   _options: { discreet?: boolean } = {}
 ): HighlightResult => {
   // Remove any existing highlight first.
-  cleanupAllHighlights(modalId);
+  cleanupAllHighlights();
 
   Debug.add(`Attempting to highlight trigger for modal ${modalId}`);
   Debug.add(`Trigger block ID: ${selectedTriggerBlockId}`);
@@ -295,16 +165,10 @@ export const highlightModalTrigger = (
         targetElement = blockElement as HTMLElement;
       }
 
-      // Make sure to track the block element itself too for complete cleanup.
-      highlightedElements.add(blockElement);
-
       // Create standard highlight with the selected target.
       const highlightInfo = createDirectHighlight(targetElement, modalId);
 
       if (highlightInfo) {
-        // Track which elements were highlighted in this session.
-        highlightedElements.add(targetElement);
-
         return {
           highlighted: true,
           element: targetElement,
@@ -323,9 +187,6 @@ export const highlightModalTrigger = (
     const highlightInfo = createDirectHighlight(triggerElement, modalId);
 
     if (highlightInfo) {
-      // Track the element.
-      highlightedElements.add(triggerElement);
-
       return {
         highlighted: true,
         element: triggerElement,
@@ -511,7 +372,7 @@ export const refreshHighlight = (
  */
 export const createDirectHighlight = (
   targetElement: HTMLElement,
-  modalId: string
+  _modalId: string
 ): HighlightInfo | null => {
   if (!targetElement) {
     Debug.add('Cannot create direct highlight - no target element', true);
@@ -519,35 +380,27 @@ export const createDirectHighlight = (
   }
 
   // Clean up any existing highlights first to avoid multiples.
-  cleanupAllHighlights(modalId);
+  cleanupAllHighlights();
 
   // Style tags must live in the same document as the target (canvas head when iframed).
   const ownerDoc = targetElement.ownerDocument;
   const ownerView = getOwnerView(targetElement);
 
-  ownerDoc
-    .querySelectorAll('style[id^="modal-direct-highlight-style-"]')
-    .forEach(el => el.remove());
-
   Debug.add('Creating direct highlight on element');
 
   try {
-    // Track this element for precise cleanup later.
-    highlightedElements.add(targetElement);
-
-    // Store original styles to restore later.
-    const originalStyles: Record<string, string> = {
-      position: targetElement.style.position,
-      zIndex: targetElement.style.zIndex,
-      outline: targetElement.style.outline,
-      outlineOffset: targetElement.style.outlineOffset,
-      boxShadow: targetElement.style.boxShadow,
-      animation: targetElement.style.animation,
-      className: targetElement.className,
-    };
-
-    // Add specific classes for highlighting.
-    targetElement.classList.add('modal-highlight-target', 'no-layout-shift');
+    const styles = DIRECT_STYLE_PROPERTIES.map(name => ({
+      name,
+      value: targetElement.style.getPropertyValue(name),
+      priority: targetElement.style.getPropertyPriority(name),
+    }));
+    directHighlights.set(targetElement, {
+      styles,
+      hadHighlightClass: targetElement.classList.contains(
+        'modal-highlight-target'
+      ),
+    });
+    targetElement.classList.add('modal-highlight-target');
 
     // Apply blue highlight styles directly with !important to override any existing styles.
     targetElement.style.setProperty(
@@ -564,12 +417,12 @@ export const createDirectHighlight = (
     targetElement.style.setProperty('position', 'relative', 'important');
     targetElement.style.setProperty('z-index', '1000', 'important');
 
-    // Create and add animation style with a unique ID based on timestamp.
-    const styleTagId = `modal-direct-highlight-style-${modalId}-${Date.now()}`;
+    // Saved IDs must never become stylesheet source.
+    const styleTagId = `modal-direct-highlight-style-${++highlightSequence}`;
     const styleTag = ownerDoc.createElement('style');
     styleTag.id = styleTagId;
-    styleTag.innerHTML = `
-			@keyframes modal-highlight-pulse-${modalId} {
+    styleTag.textContent = `
+			@keyframes aa-modal-highlight-pulse {
 				0% { outline-color: #007cba !important; box-shadow: 0 0 15px rgba(0, 124, 186, 0.7) !important; }
 				50% { outline-color: #4ca8d8 !important; box-shadow: 0 0 25px rgba(0, 124, 186, 0.9) !important; }
 				100% { outline-color: #007cba !important; box-shadow: 0 0 15px rgba(0, 124, 186, 0.7) !important; }
@@ -578,30 +431,21 @@ export const createDirectHighlight = (
 			.modal-highlight-target {
 				position: relative !important;
 				z-index: 1000 !important;
-				animation: modal-highlight-pulse-${modalId} 1.5s infinite !important;
+				animation: aa-modal-highlight-pulse 1.5s infinite !important;
 				outline: 3px solid #007cba !important;
 				outline-offset: 3px !important;
 				box-shadow: 0 0 15px rgba(0, 124, 186, 0.7) !important;
 			}
-
-			.no-layout-shift {
-				margin: 0 !important;
-				padding: 0 !important;
+			@media (prefers-reduced-motion: reduce) {
+				.modal-highlight-target { animation: none !important; }
 			}
 		`;
 
     ownerDoc.head.appendChild(styleTag);
-    styleElements.set(styleTagId, styleTag);
-
-    // Apply the animation explicitly.
-    targetElement.style.setProperty(
-      'animation',
-      `modal-highlight-pulse-${modalId} 1.5s infinite`,
-      'important'
-    );
+    styleElements.add(styleTag);
 
     // Scroll the element into view within the canvas viewport.
-    setTimeout(() => {
+    const scrollTimer = setTimeout(() => {
       const rect = targetElement.getBoundingClientRect();
       const viewportHeight =
         ownerView?.innerHeight ?? ownerDoc.documentElement.clientHeight;
@@ -615,7 +459,10 @@ export const createDirectHighlight = (
 
       if (!isInView) {
         targetElement.scrollIntoView({
-          behavior: 'smooth',
+          behavior: ownerView?.matchMedia?.('(prefers-reduced-motion: reduce)')
+            .matches
+            ? 'instant'
+            : 'smooth',
           block: 'center',
         });
         Debug.add('Scrolled element into view');
@@ -624,15 +471,17 @@ export const createDirectHighlight = (
       }
     }, 50);
 
+    highlightData.timers.push(scrollTimer);
+
     Debug.add('Direct blue highlight applied successfully');
 
     // Return highlight info for cleanup and reference.
     return {
       targetElement,
       styleTag,
-      originalStyles,
     };
   } catch (error) {
+    cleanupAllHighlights();
     Debug.add(
       `Error in createDirectHighlight: ${(error as Error).message}`,
       true

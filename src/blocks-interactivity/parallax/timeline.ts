@@ -26,7 +26,7 @@
 import type { CachedLayer } from './layers';
 import { computeScrollFrame } from './transforms';
 import type { DetectionBoundary, ParallaxContext } from './types';
-import { ParallaxLogger, parseBoundaryPart } from './utils';
+import { parseBoundaryPart } from './utils';
 
 type ViewTimelineConstructor = new (options: {
   subject: Element;
@@ -275,7 +275,7 @@ export const startTimelineAnimations = (
     return animations;
   } catch (error) {
     animations.forEach(animation => animation.cancel());
-    ParallaxLogger.warn('Scroll timeline unavailable; using JS engine', {
+    console.warn('[PARALLAX]', 'Scroll timeline unavailable; using JS engine', {
       error,
     });
     return null;

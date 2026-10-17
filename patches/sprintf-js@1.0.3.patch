@@ -1,0 +1,12 @@
+--- a/src/sprintf.js
++++ b/src/sprintf.js
+@@ -30,6 +30,9 @@
+             }
+             else if (node_type === "array") {
+                 match = parse_tree[i] // convenience purposes only
++                if (Number(match[6]) > 10000 || Number(match[7]) > 100) {
++                    throw new RangeError('[sprintf] width or precision exceeds limit')
++                }
+                 if (match[2]) { // keyword argument
+                     arg = argv[cursor]
+                     for (k = 0; k < match[2].length; k++) {

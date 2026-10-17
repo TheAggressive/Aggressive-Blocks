@@ -17,7 +17,7 @@ export interface TickerRunState {
 }
 
 export interface TickerPauseState {
-  /** Manual pause from the play/pause control (or reduced-motion lock). */
+  /** Manual pause from the play/pause control. */
   isPaused: boolean;
   /** Temporary hold from hover / keyboard focus. */
   isHeld: boolean;
