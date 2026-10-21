@@ -17,7 +17,7 @@ overrides:
   simple-git@<4.0.1: ^4.0.2
 
 patchedDependencies:
-  '@wordpress/env@11.17.0': 9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85
+  '@wordpress/env@11.17.0': 06c85907f8b2db8388481ca985e0afbf262c3c751f174ab0b01de7fdc43feb54
   braces@3.0.3: 91a1016bf711cac28c5f53df95d4315f68c665f550d05ed22e28e2e75bf5874e
   sprintf-js@1.0.3: 78d38f71e1d695fb51e60e434dbbfb085c0346d4f23558be0bc90de08f580164
 
@@ -102,7 +102,7 @@ importers:
         version: 9.0.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@18.3.1(react@19.3.1))(react@19.3.1)
       '@wordpress/env':
         specifier: ^11.17.0
-        version: 11.17.0(patch_hash=9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85)(@types/node@26.6.5)(supports-color@10.2.2)
+        version: 11.17.0(patch_hash=06c85907f8b2db8388481ca985e0afbf262c3c751f174ab0b01de7fdc43feb54)(@types/node@26.6.5)(supports-color@10.2.2)
       '@wordpress/eslint-plugin':
         specifier: ^27.1.0
         version: 27.1.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@typescript-eslint/eslint-plugin@8.71.2(@typescript-eslint/parser@8.71.2(@typescript/typescript6@6.0.2)(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript-eslint/parser@8.71.2(@typescript/typescript6@6.0.2)(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2))(@typescript/typescript6@6.0.2)(eslint@10.12.0(jiti@2.7.0)(supports-color@10.2.2))(jest@30.5.2(@types/node@26.6.5)(babel-plugin-macros@3.1.0)(supports-color@10.2.2))(lightningcss@1.33.0)(postcss@8.5.30)(prettier@3.9.10)(react-dom@18.3.1(react@19.3.1))(react@19.3.1)(stylelint@17.16.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))(supports-color@10.2.2)
@@ -126,7 +126,7 @@ importers:
         version: 14.2.0(@babel/core@8.0.7)(jest@30.5.2(@types/node@26.6.5)(babel-plugin-macros@3.1.0)(supports-color@10.2.2))(supports-color@10.2.2)
       '@wordpress/scripts':
         specifier: ^36.1.0
-        version: 36.1.0(a6cb90f4a8522ffc65c039a543bd9fb7)
+        version: 36.1.0(c6a183d96a6cbcfd45495c4a0d6c908f)
       '@wordpress/stylelint-config':
         specifier: ^26.1.0
         version: 26.1.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(lightningcss@1.33.0)(postcss@8.5.30)(react-dom@18.3.1(react@19.3.1))(react@19.3.1)(stylelint-scss@7.3.0(stylelint@17.16.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2)))(stylelint@17.16.0(@typescript/typescript6@6.0.2)(supports-color@10.2.2))
@@ -14333,7 +14333,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@wordpress/env@11.17.0(patch_hash=9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85)(@types/node@26.6.5)(supports-color@10.2.2)':
+  '@wordpress/env@11.17.0(patch_hash=06c85907f8b2db8388481ca985e0afbf262c3c751f174ab0b01de7fdc43feb54)(@types/node@26.6.5)(supports-color@10.2.2)':
     dependencies:
       '@inquirer/prompts': 7.10.1(@types/node@26.6.5)
       '@wp-playground/cli': 3.1.57(supports-color@10.2.2)
@@ -14734,7 +14734,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@wordpress/scripts@36.1.0(a6cb90f4a8522ffc65c039a543bd9fb7)':
+  '@wordpress/scripts@36.1.0(c6a183d96a6cbcfd45495c4a0d6c908f)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@pmmmwh/react-refresh-webpack-plugin': 0.5.17(react-refresh@0.14.2)(type-fest@4.41.0)(webpack-dev-server@5.2.6)(webpack@5.111.1)
@@ -14789,7 +14789,7 @@ snapshots:
       webpack-dev-server: 5.2.6(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)(webpack-cli@5.1.4)(webpack@5.111.1)
     optionalDependencies:
       '@playwright/test': 1.64.1
-      '@wordpress/env': 11.17.0(patch_hash=9b7ded99247419ece121d6867282456f7d0dfe27946913e33472e8a201883e85)(@types/node@26.6.5)(supports-color@10.2.2)
+      '@wordpress/env': 11.17.0(patch_hash=06c85907f8b2db8388481ca985e0afbf262c3c751f174ab0b01de7fdc43feb54)(@types/node@26.6.5)(supports-color@10.2.2)
       jest: 30.5.2(@types/node@26.6.5)(babel-plugin-macros@3.1.0)(supports-color@10.2.2)
     transitivePeerDependencies:
       - '@minify-html/node'

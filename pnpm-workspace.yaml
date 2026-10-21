@@ -49,6 +49,11 @@ overrides:
 # without it; bin/ci/contracts/wp-env.mjs fails if that version still calls the
 # default export. Delete the patch and the simple-git override once
 # @wordpress/env requires simple-git 4 itself.
+# The same patch pins the PHP 8.2 coverage environment's Xdebug to the official
+# 3.5.3 archive, checks its SHA-256, and installs it offline. PECL REST metadata
+# failures otherwise prevent tests from starting. Remove this part once wp-env
+# provides a pinned, verified installation without a PECL metadata dependency.
+# bin/wp-env/xdebug.test.mjs exercises the generated Dockerfiles and installer.
 allowUnusedPatches: true
 
 # No fixed npm releases exist for GHSA-vfj7-8cjw-p6xm or GHSA-hp3w-g68c-fv3c.
