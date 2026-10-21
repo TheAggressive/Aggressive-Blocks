@@ -26,6 +26,7 @@ AA_PACKAGE_REQUIRED=(
 	'includes/Blocks/class-blocks.php'
 	'includes/Blocks/class-copyright.php'
 	'includes/Blocks/class-icon-block.php'
+	'includes/Blocks/class-parallax-attributes.php'
 	'includes/Migration/class-block-renamer.php'
 	'includes/Migration/class-cli.php'
 	'build/blocks-manifest.php'
