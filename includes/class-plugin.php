@@ -25,6 +25,7 @@ class Plugin {
 		Core\Block_Categories::init();
 		Core\Brand_Icons::init();
 		Blocks\Blocks::init();
+		Blocks\Parallax_Attributes::init();
 		Blocks\Icon_Block::init();
 		Blocks\Copyright::init();
 		Update\Plugin_Updates::register();
