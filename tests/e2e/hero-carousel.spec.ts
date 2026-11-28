@@ -4,23 +4,27 @@ import { openPageEditor, publishAndGetUrl, deletePage } from './helpers';
 /** Insert a hero carousel with three slides, publish, and return the page. */
 async function publishCarousel(
   page: Page,
-  attributes: Record<string, unknown>
+  attributes: Record<string, unknown>,
+  coverAttributes: Record<string, unknown> = {}
 ): Promise<{ id: number; url: string }> {
   await openPageEditor(page);
-  await page.evaluate(async attrs => {
-    const { createBlock } = window.wp.blocks;
-    const slides = ['One', 'Two', 'Three'].map(label =>
-      createBlock('core/cover', { dimRatio: 0, minHeight: 320 }, [
-        createBlock('core/paragraph', { content: `Slide ${label}` }),
-      ])
-    );
-    window.wp.data
-      .dispatch('core/block-editor')
-      .insertBlock(
-        createBlock('aggressive-blocks/hero-carousel', attrs, slides)
+  await page.evaluate(
+    async ([attrs, cover]) => {
+      const { createBlock } = window.wp.blocks;
+      const slides = ['One', 'Two', 'Three'].map(label =>
+        createBlock('core/cover', { dimRatio: 0, minHeight: 320, ...cover }, [
+          createBlock('core/paragraph', { content: `Slide ${label}` }),
+        ])
       );
-    await new Promise(r => setTimeout(r, 400));
-  }, attributes);
+      window.wp.data
+        .dispatch('core/block-editor')
+        .insertBlock(
+          createBlock('aggressive-blocks/hero-carousel', attrs, slides)
+        );
+      await new Promise(r => setTimeout(r, 400));
+    },
+    [attributes, coverAttributes] as const
+  );
   return publishAndGetUrl(page);
 }
 
@@ -209,6 +213,51 @@ test.describe('Hero Carousel — front end', () => {
         text.y < box.y + box.height &&
         box.y < text.y + text.height;
       expect(overlaps, `copy overlaps the ${arrow} arrow`).toBe(false);
+    }
+  });
+
+  test('lets Cover padding control the copy inset above the arrow lane', async ({
+    page,
+  }) => {
+    // Lane = gap (1rem) + icon button (2.75rem) + 1em of the Cover's font.
+    const lane = (em: number) => 16 + 44 + em;
+    const cases = [
+      { padding: '8px', inset: lane },
+      { padding: '160px', inset: () => 160 },
+    ];
+    for (const { padding, inset } of cases) {
+      const { id, url } = await publishCarousel(
+        page,
+        { autoplay: false, transition: 'fade' },
+        { style: { spacing: { padding: { left: padding, right: padding } } } }
+      );
+      pageId = id;
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(url);
+
+      const slide = page.locator('.aa-hero__slide.is-active').first();
+      const cover = await slide.locator('> .wp-block-cover').boundingBox();
+      const copy = await slide
+        .locator('.wp-block-cover__inner-container > *')
+        .first()
+        .boundingBox();
+      const em = await slide
+        .locator('> .wp-block-cover')
+        .evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+      expect(cover && copy, `${padding}: slide is laid out`).toBeTruthy();
+      if (!cover || !copy) continue;
+      const expected = inset(em);
+      expect(copy.x - cover.x, `${padding}: left inset`).toBeCloseTo(
+        expected,
+        0
+      );
+      expect(
+        cover.x + cover.width - (copy.x + copy.width),
+        `${padding}: right inset`
+      ).toBeCloseTo(expected, 0);
+
+      await deletePage(page, pageId);
+      pageId = 0;
     }
   });
 });

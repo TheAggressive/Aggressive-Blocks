@@ -152,6 +152,78 @@ class Block_Render_Smoke_Test extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Opening tags of a hero carousel's slide wrappers.
+	 *
+	 * @param string $html Rendered hero carousel.
+	 * @return string[]
+	 */
+	private function hero_slide_tags( string $html ): array {
+		preg_match_all( '/<div\s+class="aa-hero__slide[^"]*"[^>]*>/', $html, $matches );
+		return $matches[0];
+	}
+
+	/**
+	 * Edge arrows expose each slide's Cover padding so the lane tops it up
+	 * instead of stacking on it.
+	 *
+	 * @return void
+	 */
+	public function test_hero_carousel_exposes_slide_padding_to_edge_lane(): void {
+		$html = $this->render(
+			'hero-carousel',
+			array(),
+			array(
+				$this->hero_slide(
+					array(
+						'style' => array(
+							'spacing' => array(
+								'padding' => array(
+									'left'  => 'var:preset|spacing|8',
+									'right' => '6rem',
+									'top'   => '2rem',
+								),
+							),
+						),
+					)
+				),
+				$this->hero_slide( array( 'style' => array( 'spacing' => array( 'padding' => array( 'top' => '2rem' ) ) ) ) ),
+				$this->hero_slide( array( 'style' => array( 'spacing' => array( 'padding' => array( 'left' => '1rem; position: fixed' ) ) ) ) ),
+			)
+		);
+
+		$this->assertMatchesRegularExpression( '/<section[^>]*class="[^"]*\baa-hero--edge-lane\b/', $html );
+
+		$slides = $this->hero_slide_tags( $html );
+		$this->assertCount( 3, $slides );
+		$this->assertStringContainsString( '--aa-hero-pad-left:var(--wp--preset--spacing--8);', $slides[0] );
+		$this->assertStringContainsString( '--aa-hero-pad-right:6rem;', $slides[0] );
+		$this->assertStringNotContainsString( 'pad-top', $slides[0] );
+		// Vertical-only padding leaves both sides on the CSS fallback.
+		$this->assertStringNotContainsString( '--aa-hero-pad', $slides[1] );
+		$this->assertStringNotContainsString( 'position', $slides[2] );
+	}
+
+	/**
+	 * Without edge arrows on screen there is no lane to reserve.
+	 *
+	 * @return void
+	 */
+	public function test_hero_carousel_skips_edge_lane_without_edge_arrows(): void {
+		$padded = $this->hero_slide( array( 'style' => array( 'spacing' => array( 'padding' => array( 'left' => '2rem' ) ) ) ) );
+		$cases  = array(
+			'bottom arrows' => array( array( 'arrowPosition' => 'bottom' ), array( $padded, $padded ) ),
+			'arrows hidden' => array( array( 'showArrows' => false ), array( $padded, $padded ) ),
+			'single slide'  => array( array(), array( $padded ) ),
+		);
+
+		foreach ( $cases as $label => list( $attributes, $slides ) ) {
+			$html = $this->render( 'hero-carousel', $attributes, $slides );
+			$this->assertStringNotContainsString( 'aa-hero--edge-lane', $html, $label );
+			$this->assertStringNotContainsString( '--aa-hero-pad', $html, $label );
+		}
+	}
+
+	/**
 	 * Hero carousel keeps valid chrome colors and drops anything else.
 	 *
 	 * @return void
