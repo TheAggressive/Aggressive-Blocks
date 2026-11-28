@@ -62,6 +62,59 @@ $hero_css_color = static function ( $value ): string {
 	return '';
 };
 
+/**
+ * Inline style exposing a slide's horizontal Cover padding to the edge-arrow
+ * lane (chrome.css), which tops the content up only by any shortfall.
+ *
+ * The Cover's own padding is the control: set in its Dimensions panel it
+ * wins, falling back to the theme's global Cover padding, then core's 1em.
+ * Values run through the style engine, which resolves presets and filters
+ * unsafe CSS.
+ *
+ * @param array<string, mixed> $attrs Cover block attributes.
+ * @return string Custom property declarations, or '' when nothing resolves.
+ */
+$hero_slide_padding_style = static function ( array $attrs ): string {
+	static $global_padding = null;
+	if ( null === $global_padding ) {
+		$global_padding = wp_get_global_styles( array( 'spacing', 'padding' ), array( 'block_name' => 'core/cover' ) );
+	}
+	$sides = array();
+	foreach ( array( $global_padding, $attrs['style']['spacing']['padding'] ?? null ) as $padding ) {
+		if ( is_string( $padding ) && '' !== $padding ) {
+			$padding = array(
+				'left'  => $padding,
+				'right' => $padding,
+			);
+		}
+		if ( ! is_array( $padding ) ) {
+			continue;
+		}
+		foreach ( array( 'left', 'right' ) as $side ) {
+			if ( isset( $padding[ $side ] ) && is_string( $padding[ $side ] ) && '' !== $padding[ $side ] ) {
+				$sides[ $side ] = $padding[ $side ];
+			}
+		}
+	}
+	if ( array() === $sides ) {
+		return '';
+	}
+	$styles = wp_style_engine_get_styles( array( 'spacing' => array( 'padding' => $sides ) ) );
+	$css    = '';
+	foreach ( $styles['declarations'] ?? array() as $property => $value ) {
+		// The style engine resolves presets but passes a smuggled `;` through,
+		// so only lengths, presets and calc()/clamp()-style math get in.
+		$value = trim( (string) $value );
+		if ( ! preg_match( '/^[a-z0-9.%+*\/(),\s-]+$/i', $value ) ) {
+			continue;
+		}
+		if ( in_array( $property, array( 'padding-left', 'padding-right' ), true ) ) {
+			$css .= '--aa-hero-pad-' . substr( $property, 8 ) . ':' . $value . ';';
+		}
+	}
+	return $css;
+};
+
 $hero_transition = $hero_enum( $attributes['transition'] ?? 'slide', array( 'slide', 'fade', 'crossfade' ), 'slide' );
 
 $hero_min_height = (string) ( $attributes['minHeight'] ?? '85svh' );
@@ -205,6 +258,12 @@ $hero_root_classes = array(
 	'aa-hero--' . $hero_transition,
 	'aa-hero--arrows-' . $hero_arrow_pos,
 );
+// Edge arrows float over the slides, so their lane is reserved only when
+// they actually render.
+$hero_edge_lane = $hero_show_arrows && $hero_count > 1 && 'edges' === $hero_arrow_pos;
+if ( $hero_edge_lane ) {
+	$hero_root_classes[] = 'aa-hero--edge-lane';
+}
 if ( 'none' !== $hero_content_anim ) {
 	$hero_root_classes[] = 'aa-hero--content-' . $hero_content_anim;
 }
@@ -436,9 +495,12 @@ $hero_slide_thumb = static function ( array $cover_attrs ) use ( $hero_css_color
 
 				// Pre-hydration a11y for stacked modes: only slide 1 is reachable.
 				$hero_is_hidden = 'slide' !== $hero_transition && 0 !== $hero_index;
+
+				$hero_slide_style = $hero_edge_lane ? $hero_slide_padding_style( $hero_slide_attrs ) : '';
 				?>
 				<div
 					class="<?php echo esc_attr( implode( ' ', $hero_slide_classes ) ); ?>"
+					<?php echo '' !== $hero_slide_style ? 'style="' . esc_attr( $hero_slide_style ) . '"' : ''; ?>
 					role="group"
 					aria-roledescription="slide"
 					<?php /* translators: 1: current slide number, 2: total slide count. */ ?>
