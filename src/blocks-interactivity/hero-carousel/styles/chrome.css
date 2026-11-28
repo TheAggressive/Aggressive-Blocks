@@ -48,11 +48,11 @@
    The Cover's own padding stays in control: render.php exposes it as
    --aa-hero-pad-left/right, and the inner container adds only the shortfall,
    so each side ends up at max(Cover padding, lane). Never added on top.
-   The lane is gap + arrow + gap: copy clears the arrow by the same gap the
-   arrow keeps from the slide edge. */
+   The lane is gap + arrow + 1em: copy clears the arrow by core's default
+   Cover padding, so slides without their own padding keep the same inset. */
 .aa-hero--edge-lane .aa-hero__slide {
   --aa-hero-lane: calc(
-    var(--aa-hero-chrome-gap) * 2 + var(--aa-icon-button-size, 2.75rem)
+    var(--aa-hero-chrome-gap) + var(--aa-icon-button-size, 2.75rem) + 1em
   );
 }
 

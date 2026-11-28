@@ -219,11 +219,11 @@ test.describe('Hero Carousel — front end', () => {
   test('lets Cover padding control the copy inset above the arrow lane', async ({
     page,
   }) => {
-    // Lane = gap (1rem) + icon button (2.75rem) + gap (1rem) = 76px.
-    const lane = 76;
+    // Lane = gap (1rem) + icon button (2.75rem) + 1em of the Cover's font.
+    const lane = (em: number) => 16 + 44 + em;
     const cases = [
       { padding: '8px', inset: lane },
-      { padding: '96px', inset: 96 },
+      { padding: '160px', inset: () => 160 },
     ];
     for (const { padding, inset } of cases) {
       const { id, url } = await publishCarousel(
@@ -241,13 +241,20 @@ test.describe('Hero Carousel — front end', () => {
         .locator('.wp-block-cover__inner-container > *')
         .first()
         .boundingBox();
+      const em = await slide
+        .locator('> .wp-block-cover')
+        .evaluate(el => parseFloat(getComputedStyle(el).fontSize));
       expect(cover && copy, `${padding}: slide is laid out`).toBeTruthy();
       if (!cover || !copy) continue;
-      expect(copy.x - cover.x, `${padding}: left inset`).toBeCloseTo(inset, 0);
+      const expected = inset(em);
+      expect(copy.x - cover.x, `${padding}: left inset`).toBeCloseTo(
+        expected,
+        0
+      );
       expect(
         cover.x + cover.width - (copy.x + copy.width),
         `${padding}: right inset`
-      ).toBeCloseTo(inset, 0);
+      ).toBeCloseTo(expected, 0);
 
       await deletePage(page, pageId);
       pageId = 0;
